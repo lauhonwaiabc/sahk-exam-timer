@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Viva Exam Timer</title>
+<style>
+  /* (Same CSS as before, omitted here for brevity; use the CSS from previous code) */
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; 
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: #f9f9f9;
+    color: #222;
+  }
+  #clock {
+    background: #222;
+    color: #0f0;
+    font-size: 2em;
+    text-align: center;
+    padding: 14px 0;
+    font-weight: 900;
+    letter-spacing: 3px;
+    user-select: none;
+  }
+  #controls {
+    text-align: center;
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  button {
+    font-size: 1.1em;
+    padding: 8px 18px;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    background: #4caf50;
+    color: white;
+    font-weight: 700;
+    transition: background-color 0.3s;
+    user-select: none;
+  }
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  button:hover:not(:disabled) {
+    background: #388e3c;
+  }
+  #topMenu {
+    margin-bottom: 15px;
+  }
+  #sectionsList, #subsectionsList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  #sectionsList li, #subsectionsList li {
+    background: #e0e0e0;
+    padding: 5px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    min-width: 120px;
+    text-align: center;
+    font-weight: 700;
+    box-shadow: 0 2px 5px rgb(0 0 0 / 0.1);
+    transition: background-color 0.3s, color 0.3s;
+  }
+  #sectionsList li.selected, #subsectionsList li.selected {
+    background: #4caf50;
+    color: white;
+    box-shadow: 0 4px 10px rgb(76 175 80 / 0.6);
+  }
+  /* Disabled but NOT selected (greyed out) */
+  #sectionsList li.disabled:not(.selected),
+  #subsectionsList li.disabled:not(.selected) {
+    pointer-events: none;
+    opacity: 0.5;
+    background: #ddd !important;
+    color: #888 !important;
+    cursor: not-allowed;
+  }
+  /* Disabled AND selected (keep green) */
+  #sectionsList li.disabled.selected,
+  #subsectionsList li.disabled.selected {
+    pointer-events: none;
+    opacity: 1;
+    background: #4caf50 !important;
+    color: white !important;
+    cursor: not-allowed;
+    box-shadow: 0 4px 10px rgb(76 175 80 / 0.6);
+  }
+  #bottomContent {
+    flex-grow: 1;
+    padding: 25px 40px 40px;
+    overflow-y: auto;
+    background: white;
+    box-shadow: inset 0 0 15px rgb(0 0 0 / 0.05);
+  }
+  .timer {
+    font-size: 7em;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #d33;
+    user-select: none;
+    letter-spacing: 4px;
+  }
+  .info {
+    font-size: 1.3em;
+    color: #444;
+    max-width: 900px;
+    margin: 0 auto 20px;
+    line-height: 1.6;
+    font-weight: 600;
+    text-align: center;
+  }
+  #tableModeContainer, #candidateModeContainer {
+    max-width: 1800px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: center;
+  }
+  .viva-box {
+    background: #f0f7f5;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
+    padding: 20px 25px;
+    width: 220px;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+    transition: box-shadow 0.3s;
+    margin-bottom: 14px;
+  }
+  .viva-box:hover {
+    box-shadow: 0 6px 16px rgb(0 0 0 / 0.2);
+  }
+  .viva-title {
+    font-weight: 900;
+    font-size: 2em;
+    margin-bottom: 12px;
+    color: #2e7d32;
+    text-align: center;
+    letter-spacing: 1.2px;
+  }
+  .candidate-row, .observer-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+  }
+  .role-label {
+    font-weight: 700;
+    font-size: 1.2em;
+    color: #555;
+    margin: 0;
+  }
+  .candidate-name {
+    font-weight: 900;
+    font-size: 1.2em;
+    color: #1b5e20;
+    margin: 0;
+  }
+  .observer-row {
+    background: #fff9c4;
+    border-radius: 8px;
+    padding: 2px 4px;
+    margin-top: 6px;
+  }
+  .candidate-cell {
+    background: #f0f7f5;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.2em;
+    color: #1b5e20;
+    transition: box-shadow 0.3s;
+    text-align: center;
+    width: 220px;
+    flex: 0 0 220px;
+    box-sizing: border-box;
+    margin-bottom: 14px;
+  }
+  .candidate-cell:hover {
+    box-shadow: 0 6px 16px rgb(0 0 0 / 0.2);
+  }
+  .candidate-cell.observer-cell {
+    background: #fff9c4 !important;
+  }
+  .candidate-number {
+    font-weight: 900;
+    font-size: 1.2em;
+    margin-bottom: 4px;
+  }
+  .candidate-role.candidate {
+    font-size: 0.95em;
+    font-weight: 900;
+    color: #5e1b20;
+    letter-spacing: 1px;
+  }
+  .candidate-role.observer {
+    font-size: 0.95em;
+    font-weight: 600;
+    color: #1b5e20;
+  }
+  .candidate-table {
+    font-weight: 700;
+    font-size: 0.9em;
+    color: #2e7d32;
+  }
+  /* Highlight for search */
+  .viva-box.highlight, .candidate-cell.highlight {
+    outline: 4px solid #1976d2 !important;
+    box-shadow: 0 0 18px #1976d2cc !important;
+    background: #e3f2fd !important;
+  }
+  @media (max-width: 600px) {
+    body {
+      font-size: 14px;
+      padding: 10px 8px;
+    }
+    #clock {
+      font-size: 1.5em;
+      padding: 10px 0;
+      letter-spacing: 1.5px;
+    }
+    #controls {
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    button {
+      font-size: 1em;
+      padding: 6px 14px;
+      border-radius: 5px;
+    }
+    #startTimeContainer label,
+    #searchContainer input,
+    #searchContainer button {
+      font-size: 1em;
+    }
+    #startTimeInput {
+      width: 120px;
+      padding: 5px 10px;
+    }
+    #searchInput {
+      width: 180px;
+    }
+    #topMenu {
+      margin-bottom: 10px;
+    }
+    #sectionsList, #subsectionsList {
+      gap: 8px;
+    }
+    #sectionsList li, #subsectionsList li {
+      min-width: 90px;
+      font-size: 0.9em;
+      padding: 4px 8px;
+    }
+    #bottomContent {
+      padding: 15px 20px 20px;
+    }
+    .timer {
+      font-size: 4.5em;
+      margin-bottom: 8px;
+    }
+    .info {
+      font-size: 1em;
+      max-width: 100%;
+      margin-bottom: 15px;
+    }
+    #tableModeContainer, #candidateModeContainer {
+      gap: 12px;
+      max-width: 100%;
+    }
+    .viva-box, .candidate-cell {
+      width: 160px;
+      flex: 1 1 140px;
+      padding: 14px 16px;
+      font-size: 0.9em;
+    }
+    .viva-title {
+      font-size: 1.5em;
+      margin-bottom: 8px;
+    }
+    .candidate-row, .observer-row {
+      gap: 6px;
+    }
+    .role-label, .candidate-name, .candidate-number, .candidate-role, .candidate-table {
+      font-size: 0.9em;
+    }
+    .candidate-role.candidate,
+    .candidate-role.observer {
+      font-size: 0.85em;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="clock">00:00:00</div>
+<div id="controls">
+  <button id="startBtn">Start</button>
+  <button id="pauseBtn" disabled>Pause</button>
+  <button id="stopBtn" disabled>Stop &amp; Reset</button>
+  <button id="toggleModeBtn" aria-pressed="false" aria-label="Toggle between Table Mode and Candidate Mode">Switch to Candidate Mode</button>
+</div>
+
+<!-- Scheduled Start Time Input -->
+<div id="startTimeContainer" style="text-align:center;margin:10px 0;">
+  <label for="startTimeInput" style="font-weight:700;margin-right:8px;">Start Time (hh:mm:ss):</label>
+  <input id="startTimeInput" type="time" step="1" value="13:55:00" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:140px;">
+  <button id="applyStartTimeBtn" style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer;">Apply</button>
+</div>
+
+<!-- Search Input -->
+<div id="searchContainer" style="display:flex;justify-content:center;align-items:center;margin:10px 0;">
+  <input id="searchInput" type="text" placeholder="Enter Candidate ID or Table Number" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:260px;margin-right:8px;">
+  <button id="searchBtn" style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer;">Search</button>
+</div>
+
+<div id="topMenu">
+  <ul id="sectionsList"></ul>
+  <br>
+  <ul id="subsectionsList"></ul>
+</div>
+
+<div id="bottomContent">
+  <div class="timer" id="timerDisplay">00:00</div>
+  <div class="info" id="infoDisplay">Select a session and phase to see information here.</div>
+  <div id="tableModeContainer" aria-live="polite"></div>
+  <div id="candidateModeContainer" aria-live="polite" style="display:none;"></div>
+</div>
+
+<script>
+(() => {
+  // --- CONFIGURATION ---
+  const NUM_SESSIONS = 11; // total sessions after renaming and removing session 11
+
+  // Session phases: index 5 is "Break" with one phase; others have 3 phases
+  const SESSION_PHASES = [
+    // Sessions 1-5: standard 3 phases
+    [
+      { title: 'Transit', duration: 60, info: '1 minute' },
+      { title: 'Viva Exam', duration: 900, info: '15 minutes' },
+      { title: 'Debriefing', duration: 420, info: '7 minutes' }
+    ],
+    [
+      { title: 'Transit', duration: 60, info: '1 minute' },
+      { title: 'Viva Exam', duration: 900, info: '15 minutes' },
+      { title: 'Debriefing', duration: 420, info: '7 minutes' }
+    ],
+    [
+      { title: 'Transit', duration: 60, info: '1 minute' },
+      { title: 'Viva Exam', duration: 900, info: '15 minutes' },
+      { title: 'Debriefing', duration: 420, info: '7 minutes' }
+    ],
+    [
+      { title: 'Transit', duration: 60, info: '1 minute' },
+      { title: 'Viva Exam', duration: 900, info: '15 minutes' },
+      { title: 'Debriefing', duration: 420, info: '7 minutes' }
+    ],
+    [
+      { title: 'Transit', duration: 60, info: '1 minute' },
+      { title: 'Viva Exam', duration: 900, info: '15 minutes' },
+      { title: 'Debriefing', duration: 420, info: '7 minutes' }
+    ],
+
+    // Session 6 renamed as "Break" with one phase
+    [
+      { title: 'Break', duration: 900, info: '15 minutes' }
+    ],
+
+    // Sessions 7-10 (originally 7-11, shifted down by 1)
+    [
+      { title: 'Transit', duration: 60, info: '1 minute' },
+      { title: 'Viva Exam', duration: 900, info: '15 minutes' },
+      { title: 'Debriefing', duration: 420, info: '7 minutes' }
+    ],
+    [
+      { title: 'Transit', duration: 60, info: '1 minute' },
+      { title: 'Viva Exam', duration: 900, info: '15 minutes' },
+      { title: 'Debriefing', duration: 420, info: '7 minutes' }
+    ],
+    [
+      { title: 'Transit', duration: 60, info: '1 minute' },
+      { title: 'Viva Exam', duration: 900, info: '15 minutes' },
+      { title: 'Debriefing', duration: 420, info: '7 minutes' }
+    ],
+    [
+      { title: 'Transit', duration: 60, info: '1 minute' },
+      { title: 'Viva Exam', duration: 900, info: '15 minutes' },
+      { title: 'Debriefing', duration: 420, info: '7 minutes' }
+    ],
+    [
+      { title: 'Transit', duration: 60, info: '1 minute' },
+      { title: 'Viva Exam', duration: 900, info: '15 minutes' },
+      { title: 'Debriefing', duration: 420, info: '7 minutes' }
+    ]
+  ];
+
+  // Adjusted session times for 10 sessions (removed last session 11)
+const SESSION_TIMES = [
+  "13:55-14:18",
+  "14:18-14:41",
+  "14:41-15:04",
+  "15:04-15:27",
+  "15:27-15:50",
+  "15:50-16:05", // Break session 6
+  "16:05-16:28",
+  "16:28-16:51",
+  "16:51-17:14",
+  "17:14-17:37",
+  "17:37-18:00",
+];
+
+
+  // Adjusted vivaData keys: renaming sessions 7-11 to 6-10 and removing session 11
+const vivaData={"Session 1":{"Candidate":["10","32","11","7","1","29","13","33","31","24","16","36"],"Observer":["12","18",null,null,null,"28","26",null,"21",null,"23",null]},"Session 2":{"Candidate":["21","13","33","10","18","1","36","26","7","11","28","31"],"Observer":[null,null,null,null,null,null,"23","32","29","12","24","16"]},"Session 3":{"Candidate":["24","28","1","23","13","12","31","18","32","10","36","7"],"Observer":["16",null,"29","21",null,"26",null,null,"11",null,null,"33"]},"Session 4":{"Candidate":["1","31","13","11","21","33","16","23","12","7","18","32"],"Observer":[null,"26",null,null,null,null,null,"36","10","28","29","24"]},"Session 5":{"Candidate":["28","24","36","12","23","11","7","21","1","29","26","10"],"Observer":["18","33",null,null,"32",null,null,"16",null,null,"31","13"]},"Session 6":{"Candidate":["36","10","32","29","16","21","24","11","26","18","1","28"],"Observer":[null,"7",null,"31","33","23","12",null,null,null,"13",null]},"Session 7":{"Candidate":["13","29","21","24","26","7","33","12","16","23","32","18"],"Observer":[null,"1","31","28","10",null,"11",null,"36",null,null,null]},"Session 8":{"Candidate":["29","23","16","33","12","31","21","13","24","36","10","1"],"Observer":[null,null,"28",null,"11",null,"18","7",null,"32",null,"26"]},"Session 9":{"Candidate":["23","12","7","16","29","18","10","24","28","26","33","11"],"Observer":[null,null,null,"1","36","13","32",null,null,"31",null,"21"]},"Session 10":{"Candidate":["32","21","26","18","31","36","28","29","13","16","11","12"],"Observer":[null,null,null,null,"24","10",null,null,"33","1","7","23"]}};
+
+  // --- DOM ELEMENTS ---
+  const clockEl = document.getElementById('clock');
+  const startBtn = document.getElementById('startBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const toggleModeBtn = document.getElementById('toggleModeBtn');
+  const sectionsList = document.getElementById('sectionsList');
+  const subsectionsList = document.getElementById('subsectionsList');
+  const timerDisplay = document.getElementById('timerDisplay');
+  const infoDisplay = document.getElementById('infoDisplay');
+  const tableModeContainer = document.getElementById('tableModeContainer');
+  const candidateModeContainer = document.getElementById('candidateModeContainer');
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const startTimeInput = document.getElementById('startTimeInput');
+  const applyStartTimeBtn = document.getElementById('applyStartTimeBtn');
+
+  // --- STATE ---
+  let isRunning = false;
+  let selectedSessionIndex = 0;
+  let selectedPhaseIndex = 0;
+  let countdownInterval = null;
+  let countdownSecondsLeft = 0;
+  let beepAudioCtx = null;
+  let isCandidateMode = false;
+  let lastSearchValue = '';
+
+  // --- SCHEDULED TIME STATE ---
+  let startTimeStr = "13:55:00";
+  let scheduledTimes = [];
+
+  function parseTimeString(str) {
+    if (!str) return 0;
+    const [h, m, s] = str.split(':').map(Number);
+    return (h*3600) + (m*60) + (s || 0);
+  }
+  function formatTimeHMSSec(secs) {
+    const h = Math.floor(secs/3600);
+    const m = Math.floor((secs%3600)/60);
+    const s = secs%60;
+    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  }
+  function recalculateScheduledTimes() {
+    scheduledTimes = [];
+    let t = parseTimeString(startTimeStr);
+    for (let s=0; s<NUM_SESSIONS; s++) {
+      scheduledTimes[s] = [];
+      const phases = SESSION_PHASES[s];
+      for (let p=0; p<phases.length; p++) {
+        scheduledTimes[s][p] = t;
+        t += phases[p].duration;
+      }
+    }
+  }
+  recalculateScheduledTimes();
+
+  // --- MENU ENABLE/DISABLE ---
+  function setSessionPhaseMenusEnabled(enabled) {
+    document.querySelectorAll('#sectionsList li').forEach((li, index) => {
+      if (enabled) {
+        li.classList.remove('disabled');
+        li.tabIndex = 0;
+        li.style.pointerEvents = '';
+        li.style.opacity = '';
+      } else {
+        if (index === selectedSessionIndex) {
+          li.classList.add('disabled', 'selected');
+          li.tabIndex = -1;
+          li.style.pointerEvents = 'none';
+          li.style.opacity = '1';
+        } else {
+          li.classList.add('disabled');
+          li.classList.remove('selected');
+          li.tabIndex = -1;
+          li.style.pointerEvents = 'none';
+          li.style.opacity = '0.5';
+        }
+      }
+    });
+    document.querySelectorAll('#subsectionsList li').forEach((li, index) => {
+      if (enabled) {
+        li.classList.remove('disabled');
+        li.tabIndex = 0;
+        li.style.pointerEvents = '';
+        li.style.opacity = '';
+      } else {
+        if (index === selectedPhaseIndex) {
+          li.classList.add('disabled', 'selected');
+          li.tabIndex = -1;
+          li.style.pointerEvents = 'none';
+          li.style.opacity = '1';
+        } else {
+          li.classList.add('disabled');
+          li.classList.remove('selected');
+          li.tabIndex = -1;
+          li.style.pointerEvents = 'none';
+          li.style.opacity = '0.5';
+        }
+      }
+    });
+  }
+
+  // --- AUDIO BEEP ---
+  function initBeep() {
+    if (!beepAudioCtx) beepAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  function resumeAudioContext() {
+    if (beepAudioCtx && beepAudioCtx.state === 'suspended') beepAudioCtx.resume();
+  }
+  document.body.addEventListener('click', resumeAudioContext, {once:true});
+  document.body.addEventListener('keydown', resumeAudioContext, {once:true});
+  function beep(times = 1) {
+    initBeep();
+    let count = 0;
+    function playBeep() {
+      if (count >= times) return;
+      const oscillator = beepAudioCtx.createOscillator();
+      const gainNode = beepAudioCtx.createGain();
+      oscillator.frequency.value = 1000;
+      oscillator.type = 'square';
+      oscillator.connect(gainNode);
+      gainNode.connect(beepAudioCtx.destination);
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+        count++;
+        setTimeout(playBeep, 150);
+      }, 200);
+    }
+    playBeep();
+  }
+
+  // --- CLOCK ---
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+  }
+  function updateClock() {
+    const now = new Date();
+    const h = now.getHours().toString().padStart(2,'0');
+    const m = now.getMinutes().toString().padStart(2,'0');
+    const s = now.getSeconds().toString().padStart(2,'0');
+    clockEl.textContent = `${h}:${m}:${s}`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // --- SEARCH HIGHLIGHT FUNCTIONALITY ---
+  function highlightBoxes(searchValue) {
+    document.querySelectorAll('.viva-box.highlight, .candidate-cell.highlight').forEach(el => el.classList.remove('highlight'));
+    if (!searchValue) return;
+
+    const tableMatch = searchValue.trim().match(/^table\s*(\d{1,2})$/i);
+    let tableNum = null;
+    if (tableMatch) {
+      tableNum = parseInt(tableMatch[1], 10);
+      if (tableNum < 1 || tableNum > 12) tableNum = null;
+    }
+
+    if (isCandidateMode) {
+      document.querySelectorAll('#candidateModeContainer .candidate-cell').forEach(cell => {
+        const num = cell.querySelector('.candidate-number')?.textContent.trim();
+        if (num === searchValue) cell.classList.add('highlight');
+        if (tableNum) {
+          const t = cell.querySelector('.candidate-table')?.textContent.match(/\d+/);
+          if (t && parseInt(t[0],10) === tableNum) cell.classList.add('highlight');
+        }
+      });
+    } else {
+      document.querySelectorAll('#tableModeContainer .viva-box').forEach((box, idx) => {
+        const cand = box.querySelector('.candidate-row .candidate-name')?.textContent.trim();
+        const obs = box.querySelector('.observer-row .candidate-name')?.textContent.trim();
+        if (cand === searchValue || obs === searchValue) box.classList.add('highlight');
+        if (tableNum && idx === (tableNum-1)) box.classList.add('highlight');
+      });
+    }
+  }
+
+  function doSearch() {
+    lastSearchValue = searchInput.value.trim();
+    highlightBoxes(lastSearchValue);
+  }
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+  searchBtn.addEventListener('click', doSearch);
+  searchInput.addEventListener('input', () => {
+    if (!searchInput.value.trim()) {
+      lastSearchValue = '';
+      highlightBoxes('');
+    }
+  });
+
+  // --- RENDERING ---
+  function renderSections() {
+    sectionsList.innerHTML = '';
+    for (let i = 0; i < NUM_SESSIONS; i++) {
+      const li = document.createElement('li');
+      // Rename session 6 label to "Break"
+      if (i === 5) {
+        li.textContent = 'Break';
+      } else if (i > 5) {
+        // Sessions 7-10 renamed as 6-10
+        li.textContent = `Session ${i}`;
+      } else {
+        li.textContent = `Session ${i + 1}`;
+      }
+      if (i === selectedSessionIndex) li.classList.add('selected');
+      li.addEventListener('click', () => {
+        if (isRunning) return;
+        if (selectedSessionIndex !== i) {
+          selectedSessionIndex = i;
+          selectedPhaseIndex = 0;
+          resetTimerToCurrentPhase();
+          renderSections();
+          renderPhases();
+          renderBottomContent();
+          if (isRunning) startCountdownForSelected();
+        }
+      });
+      sectionsList.appendChild(li);
+    }
+    setSessionPhaseMenusEnabled(!isRunning);
+  }
+  function renderPhases() {
+    subsectionsList.innerHTML = '';
+    const currentPhases = SESSION_PHASES[selectedSessionIndex];
+    currentPhases.forEach((phase, idx) => {
+      const li = document.createElement('li');
+      li.textContent = phase.title;
+      if (idx === selectedPhaseIndex) li.classList.add('selected');
+      li.addEventListener('click', () => {
+        if (isRunning) return;
+        if (selectedPhaseIndex !== idx) {
+          selectedPhaseIndex = idx;
+          resetTimerToCurrentPhase();
+          renderPhases();
+          renderBottomContent();
+          if (isRunning) startCountdownForSelected();
+        }
+      });
+      subsectionsList.appendChild(li);
+    });
+    setSessionPhaseMenusEnabled(!isRunning);
+  }
+  function renderBottomContent() {
+    const currentPhases = SESSION_PHASES[selectedSessionIndex];
+    const phase = currentPhases[selectedPhaseIndex];
+    updateTimerDisplay();
+
+    const sessionNumber = (selectedSessionIndex === 5) ? 'Break' : (selectedSessionIndex > 5 ? selectedSessionIndex : selectedSessionIndex + 1);
+    const heading = 'SAHK Final Examination Preparation Course - Viva Examination';
+    const sessionTime = SESSION_TIMES[selectedSessionIndex] || '';
+    const schedSec = scheduledTimes[selectedSessionIndex]?.[selectedPhaseIndex];
+    const schedTimeStr = schedSec ? formatTimeHMSSec(schedSec) : '';
+    const sessionLine = (sessionNumber === 'Break')
+      ? `Break, ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Scheduled Start: ${schedTimeStr}</span>`
+      : `Session ${sessionNumber}, ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Scheduled Start: ${schedTimeStr}</span>`;
+    infoDisplay.innerHTML = `
+      <div style="font-weight: 700; font-size: 1em; margin-bottom: 6px; text-align:center;">
+        ${heading}
+      </div>
+      <div style="font-weight: 600; font-size: 1em; margin-bottom: 10px; text-align:center;">
+        ${sessionLine}
+      </div>
+    `;
+
+    if (isCandidateMode) {
+      renderCandidateMode();
+    } else {
+      renderTableMode();
+    }
+  }
+  function renderTableMode() {
+    candidateModeContainer.style.display = 'none';
+    tableModeContainer.style.display = 'flex';
+
+    // Map session index to vivaData key
+    let sessionKey;
+    if (selectedSessionIndex === 5) {
+      sessionKey = 'Break';
+    } else if (selectedSessionIndex > 5) {
+      sessionKey = `Session ${selectedSessionIndex}`;
+    } else {
+      sessionKey = `Session ${selectedSessionIndex + 1}`;
+    }
+
+    const details = vivaData[sessionKey];
+    if (!details) {
+      tableModeContainer.innerHTML = '<p style="text-align:center; color:#666;">No candidate/observer data available.</p>';
+      return;
+    }
+    let html = '';
+    for (let i = 0; i < 12; i++) {
+      const candidate = details.Candidate[i] || '—';
+      const observer = details.Observer[i] || '—';
+      html += `
+        <div class="viva-box" tabindex="0" aria-label="Table ${i+1} details">
+          <div class="viva-title">Table ${i+1}</div>
+          <div class="candidate-row">
+            <div class="role-label">Candidate</div>
+            <div class="candidate-name">${candidate}</div>
+          </div>
+          <div class="observer-row">
+            <div class="role-label">Observer</div>
+            <div class="candidate-name">${observer}</div>
+          </div>
+        </div>
+      `;
+    }
+    tableModeContainer.innerHTML = html;
+    highlightBoxes(lastSearchValue);
+  }
+  function renderCandidateMode() {
+    tableModeContainer.style.display = 'none';
+    candidateModeContainer.style.display = 'flex';
+
+    // Map session index to vivaData key
+    let sessionKey;
+    if (selectedSessionIndex === 5) {
+      sessionKey = 'Break';
+    } else if (selectedSessionIndex > 5) {
+      sessionKey = `Session ${selectedSessionIndex}`;
+    } else {
+      sessionKey = `Session ${selectedSessionIndex + 1}`;
+    }
+
+    const details = vivaData[sessionKey];
+    if (!details) {
+      candidateModeContainer.innerHTML = '<p style="text-align:center; color:#666;">No candidate/observer data available.</p>';
+      return;
+    }
+    const entries = [];
+    for (let i = 0; i < 12; i++) {
+      const candNum = details.Candidate[i];
+      if (candNum) entries.push({ number: candNum, tableIndex: i, role: 'Candidate' });
+      const obsNum = details.Observer[i];
+      if (obsNum) entries.push({ number: obsNum, tableIndex: i, role: 'Observer' });
+    }
+    entries.sort((a, b) => a.number.localeCompare(b.number));
+    let html = '';
+    for (const entry of entries) {
+      const cellClass = entry.role === 'Observer' ? 'candidate-cell observer-cell' : 'candidate-cell';
+      html += `
+        <div class="${cellClass}" tabindex="0" aria-label="${entry.role} ${entry.number}, Table ${entry.tableIndex + 1}">
+          <div class="candidate-number">${entry.number}</div>
+          <div class="candidate-role ${entry.role.toLowerCase()}">${entry.role}</div>
+          <div class="candidate-table">Table ${entry.tableIndex + 1}</div>
+        </div>
+      `;
+    }
+    candidateModeContainer.innerHTML = html;
+    highlightBoxes(lastSearchValue);
+  }
+  function updateTimerDisplay() {
+    timerDisplay.textContent = formatTime(countdownSecondsLeft);
+  }
+  function resetTimerToCurrentPhase() {
+    const currentPhases = SESSION_PHASES[selectedSessionIndex];
+    countdownSecondsLeft = currentPhases[selectedPhaseIndex].duration;
+  }
+  function moveToNextPhase() {
+    let s = selectedSessionIndex;
+    let p = selectedPhaseIndex + 1;
+    const currentPhases = SESSION_PHASES[s];
+    if (p >= currentPhases.length) {
+      s++;
+      p = 0;
+      if (s >= NUM_SESSIONS) {
+        stopTimers();
+        alert('All sessions completed!');
+        return;
+      }
+    }
+    selectedSessionIndex = s;
+    selectedPhaseIndex = p;
+    renderSections();
+    renderPhases();
+    resetTimerToCurrentPhase();
+    renderBottomContent();
+    if (isRunning) startCountdownForSelected();
+  }
+  function startCountdownForSelected() {
+    clearInterval(countdownInterval);
+    if (countdownSecondsLeft <= 0) resetTimerToCurrentPhase();
+    updateTimerDisplay();
+    countdownInterval = setInterval(() => {
+      if (!isRunning) return;
+      countdownSecondsLeft--;
+      updateTimerDisplay();
+      if (countdownSecondsLeft <= 0) {
+        beep(5);
+        moveToNextPhase();
+      }
+    }, 1000);
+  }
+  function startTimers() {
+    if (isRunning) return;
+    isRunning = true;
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+    stopBtn.disabled = false;
+    setSessionPhaseMenusEnabled(false);
+    if (countdownSecondsLeft <= 0) resetTimerToCurrentPhase();
+    startCountdownForSelected();
+  }
+  function pauseTimers() {
+    if (!isRunning) return;
+    isRunning = false;
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
+    stopBtn.disabled = false;
+    clearInterval(countdownInterval);
+    setSessionPhaseMenusEnabled(true);
+  }
+  function stopTimers() {
+    isRunning = false;
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
+    stopBtn.disabled = true;
+    clearInterval(countdownInterval);
+    resetTimerToCurrentPhase();
+    updateTimerDisplay();
+    setSessionPhaseMenusEnabled(true);
+  }
+
+  toggleModeBtn.addEventListener('click', () => {
+    isCandidateMode = !isCandidateMode;
+    toggleModeBtn.textContent = isCandidateMode ? 'Switch to Table Mode' : 'Switch to Candidate Mode';
+    toggleModeBtn.setAttribute('aria-pressed', isCandidateMode.toString());
+    renderBottomContent();
+  });
+  startBtn.addEventListener('click', startTimers);
+  pauseBtn.addEventListener('click', pauseTimers);
+  stopBtn.addEventListener('click', stopTimers);
+
+  applyStartTimeBtn.addEventListener('click', () => {
+    startTimeStr = startTimeInput.value || "13:55:00";
+    recalculateScheduledTimes();
+    renderSections();
+    renderPhases();
+    renderBottomContent();
+  });
+
+  setInterval(() => {
+    if (isRunning) return;
+    const now = new Date();
+    const nowSec = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+    let found = false;
+    for (let s = 0; s < scheduledTimes.length; s++) {
+      for (let p = 0; p < scheduledTimes[s].length; p++) {
+        const schedSec = scheduledTimes[s][p];
+        if (Math.abs(nowSec - schedSec) < 1) {
+          if (selectedSessionIndex !== s || selectedPhaseIndex !== p) {
+            selectedSessionIndex = s;
+            selectedPhaseIndex = p;
+            resetTimerToCurrentPhase();
+            renderSections();
+            renderPhases();
+            renderBottomContent();
+          }
+          startTimers();
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+  }, 500);
+
+  renderSections();
+  renderPhases();
+  resetTimerToCurrentPhase();
+  renderBottomContent();
+})();
+</script>
+
+</body>
+</html>
