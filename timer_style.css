@@ -1,0 +1,412 @@
+/* ===== Base Layout ===== */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: #f9f9f9;
+    color: #222;
+}
+
+/* ===== Clock ===== */
+#clock {
+    background: #222;
+    color: #0f0;
+    font-size: 2em;
+    text-align: center;
+    padding: 14px 0;
+    font-weight: 900;
+    letter-spacing: 3px;
+    user-select: none;
+}
+
+/* ===== Controls ===== */
+#controls {
+    text-align: center;
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+button {
+    font-size: 1.1em;
+    padding: 8px 18px;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    background: #4caf50;
+    color: white;
+    font-weight: 700;
+    transition: background-color 0.3s;
+    user-select: none;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+button:hover:not(:disabled) {
+    background: #388e3c;
+}
+
+/* ===== Menu / Sections ===== */
+#topMenu {
+    margin-bottom: 15px;
+}
+
+#sectionsList, 
+#subsectionsList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#sectionsList li,
+#subsectionsList li {
+    background: #e0e0e0;
+    padding: 5px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    min-width: 120px;
+    text-align: center;
+    font-weight: 700;
+    box-shadow: 0 2px 5px rgb(0 0 0 / 0.1);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#sectionsList li.selected,
+#subsectionsList li.selected {
+    background: #4caf50;
+    color: white;
+    box-shadow: 0 4px 10px rgb(76 175 80 / 0.6);
+}
+
+/* Disabled (greyed out unless selected) */
+#sectionsList li.disabled:not(.selected),
+#subsectionsList li.disabled:not(.selected) {
+    pointer-events: none;
+    opacity: 0.5;
+    background: #ddd !important;
+    color: #888 !important;
+    cursor: not-allowed;
+}
+
+/* Disabled + selected (keep green) */
+#sectionsList li.disabled.selected,
+#subsectionsList li.disabled.selected {
+    pointer-events: none;
+    opacity: 1;
+    background: #4caf50 !important;
+    color: white !important;
+    cursor: not-allowed;
+    box-shadow: 0 4px 10px rgb(76 175 80 / 0.6);
+}
+
+/* ===== Content ===== */
+#bottomContent {
+    flex-grow: 1;
+    padding: 25px 40px 40px;
+    overflow-y: auto;
+    background: white;
+    box-shadow: inset 0 0 15px rgb(0 0 0 / 0.05);
+}
+
+.timer {
+    font-size: 7em;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #d33;
+    user-select: none;
+    letter-spacing: 4px;
+}
+
+.info {
+    font-size: 1.3em;
+    color: #444;
+    max-width: 900px;
+    margin: 0 auto 20px;
+    line-height: 1.6;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* ===== Containers ===== */
+#tableModeContainer,
+#stationModeContainer,
+#candidateModeContainer {
+    max-width: 1800px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: center;
+}
+
+/* ===== Box Styles (Shared Viva / OSCE) ===== */
+.viva-box,
+.osce-box {
+    background: #f0f7f5;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
+    padding: 20px 25px;
+    width: 220px;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+    transition: box-shadow 0.3s;
+    margin-bottom: 14px;
+}
+
+.viva-box:hover,
+.osce-box:hover {
+    box-shadow: 0 6px 16px rgb(0 0 0 / 0.2);
+}
+
+.viva-title,
+.osce-title {
+    font-weight: 900;
+    font-size: 2em;
+    margin-bottom: 12px;
+    color: #2e7d32;
+    text-align: center;
+    letter-spacing: 1.2px;
+}
+
+/* ===== Candidate / Observer Cells ===== */
+.candidate-row,
+.observer-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+}
+
+.role-label {
+    font-weight: 700;
+    font-size: 1.2em;
+    color: #555;
+    margin: 0;
+}
+
+.candidate-name {
+    font-weight: 900;
+    font-size: 1.2em;
+    color: #1b5e20;
+    margin: 0;
+}
+
+.candidate-cell {
+    background: #f0f7f5;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.2em;
+    color: #1b5e20;
+    transition: box-shadow 0.3s;
+    text-align: center;
+    width: 220px;
+    flex: 0 0 220px;
+    box-sizing: border-box;
+    margin-bottom: 14px;
+}
+
+.candidate-cell:hover {
+    box-shadow: 0 6px 16px rgb(0 0 0 / 0.2);
+}
+
+.candidate-cell.observer-cell {
+    background: #fff9c4 !important;
+}
+
+.candidate-cell.rest-station {
+    background: #f0e3fa !important;
+    border: 2px solid #9621f3 !important;
+}
+
+.candidate-cell.observer-cell.rest-station {
+    background: #fff9c4 !important;
+    border: 2px solid #2196f3 !important;
+}
+
+/* Text details */
+.candidate-number {
+    font-weight: 900;
+    font-size: 1.2em;
+    margin-bottom: 4px;
+}
+
+.candidate-role.candidate {
+    font-size: 0.95em;
+    font-weight: 900;
+    color: #5e1b20;
+    letter-spacing: 1px;
+}
+
+.candidate-role.observer {
+    font-size: 0.95em;
+    font-weight: 600;
+    color: #1b5e20;
+}
+
+.candidate-table,
+.candidate-station {
+    font-weight: 700;
+    font-size: 0.9em;
+    color: #2e7d32;
+}
+
+/* Rest station styling */
+.osce-box.rest-station {
+    background: #f0e3fa !important;
+    border: 2px solid #9621f3;
+}
+
+.osce-box.rest-station .osce-title,
+.osce-box.rest-station .candidate-station {
+    color: #1565c0 !important;
+}
+
+/* Observer row */
+.observer-row {
+    background: #fff9c4;
+    border-radius: 8px;
+    padding: 2px 4px;
+    margin-top: 6px;
+}
+
+/* ===== Highlight for search ===== */
+.viva-box.highlight,
+.osce-box.highlight,
+.candidate-cell.highlight {
+    outline: 4px solid #1976d2 !important;
+    box-shadow: 0 0 18px #1976d2cc !important;
+    background: #e3f2fd !important;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+    body {
+        font-size: 14px;
+        padding: 10px 8px;
+    }
+
+    #clock {
+        font-size: 1.5em;
+        padding: 10px 0;
+        letter-spacing: 1.5px;
+    }
+
+    #controls {
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 10px 0;
+    }
+
+    button {
+        font-size: 1em;
+        padding: 6px 14px;
+        border-radius: 5px;
+    }
+
+    #startTimeContainer label,
+    #searchContainer input,
+    #searchContainer button {
+        font-size: 1em;
+    }
+
+    #startTimeInput {
+        width: 120px;
+        padding: 5px 10px;
+    }
+
+    #searchInput {
+        width: 180px;
+    }
+
+    #topMenu {
+        margin-bottom: 10px;
+    }
+
+    #sectionsList, 
+    #subsectionsList {
+        gap: 8px;
+    }
+
+    #sectionsList li,
+    #subsectionsList li {
+        min-width: 90px;
+        font-size: 0.9em;
+        padding: 4px 8px;
+    }
+
+    #bottomContent {
+        padding: 15px 20px 20px;
+    }
+
+    .timer {
+        font-size: 4.5em;
+        margin-bottom: 8px;
+    }
+
+    .info {
+        font-size: 1em;
+        max-width: 100%;
+        margin-bottom: 15px;
+    }
+
+    #tableModeContainer,
+    #stationModeContainer,
+    #candidateModeContainer {
+        gap: 12px;
+        max-width: 50%;
+    }
+
+    .viva-box, 
+    .osce-box, 
+    .candidate-cell {
+        width: 160px;
+        flex: 1 1 140px;
+        padding: 14px 16px;
+        box-sizing: border-box;
+        font-size: 0.9em;
+    }
+
+    .viva-title, 
+    .osce-title {
+        font-size: 1.5em;
+        margin-bottom: 8px;
+    }
+
+    .candidate-row, 
+    .observer-row {
+        gap: 6px;
+    }
+
+    .role-label, 
+    .candidate-name, 
+    .candidate-number, 
+    .candidate-role, 
+    .candidate-table, 
+    .candidate-station {
+        font-size: 0.9em;
+    }
+
+    .candidate-role.candidate,
+    .candidate-role.observer {
+        font-size: 0.85em;
+    }
+}
