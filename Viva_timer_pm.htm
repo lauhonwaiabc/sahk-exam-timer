@@ -377,7 +377,7 @@
             const schedTimeStr = schedSec ? formatTimeHMSSec(schedSec) : '';
             const sessionLine = (sessionNumber === 'Break')
                 ? `Break, ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Scheduled Start: ${schedTimeStr}</span>`
-                : `Session ${sessionNumber}, ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Scheduled Start: ${schedTimeStr}</span>`;
+                : `Session ${sessionNumber} (${phase.title}), ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Scheduled Start: ${schedTimeStr}</span>`;
             infoDisplay.innerHTML = `
       <div style="font-weight: 700; font-size: 1em; margin-bottom: 6px; text-align:center;">
         ${heading}
