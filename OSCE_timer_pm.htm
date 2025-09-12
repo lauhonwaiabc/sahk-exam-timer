@@ -364,7 +364,7 @@
             const phase = currentPhases[selectedPhaseIndex];
             updateTimerDisplay();
 
-            const sessionNumber = (selectedSessionIndex === 5) ? 'Break' : (selectedSessionIndex > 5 ? selectedSessionIndex : selectedSessionIndex + 1);
+            const sessionNumber = selectedSessionIndex;
             const heading = 'SAHK Final Examination Preparation Course - Viva Examination';
             const sessionTime = SESSION_TIMES[selectedSessionIndex] || '';
             const schedSec = scheduledTimes[selectedSessionIndex]?.[selectedPhaseIndex];
@@ -584,3 +584,4 @@
 </script>
 </body>
 </html>
+
