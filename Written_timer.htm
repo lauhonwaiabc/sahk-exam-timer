@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Written Exam Timer</title>
+    <link rel="stylesheet" href="timer_style.css">
+    <script src="config/written_config.js"></script>
+    <style>
+        #clock {
+            background: #ffffff;
+            font-size: 7em;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #d33;
+            user-select: none;
+            letter-spacing: 4px;
+        }
+
+        .timer {
+            background: #222;
+            color: #0f0;
+            font-size: 2em;
+            text-align: center;
+            padding: 14px 0;
+            font-weight: 900;
+            letter-spacing: 3px;
+            user-select: none;
+        }
+
+
+    </style>
+</head>
+<body>
+<div class="timer" id="timerDisplay">00:00</div>
+<div id="controls">
+    <button id="startBtn">Start</button>
+    <button id="pauseBtn" disabled>Pause</button>
+    <button id="stopBtn" disabled>Stop & Reset</button>
+</div>
+
+<div id="startTimeContainer" style="text-align:center;margin:10px 0;">
+    <label for="startTimeInput" style="font-weight:700;margin-right:8px;">Start Time (hh:mm:ss):</label>
+    <input id="startTimeInput" type="time" step="1"
+           style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:140px;">
+    <button id="applyStartTimeBtn"
+            style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer;">
+        Apply
+    </button>
+</div>
+
+<div id="topMenu">
+    <ul id="sectionsList"></ul>
+    <br>
+    <ul id="subsectionsList"></ul>
+</div>
+
+<div id="bottomContent">
+    <div id="clock">00:00:00</div>
+    <div class="info" id="infoDisplay">Select a Paper and Phase to see details here.</div>
+</div>
+
+<script>
+    (() => {
+        // Define button and input element references here
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const startTimeInput = document.getElementById('startTimeInput');
+        const applyStartTimeBtn = document.getElementById('applyStartTimeBtn');
+        const clockEl = document.getElementById('clock');
+
+        // --- SCHEDULED TIME STATE ---
+        let isRunning = false;
+        let selectedSessionIndex = 0;
+        let selectedPhaseIndex = 0;
+        let countdownInterval = null;
+        let countdownSecondsLeft = 0;
+        let beepAudioCtx = null;
+
+        document.getElementById('startTimeInput').value = START_TIME;
+        let startTimeStr = START_TIME;
+        let scheduledTimes = [];
+
+        function parseTimeString(str) {
+            if (!str) return 0;
+            const [h, m, s] = str.split(':').map(Number);
+            return (h * 3600) + (m * 60) + (s || 0);
+        }
+
+        function formatClock(secs) {
+            const h = Math.floor(secs / 3600);
+            const m = Math.floor((secs % 3600) / 60);
+            const s = secs % 60;
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function formatTimeHMSSec(secs) {
+            const h = Math.floor(secs / 3600);
+            const m = Math.floor((secs % 3600) / 60);
+            const s = secs % 60;
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function formatDuration(sec) {
+            if (sec >= 3600) {
+                const h = Math.floor(sec / 3600);
+                const m = Math.floor((sec % 3600) / 60);
+                const s = sec % 60;
+                return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            } else {
+                const m = Math.floor(sec / 60);
+                const s = sec % 60;
+                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function recalculateScheduledTimes() {
+            scheduledTimes = [];
+            let t = parseTimeString(startTimeStr);
+            for (let s = 0; s < NUM_SESSIONS; s++) {
+                scheduledTimes[s] = [];
+                const phases = SESSION_PHASES[s];
+                for (let p = 0; p < phases.length; p++) {
+                    scheduledTimes[s][p] = t;
+                    t += phases[p].duration;
+                }
+            }
+        }
+
+        recalculateScheduledTimes();
+
+        // --- AUDIO BEEP ---
+        function initBeep() {
+            if (!beepAudioCtx) beepAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function resumeAudioContext() {
+            if (beepAudioCtx && beepAudioCtx.state === 'suspended') beepAudioCtx.resume();
+        }
+
+        document.body.addEventListener('click', resumeAudioContext, {once: true});
+        document.body.addEventListener('keydown', resumeAudioContext, {once: true});
+
+        function beep(times = 1) {
+            initBeep();
+            let count = 0;
+
+            function playBeep() {
+                if (count >= times) return;
+                const oscillator = beepAudioCtx.createOscillator();
+                const gainNode = beepAudioCtx.createGain();
+                oscillator.frequency.value = 1000;
+                oscillator.type = 'square';
+                oscillator.connect(gainNode);
+                gainNode.connect(beepAudioCtx.destination);
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.stop();
+                    count++;
+                    setTimeout(playBeep, 150);
+                }, 200);
+            }
+
+            playBeep();
+        }
+
+        // Text-To-Speech function
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                window.speechSynthesis.cancel(); // Cancel any current speech
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn("Text-to-Speech not supported in this browser.");
+            }
+        }
+
+        // --- CLOCK ---
+
+        function updateClock() {
+            const now = new Date();
+            const h = now.getHours().toString().padStart(2, '0');
+            const m = now.getMinutes().toString().padStart(2, '0');
+            const s = now.getSeconds().toString().padStart(2, '0');
+            clockEl.textContent = `${h}:${m}:${s}`;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Render menus
+        function renderSections() {
+            const list = document.getElementById("sectionsList");
+            list.innerHTML = "";
+            for (let i = 0; i < NUM_SESSIONS; i++) {
+                const li = document.createElement("li");
+                li.textContent = SESSION_TITLES[i];
+                if (i === selectedSessionIndex) li.classList.add("selected");
+                li.onclick = () => {
+                    if (isRunning) return;
+                    selectedSessionIndex = i;
+                    selectedPhaseIndex = 0;
+                    resetTimer();
+                    renderSections();
+                    renderPhases();
+                    renderBottomContent();
+                };
+                list.appendChild(li);
+            }
+        }
+
+        function renderPhases() {
+            const list = document.getElementById("subsectionsList");
+            list.innerHTML = "";
+            SESSION_PHASES[selectedSessionIndex].forEach((ph, idx) => {
+                const li = document.createElement("li");
+                li.textContent = ph.title;
+                if (idx === selectedPhaseIndex) li.classList.add("selected");
+                li.onclick = () => {
+                    if (isRunning) return;
+                    selectedPhaseIndex = idx;
+                    resetTimer();
+                    renderPhases();
+                    renderBottomContent();
+                };
+                list.appendChild(li);
+            });
+        }
+
+        // Render bottom info
+        function renderBottomContent() {
+            document.getElementById("timerDisplay").textContent = formatClock(countdownSecondsLeft);
+
+            const schedSec = scheduledTimes[selectedSessionIndex][selectedPhaseIndex];
+            const schedStr = formatTimeHMSSec(schedSec);
+            const startStr = schedStr;
+            const endStr = formatTimeHMSSec(schedSec + SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex].duration);
+            const durationStr = formatDuration(SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex].duration);
+
+            document.getElementById("infoDisplay").innerHTML =
+                `<div style="font-size:1.6em;font-weight:700;margin-bottom:8px;">${startStr.slice(0, 5)} – ${endStr.slice(0, 5)}</div>` +
+                `${EXAM_TITLE}<br>` +
+                `${SESSION_TITLES[selectedSessionIndex]} (${SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex].title}) (${durationStr})<br>` +
+                `Scheduled Start: ${startStr}`;
+        }
+
+
+        // Timer control functions
+        function resetTimerToCurrentPhase() {
+            const currentPhases = SESSION_PHASES[selectedSessionIndex];
+            countdownSecondsLeft = currentPhases[selectedPhaseIndex].duration;
+        }
+
+        // Provide alias resetTimer to resetTimerToCurrentPhase for clarity in code calls
+        function resetTimer() {
+            resetTimerToCurrentPhase();
+        }
+
+        function moveToNextPhase() {
+            let s = selectedSessionIndex;
+            let p = selectedPhaseIndex + 1;
+            const currentPhases = SESSION_PHASES[s];
+            if (p >= currentPhases.length) {
+                s++;
+                p = 0;
+                if (s >= NUM_SESSIONS) {
+                    stopTimers();
+                    alert('All sessions completed!');
+                    return;
+                }
+            }
+            selectedSessionIndex = s;
+            selectedPhaseIndex = p;
+            renderSections();
+            renderPhases();
+            resetTimerToCurrentPhase();
+            renderBottomContent();
+            if (isRunning) startCountdownForSelected();
+        }
+
+        function startCountdownForSelected() {
+            clearInterval(countdownInterval);
+            if (countdownSecondsLeft <= 0) resetTimerToCurrentPhase();
+            updateTimerDisplay();
+            countdownInterval = setInterval(() => {
+                if (!isRunning) return;
+                countdownSecondsLeft--;
+                updateTimerDisplay();
+                if (countdownSecondsLeft <= 0) {
+                    beep(5);
+                    moveToNextPhase();
+                }
+            }, 1000);
+        }
+
+        function startTimers() {
+            if (isRunning) return;
+            isRunning = true;
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            stopBtn.disabled = false;
+            setSessionPhaseMenusEnabled(false);
+            if (countdownSecondsLeft <= 0) resetTimerToCurrentPhase();
+            startCountdownForSelected();
+        }
+
+        function pauseTimers() {
+            if (!isRunning) return;
+            isRunning = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            stopBtn.disabled = false;
+            clearInterval(countdownInterval);
+            setSessionPhaseMenusEnabled(true);
+        }
+
+        function stopTimers() {
+            isRunning = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            stopBtn.disabled = true;
+            clearInterval(countdownInterval);
+            resetTimerToCurrentPhase();
+            updateTimerDisplay();
+            setSessionPhaseMenusEnabled(true);
+        }
+
+        // New helper function added to enable/disable section and phase menu clicks
+        function setSessionPhaseMenusEnabled(enabled) {
+            const sections = document.getElementById("sectionsList").children;
+            const phases = document.getElementById("subsectionsList").children;
+            for (let item of sections) {
+                item.style.pointerEvents = enabled ? 'auto' : 'none';
+            }
+            for (let item of phases) {
+                item.style.pointerEvents = enabled ? 'auto' : 'none';
+            }
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById("timerDisplay").textContent = formatClock(countdownSecondsLeft);
+        }
+
+        // Button event hooks
+        startBtn.addEventListener('click', startTimers);
+        pauseBtn.addEventListener('click', pauseTimers);
+        stopBtn.addEventListener('click', stopTimers);
+
+        applyStartTimeBtn.addEventListener('click', () => {
+            startTimeStr = startTimeInput.value || START_TIME;
+            recalculateScheduledTimes();
+            renderSections();
+            renderPhases();
+            renderBottomContent();
+        });
+
+        setInterval(() => {
+            if (isRunning) return;
+            const now = new Date();
+            const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+            let found = false;
+            for (let s = 0; s < scheduledTimes.length; s++) {
+                for (let p = 0; p < scheduledTimes[s].length; p++) {
+                    const schedSec = scheduledTimes[s][p];
+                    if (Math.abs(nowSec - schedSec) < 1) {
+                        if (selectedSessionIndex !== s || selectedPhaseIndex !== p) {
+                            selectedSessionIndex = s;
+                            selectedPhaseIndex = p;
+                            resetTimerToCurrentPhase();
+                            renderSections();
+                            renderPhases();
+                            renderBottomContent();
+                        }
+                        startTimers();
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+        }, 500);
+
+        renderSections();
+        renderPhases();
+        resetTimerToCurrentPhase();
+        renderBottomContent();
+    })();
+</script>
+</body>
+</html>

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Viva Exam Timer</title>
     <link rel="stylesheet" href="timer_style.css">
-    <script src="config/viva_config_am.js"></script>
-    <script src="config/viva_tables_am.js"></script>
+    <script src="config/viva_config.js"></script>
+    <script src="config/viva_tables.js"></script>
     <script src="config/viva_data_am.js"></script>
 </head>
 <body>
@@ -24,7 +24,7 @@
 <!-- Scheduled Start Time Input -->
 <div id="startTimeContainer" style="text-align:center;margin:10px 0;">
     <label for="startTimeInput" style="font-weight:700;margin-right:8px;">Start Time (hh:mm:ss):</label>
-    <input id="startTimeInput" type="time" step="1" value="09:00:00"
+    <input id="startTimeInput" type="time" step="1"
            style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:140px;">
     <button id="applyStartTimeBtn"
             style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer;">
@@ -86,6 +86,8 @@
         let lastSearchValue = '';
 
         // --- SCHEDULED TIME STATE ---
+        const START_TIME = START_TIME_AM
+        document.getElementById('startTimeInput').value = START_TIME;
         let startTimeStr = START_TIME;
         let scheduledTimes = [];
 
@@ -252,6 +254,7 @@
         updateClock();
 
         // --- SEARCH HIGHLIGHT FUNCTIONALITY ---
+        const TABLE_NAMES = TABLE_NAMES_AM
         function highlightBoxes(searchValue) {
             document.querySelectorAll('.viva-box.highlight, .candidate-cell.highlight').forEach(el => el.classList.remove('highlight'));
             if (!searchValue) return;
