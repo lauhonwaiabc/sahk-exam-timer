@@ -31,7 +31,6 @@
     </button>
 </div>
 
-<!-- Search Input -->
 <div id="searchContainer" style="display:flex;justify-content:center;align-items:center;margin:10px 0;">
     <input id="searchInput" type="text" placeholder="Enter Candidate Number, Station Name or Station Number"
            style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:320px;margin-right:8px;">
@@ -56,7 +55,6 @@
 
 <script>
     (() => {
-
         // --- DOM ELEMENTS ---
         const clockEl = document.getElementById('clock');
         const startBtn = document.getElementById('startBtn');
@@ -83,17 +81,20 @@
         let selectedSessionIndex = 0;
         let selectedPhaseIndex = 0;
         let countdownInterval = null;
-        let countdownSecondsLeft = 0;
-        let beepAudioCtx = null;
         let isCandidateMode = false;
         let lastSearchValue = '';
 
+        // Accurate timer state
+        let startTime = null; // timestamp in ms when current phase started
+        let endTime = null;   // timestamp in ms when current phase should end
+
         // --- SCHEDULED TIME STATE ---
-        const START_TIME = START_TIME_AM
+        const START_TIME = START_TIME_AM;
         document.getElementById('startTimeInput').value = START_TIME;
         let startTimeStr = START_TIME;
         let scheduledTimes = [];
 
+        // Clone phases for each session (assuming standardPhases defined in config)
         const SESSION_PHASES = [];
         for (let i = 0; i < NUM_SESSIONS; i++) {
             SESSION_PHASES.push([...standardPhases]);
@@ -200,6 +201,8 @@
         }
 
         // --- AUDIO BEEP ---
+        let beepAudioCtx = null;
+
         function initBeep() {
             if (!beepAudioCtx) beepAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
@@ -235,12 +238,6 @@
         }
 
         // --- CLOCK ---
-        function formatTime(s) {
-            const m = Math.floor(s / 60);
-            const sec = s % 60;
-            return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-        }
-
         function updateClock() {
             const now = new Date();
             const h = now.getHours().toString().padStart(2, '0');
@@ -455,15 +452,26 @@
             highlightBoxes(lastSearchValue);
         }
 
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const sec = seconds % 60;
+            return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+
         function updateTimerDisplay() {
             timerDisplay.textContent = formatTime(countdownSecondsLeft);
         }
 
+        // On reset, set countdownSecondsLeft for current phase duration
         function resetTimerToCurrentPhase() {
             const currentPhases = SESSION_PHASES[selectedSessionIndex];
             countdownSecondsLeft = currentPhases[selectedPhaseIndex].duration;
+            // Clear timestamps until started
+            startTime = null;
+            endTime = null;
         }
 
+        // Move to next phase and reset timer state
         function moveToNextPhase() {
             let s = selectedSessionIndex;
             let p = selectedPhaseIndex + 1;
@@ -479,26 +487,33 @@
             }
             selectedSessionIndex = s;
             selectedPhaseIndex = p;
+            resetTimerToCurrentPhase();
             renderSections();
             renderPhases();
-            resetTimerToCurrentPhase();
             renderBottomContent();
             if (isRunning) startCountdownForSelected();
         }
 
+        // Main countdown loop with accurate system clock calculation
         function startCountdownForSelected() {
             clearInterval(countdownInterval);
-            if (countdownSecondsLeft <= 0) resetTimerToCurrentPhase();
+            if (!startTime || !endTime) {
+                const now = Date.now();
+                startTime = now;
+                endTime = now + countdownSecondsLeft * 1000;
+            }
             updateTimerDisplay();
             countdownInterval = setInterval(() => {
                 if (!isRunning) return;
-                countdownSecondsLeft--;
+                const now = Date.now();
+                const diffMs = endTime - now;
+                countdownSecondsLeft = diffMs > 0 ? Math.ceil(diffMs / 1000) : 0;
                 updateTimerDisplay();
                 if (countdownSecondsLeft <= 0) {
                     beep(5);
                     moveToNextPhase();
                 }
-            }, 1000);
+            }, 200); // update more frequently for smoother countdown
         }
 
         function startTimers() {
@@ -508,7 +523,11 @@
             pauseBtn.disabled = false;
             stopBtn.disabled = false;
             setSessionPhaseMenusEnabled(false);
+
             if (countdownSecondsLeft <= 0) resetTimerToCurrentPhase();
+
+            startTime = Date.now();
+            endTime = startTime + countdownSecondsLeft * 1000;
             startCountdownForSelected();
         }
 
@@ -519,7 +538,16 @@
             pauseBtn.disabled = true;
             stopBtn.disabled = false;
             clearInterval(countdownInterval);
+
+            // Calculate remaining seconds and clear timing reference to pause precisely
+            const now = Date.now();
+            const diffMs = endTime - now;
+            countdownSecondsLeft = diffMs > 0 ? Math.ceil(diffMs / 1000) : 0;
+            startTime = null;
+            endTime = null;
+
             setSessionPhaseMenusEnabled(true);
+            updateTimerDisplay();
         }
 
         function stopTimers() {
@@ -551,6 +579,7 @@
             renderBottomContent();
         });
 
+        // Sync to scheduled times for auto-start (optional)
         setInterval(() => {
             if (isRunning) return;
             const now = new Date();
