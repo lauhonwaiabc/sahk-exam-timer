@@ -378,7 +378,7 @@ button:hover:not(:disabled) {
     .viva-box, 
     .osce-box, 
     .candidate-cell {
-        width: 160px;
+        width: 150px;
         flex: 1 1 140px;
         padding: 14px 16px;
         box-sizing: border-box;
@@ -410,3 +410,4 @@ button:hover:not(:disabled) {
         font-size: 0.85em;
     }
 }
+
