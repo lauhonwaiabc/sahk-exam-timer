@@ -401,7 +401,6 @@
         function moveToNextPhase() {
             let s = selectedSessionIndex;
             let p = selectedPhaseIndex + 1;
-
             if (p >= SESSION_PHASES[s].length) {
                 s++;
                 p = 0;
@@ -411,41 +410,32 @@
                     return;
                 }
             }
-
             selectedSessionIndex = s;
             selectedPhaseIndex = p;
             resetTimerToCurrentPhase();
-
+            const dur = SESSION_PHASES[s][p].duration;
             if (endTime) {
                 startTime = endTime;
-                const dur = SESSION_PHASES[s][p].duration;
                 endTime = startTime + dur * 1000;
-                countdownSecondsLeft = dur;
             } else {
-                startTime = Date.now();
-                const dur = SESSION_PHASES[s][p].duration;
+                startTime = getCorrectedNow();
                 endTime = startTime + dur * 1000;
-                countdownSecondsLeft = dur;
             }
-
+            countdownSecondsLeft = dur;
             renderSections();
             renderPhases();
             renderBottomContent();
-
             if (isRunning) startCountdownForSelected();
         }
 
         function startCountdownForSelected() {
             clearInterval(countdownInterval);
-            if (!startTime || !endTime) {
-                startTime = Date.now();
-                endTime = startTime + countdownSecondsLeft * 1000;
-            }
             updateTimerDisplay();
             countdownInterval = setInterval(() => {
                 if (!isRunning) return;
-                const diffMs = endTime - Date.now();
-                countdownSecondsLeft = diffMs > 0 ? Math.ceil(diffMs / 1000) : 0;
+                const now = getCorrectedNow();
+                const diff = endTime - now;
+                countdownSecondsLeft = diff > 0 ? Math.ceil(diff / 1000) : 0;
                 updateTimerDisplay();
                 if (countdownSecondsLeft <= 0) {
                     beep(5);
@@ -454,15 +444,16 @@
             }, 200);
         }
 
-        function startTimers() {
+        async function startTimers() {
             if (isRunning) return;
+            await fetchStandardTimeOffset();
             isRunning = true;
             startBtn.disabled = true;
             pauseBtn.disabled = false;
             stopBtn.disabled = false;
             setSessionPhaseMenusEnabled(false);
             if (countdownSecondsLeft <= 0) resetTimerToCurrentPhase();
-            startTime = Date.now();
+            startTime = getCorrectedNow();
             endTime = startTime + countdownSecondsLeft * 1000;
             renderBottomContent();
             startCountdownForSelected();
@@ -475,12 +466,13 @@
             pauseBtn.disabled = true;
             stopBtn.disabled = false;
             clearInterval(countdownInterval);
-            countdownSecondsLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-            startTime = null;
-            endTime = null;
+            const diff = endTime - getCorrectedNow();
+            countdownSecondsLeft = diff > 0 ? Math.ceil(diff / 1000) : 0;
+            startTime = endTime = null;
             setSessionPhaseMenusEnabled(true);
             updateTimerDisplay();
         }
+
 
         function stopTimers() {
             isRunning = false;
@@ -542,6 +534,40 @@
         renderPhases();
         resetTimerToCurrentPhase();
         renderBottomContent();
+
+        async function fetchStandardTime() {
+            try {
+                const response = await fetch('http://worldtimeapi.org/api/ip');
+                const data = await response.json();
+                const timeStr = new Date(data.datetime).toTimeString().slice(0, 8);
+                clockEl.textContent = timeStr;
+                return new Date(data.datetime).getTime(); // timestamp in ms
+            } catch (e) {
+                console.error('Error fetching standard time, falling back to local time', e);
+                clockEl.textContent = new Date().toTimeString().slice(0, 8);
+                return Date.now();
+            }
+        }
+
+        async function fetchStandardTimeOffset() {
+            try {
+                const response = await fetch('http://worldtimeapi.org/api/ip');
+                const data = await response.json();
+                const standardTime = new Date(data.datetime).getTime();
+                timeOffset = standardTime - Date.now();
+            } catch (e) {
+                console.error('Failed to fetch standard time, using local time fallback', e);
+                timeOffset = 0;
+            }
+        }
+
+        function getCorrectedNow() {
+            return Date.now() + timeOffset;
+        }
+
+        fetchStandardTime();
+        setInterval(fetchStandardTime, 60000);
+
     })();
 </script>
 </body>
