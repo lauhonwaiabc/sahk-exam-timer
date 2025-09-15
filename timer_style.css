@@ -371,18 +371,17 @@ button:hover:not(:disabled) {
     #tableModeContainer,
     #stationModeContainer,
     #candidateModeContainer {
+        max-width: 100%; /* Allow full width */
         gap: 12px;
-        max-width: 50%;
+        justify-content: flex-start; /* Align left for better UX */
     }
 
     .viva-box, 
     .osce-box, 
     .candidate-cell {
-        width: 150px;
-        flex: 1 1 140px;
-        padding: 14px 16px;
-        box-sizing: border-box;
-        font-size: 0.9em;
+        flex: 0 0 calc(50% - 16px);
+        width: calc(50% - 16px);
+        margin-bottom: 14px;
     }
 
     .viva-title, 
@@ -410,4 +409,5 @@ button:hover:not(:disabled) {
         font-size: 0.85em;
     }
 }
+
 
