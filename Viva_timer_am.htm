@@ -9,7 +9,6 @@
     <script src="config/viva_tables.js"></script>
     <script src="config/viva_data_am.js"></script>
 </head>
-
 <body>
 <div id="clock">00:00:00</div>
 <div id="controls">
@@ -399,6 +398,51 @@
             countdownSecondsLeft = SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex].duration;
         }
 
+        function moveToNextPhase() {
+            let s = selectedSessionIndex;
+            let p = selectedPhaseIndex + 1;
+            if (p >= SESSION_PHASES[s].length) {
+                s++;
+                p = 0;
+                if (s >= NUM_SESSIONS) {
+                    stopTimers();
+                    alert('All sessions completed!');
+                    return;
+                }
+            }
+            selectedSessionIndex = s;
+            selectedPhaseIndex = p;
+            resetTimerToCurrentPhase();
+            const dur = SESSION_PHASES[s][p].duration;
+            if (endTime) {
+                startTime = endTime;
+                endTime = startTime + dur * 1000;
+            } else {
+                startTime = getCorrectedNow();
+                endTime = startTime + dur * 1000;
+            }
+            countdownSecondsLeft = dur;
+            renderSections();
+            renderPhases();
+            renderBottomContent();
+            if (isRunning) startCountdownForSelected();
+        }
+
+        function startCountdownForSelected() {
+            clearInterval(countdownInterval);
+            updateTimerDisplay();
+            countdownInterval = setInterval(() => {
+                if (!isRunning) return;
+                const now = getCorrectedNow();
+                const diff = endTime - now;
+                countdownSecondsLeft = diff > 0 ? Math.ceil(diff / 1000) : 0;
+                updateTimerDisplay();
+                if (countdownSecondsLeft <= 0) {
+                    beep(5);
+                    moveToNextPhase();
+                }
+            }, 200);
+        }
 
         async function startTimers() {
             if (isRunning) return;
