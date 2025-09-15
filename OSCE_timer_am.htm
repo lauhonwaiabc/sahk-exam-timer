@@ -133,9 +133,10 @@
         }
 
         function formatTimeHMSSec(secs) {
-            const h = Math.floor(secs / 3600);
-            const m = Math.floor((secs % 3600) / 60);
-            const s = secs % 60;
+            const totalSecs = secs % 86400; // wrap around after 24 hours
+            const h = Math.floor(totalSecs / 3600);
+            const m = Math.floor((totalSecs % 3600) / 60);
+            const s = totalSecs % 60;
             return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
@@ -357,17 +358,35 @@
             setSessionPhaseMenusEnabled(!isRunning);
         }
 
+        function formatAbsoluteTime(ms) {
+            const date = new Date(ms);
+            return date.toTimeString().slice(0, 8);
+        }
+
         function renderBottomContent() {
             const currentPhases = SESSION_PHASES[selectedSessionIndex];
             const phase = currentPhases[selectedPhaseIndex];
             updateTimerDisplay();
-
             const sessionNumber = selectedSessionIndex + 1;
-            const heading = 'SAHK Final Examination Preparation Course - Viva Examination';
+            const heading = 'SAHK Final Examination Preparation Course - OSCE Examination';
             const sessionTime = SESSION_TIMES[selectedSessionIndex] || '';
             const schedSec = scheduledTimes[selectedSessionIndex]?.[selectedPhaseIndex];
             const schedTimeStr = schedSec ? formatTimeHMSSec(schedSec) : '';
-            const sessionLine = `Session ${sessionNumber} (${phase.title}), ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Scheduled Start: ${schedTimeStr}</span>`;
+
+            // Show current actual session time when running, else scheduled start time
+            let displayStartTime = schedTimeStr;
+            let displayEndTime = '';
+            if (isRunning && startTime !== null && endTime !== null) {
+                displayStartTime = formatAbsoluteTime(startTime);
+                displayEndTime = formatAbsoluteTime(endTime);
+            }
+
+            const sessionLine = isRunning
+                ? `Session ${sessionNumber} (${phase.title}), ${sessionTime} (${phase.info})<br>` +
+                `<span style="color:#1976d2;">Current Session Time: ${displayStartTime} - ${displayEndTime}</span>`
+                : `Session ${sessionNumber} (${phase.title}), ${sessionTime} (${phase.info})<br>` +
+                `<span style="color:#1976d2;">Scheduled Start: ${displayStartTime}</span>`;
+
             infoDisplay.innerHTML = `
       <div style="font-weight: 700; font-size: 1em; margin-bottom: 6px; text-align:center;">
         ${heading}
@@ -545,11 +564,10 @@
             pauseBtn.disabled = false;
             stopBtn.disabled = false;
             setSessionPhaseMenusEnabled(false);
-
             if (countdownSecondsLeft <= 0) resetTimerToCurrentPhase();
-
             startTime = Date.now();
             endTime = startTime + countdownSecondsLeft * 1000;
+            renderBottomContent();
             startCountdownForSelected();
         }
 
@@ -560,14 +578,11 @@
             pauseBtn.disabled = true;
             stopBtn.disabled = false;
             clearInterval(countdownInterval);
-
-            // Calculate remaining seconds and clear timing reference to pause precisely
             const now = Date.now();
             const diffMs = endTime - now;
             countdownSecondsLeft = diffMs > 0 ? Math.ceil(diffMs / 1000) : 0;
             startTime = null;
             endTime = null;
-
             setSessionPhaseMenusEnabled(true);
             updateTimerDisplay();
         }
@@ -580,6 +595,7 @@
             clearInterval(countdownInterval);
             resetTimerToCurrentPhase();
             updateTimerDisplay();
+            renderBottomContent();
             setSessionPhaseMenusEnabled(true);
         }
 
