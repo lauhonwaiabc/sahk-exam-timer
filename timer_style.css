@@ -371,8 +371,10 @@ button:hover:not(:disabled) {
     #tableModeContainer,
     #stationModeContainer,
     #candidateModeContainer {
+        display: flex;
+        flex-wrap: wrap;
         gap: 12px;
-        justify-content: flex-start; /* Align left for better UX */
+        justify-content: center;
     }
 
     .viva-box, 
@@ -410,6 +412,7 @@ button:hover:not(:disabled) {
         font-size: 0.85em;
     }
 }
+
 
 
 
