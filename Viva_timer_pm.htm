@@ -488,26 +488,47 @@
     }
 
     function moveToNextPhase() {
-        let s = selectedSessionIndex;
-        let p = selectedPhaseIndex + 1;
-        const currentPhases = SESSION_PHASES[s];
-        if (p >= currentPhases.length) {
-            s++;
-            p = 0;
-            if (s >= NUM_SESSIONS) {
-                stopTimers();
-                alert('All sessions completed!');
-                return;
+            // Move to the next phase index, and next session if phase index exceeds
+            let s = selectedSessionIndex;
+            let p = selectedPhaseIndex + 1;
+            const currentPhases = SESSION_PHASES[s];
+
+            if (p >= currentPhases.length) {
+                s++;
+                p = 0;
+                if (s >= NUM_SESSIONS) {
+                    stopTimers();
+                    alert('All sessions completed!');
+                    return;
+                }
             }
+
+            selectedSessionIndex = s;
+            selectedPhaseIndex = p;
+
+            // Reset timer duration for new phase
+            resetTimerToCurrentPhase();
+
+            // Synchronize new phase startTime to previous endTime when available
+            if (endTime) {
+                startTime = endTime;
+                const durationSec = SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex].duration;
+                endTime = startTime + durationSec * 1000;
+                countdownSecondsLeft = durationSec;
+            } else {
+                // Fallback to current system time if endTime unknown
+                startTime = Date.now();
+                const durationSec = SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex].duration;
+                endTime = startTime + durationSec * 1000;
+                countdownSecondsLeft = durationSec;
+            }
+
+            renderSections();
+            renderPhases();
+            renderBottomContent();
+
+            if (isRunning) startCountdownForSelected();
         }
-        selectedSessionIndex = s;
-        selectedPhaseIndex = p;
-        resetTimerToCurrentPhase();
-        renderSections();
-        renderPhases();
-        renderBottomContent();
-        if (isRunning) startCountdownForSelected();
-    }
 
     function startCountdownForSelected() {
         clearInterval(countdownInterval);

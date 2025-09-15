@@ -473,9 +473,11 @@
 
         // Move to next phase and reset timer state
         function moveToNextPhase() {
+            // Move to the next phase index, and next session if phase index exceeds
             let s = selectedSessionIndex;
             let p = selectedPhaseIndex + 1;
             const currentPhases = SESSION_PHASES[s];
+
             if (p >= currentPhases.length) {
                 s++;
                 p = 0;
@@ -485,14 +487,34 @@
                     return;
                 }
             }
+
             selectedSessionIndex = s;
             selectedPhaseIndex = p;
+
+            // Reset timer duration for new phase
             resetTimerToCurrentPhase();
+
+            // Synchronize new phase startTime to previous endTime when available
+            if (endTime) {
+                startTime = endTime;
+                const durationSec = SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex].duration;
+                endTime = startTime + durationSec * 1000;
+                countdownSecondsLeft = durationSec;
+            } else {
+                // Fallback to current system time if endTime unknown
+                startTime = Date.now();
+                const durationSec = SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex].duration;
+                endTime = startTime + durationSec * 1000;
+                countdownSecondsLeft = durationSec;
+            }
+
             renderSections();
             renderPhases();
             renderBottomContent();
+
             if (isRunning) startCountdownForSelected();
         }
+
 
         // Main countdown loop with accurate system clock calculation
         function startCountdownForSelected() {
