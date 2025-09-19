@@ -1,12 +1,12 @@
 const TABLE_NAMES_AM = [
-  "Wilson Choo",
+  "Eva Chan",
   "Andy Ng",
   "Eric Chung",
   "Vivian Lau",
   "Harrison Wai",
   "Kenneth Ho",
   "Vincent So",
-  "Eva Chan",
+  "Wilson Choo",
   "Erica Chang",
   "Louisa Yuen",
   "Frankie Ng",
@@ -26,4 +26,5 @@ const TABLE_NAMES_PM = [
   "Louisa Yuen",
   "Frankie Ng",
   "Charmaine Chu"
+
 ];
