@@ -12,11 +12,13 @@
 <body>
 <div id="clock">00:00:00</div>
 <div id="controls">
+    <button id="scheduleStartBtn">Schedule Start</button>
     <button id="startBtn">Start</button>
     <button id="pauseBtn" disabled>Pause</button>
     <button id="stopBtn" disabled>Stop &amp; Reset</button>
-    <button id="toggleModeBtn" aria-pressed="false" aria-label="Toggle between Table Mode and Candidate Mode">Switch to
-        Candidate Mode
+    <button id="muteBtn" aria-pressed="true" aria-label="Toggle mute/sound">Mute</button>
+    <button id="toggleModeBtn" aria-pressed="false" aria-label="Toggle between Table Mode and Candidate Mode">
+        Switch to Candidate Mode
     </button>
 </div>
 
@@ -31,7 +33,7 @@
 </div>
 
 <div id="searchContainer" style="display:flex;justify-content:center;align-items:center;margin:10px 0;">
-    <input id="searchInput" type="text" placeholder="Enter Candidate ID or Table Number"
+    <input id="searchInput" type="text" placeholder="Enter Candidate ID, Table Name or Table Number"
            style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:260px;margin-right:8px;"/>
     <button id="searchBtn"
             style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer;">
@@ -59,6 +61,8 @@
         const pauseBtn = document.getElementById('pauseBtn');
         const stopBtn = document.getElementById('stopBtn');
         const toggleModeBtn = document.getElementById('toggleModeBtn');
+        const scheduleStartBtn = document.getElementById('scheduleStartBtn');
+        const muteBtn = document.getElementById('muteBtn');
         const sectionsList = document.getElementById('sectionsList');
         const subsectionsList = document.getElementById('subsectionsList');
         const timerDisplay = document.getElementById('timerDisplay');
@@ -69,27 +73,26 @@
         const searchBtn = document.getElementById('searchBtn');
         const startTimeInput = document.getElementById('startTimeInput');
         const applyStartTimeBtn = document.getElementById('applyStartTimeBtn');
+        const toHHMM = (s) => s.slice(0, 5);
 
         let isRunning = false;
         let selectedSessionIndex = 0;
         let selectedPhaseIndex = 0;
         let countdownInterval = null;
         let countdownSecondsLeft = 0;
-        let beepAudioCtx = null;
         let isCandidateMode = false;
         let lastSearchValue = '';
         let startTime = null;
         let endTime = null;
+        let isMuted = true;
+        let timeOffset = 0;
+        let beepAudioCtx = null;
 
-        const START_TIME = START_TIME_AM;
-        startTimeInput.value = START_TIME;
-        let startTimeStr = START_TIME;
-        const SESSION_PHASES = Array(NUM_SESSIONS)
-            .fill(null)
-            .map((_, i) => i === BREAK_SESSION ? [...breakPhase] : [...standardPhases]);
+        let startTimeStr = START_TIME_AM;
+        startTimeInput.value = startTimeStr;
+
         let scheduledTimes = [];
-
-        const toHHMM = (s) => s.slice(0, 5);
+        let SESSION_TIMES = generateSessionTimes();
 
         function addSeconds(timeStr, seconds) {
             let [h, m, s] = timeStr.split(':').map(Number);
@@ -99,7 +102,7 @@
         }
 
         function generateSessionTimes() {
-            let times = [], current = START_TIME;
+            let times = [], current = startTimeStr;
             for (const phases of SESSION_PHASES) {
                 const totalDuration = phases.reduce((sum, p) => sum + p.duration, 0);
                 let next = addSeconds(current, totalDuration);
@@ -108,8 +111,6 @@
             }
             return times;
         }
-
-        const SESSION_TIMES = generateSessionTimes();
 
         function parseTimeString(str) {
             if (!str) return 0;
@@ -125,10 +126,16 @@
             return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
         function recalculateScheduledTimes() {
             scheduledTimes = [];
             let t = parseTimeString(startTimeStr);
-            for (let s = 0; s < NUM_SESSIONS; s++) {
+            for (let s = 0; s < SESSION_PHASES.length; s++) {
                 scheduledTimes[s] = [];
                 for (const phase of SESSION_PHASES[s]) {
                     scheduledTimes[s].push(t);
@@ -138,6 +145,51 @@
         }
 
         recalculateScheduledTimes();
+
+        function initBeep() {
+            if (!beepAudioCtx) beepAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function resumeAudioContext() {
+            if (beepAudioCtx?.state === 'suspended') beepAudioCtx.resume();
+        }
+
+        document.body.addEventListener('click', resumeAudioContext, {once: true});
+        document.body.addEventListener('keydown', resumeAudioContext, {once: true});
+
+        function beep(times = 1) {
+            if (isMuted) return;
+            initBeep();
+            let count = 0;
+
+            function play() {
+                if (count >= times) return;
+                const osc = beepAudioCtx.createOscillator();
+                const gain = beepAudioCtx.createGain();
+                osc.frequency.value = 1000;
+                osc.type = 'square';
+                osc.connect(gain);
+                gain.connect(beepAudioCtx.destination);
+                osc.start();
+                setTimeout(() => {
+                    osc.stop();
+                    count++;
+                    setTimeout(play, 150);
+                }, 200);
+            }
+
+            play();
+        }
+
+        // Clock update
+
+        function updateClock() {
+            const now = new Date();
+            clockEl.textContent = now.toTimeString().slice(0, 8);
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
 
         function setSessionPhaseMenusEnabled(enabled) {
             const toggleElements = (list, selectedIdx) => {
@@ -167,107 +219,18 @@
             toggleElements(subsectionsList, selectedPhaseIndex);
         }
 
-        function initBeep() {
-            if (!beepAudioCtx) beepAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
-        function resumeAudioContext() {
-            if (beepAudioCtx?.state === 'suspended') beepAudioCtx.resume();
-        }
-
-        document.body.addEventListener('click', resumeAudioContext, {once: true});
-        document.body.addEventListener('keydown', resumeAudioContext, {once: true});
-
-        function beep(times = 1) {
-            initBeep();
-            let count = 0;
-
-            function play() {
-                if (count >= times) return;
-                const osc = beepAudioCtx.createOscillator();
-                const gain = beepAudioCtx.createGain();
-                osc.frequency.value = 1000;
-                osc.type = 'square';
-                osc.connect(gain);
-                gain.connect(beepAudioCtx.destination);
-                osc.start();
-                setTimeout(() => {
-                    osc.stop();
-                    count++;
-                    setTimeout(play, 150);
-                }, 200);
-            }
-
-            play();
-        }
-
-        function updateClock() {
-            const now = new Date();
-            clockEl.textContent = now.toTimeString().slice(0, 8);
-        }
-
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        const TABLE_NAMES = TABLE_NAMES_AM;
-
-        function highlightBoxes(searchValue) {
-            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-            if (!searchValue) return;
-            const search = searchValue.trim().toLowerCase();
-            let tableNum = null;
-            const match = search.match(/^table\s*(\d{1,2})$/i);
-            if (match) {
-                tableNum = parseInt(match[1], 10);
-                if (tableNum < 1 || tableNum > NUM_TABLES) tableNum = null;
-            }
-            let tableNameIndex = null;
-            if (!tableNum) {
-                tableNameIndex = TABLE_NAMES.findIndex(t => t.toLowerCase().includes(search));
-            }
-            if (isCandidateMode) {
-                candidateModeContainer.querySelectorAll('.candidate-cell').forEach(cell => {
-                    const num = cell.querySelector('.candidate-number')?.textContent.trim();
-                    if (num === searchValue) cell.classList.add('highlight');
-                    if (tableNum) {
-                        const label = cell.querySelector('.candidate-table')?.textContent.match(/Table\s*(\d+)/i);
-                        if (label && +label[1] === tableNum) cell.classList.add('highlight');
-                    }
-                    if (tableNameIndex >= 0) {
-                        const label = cell.querySelector('.candidate-table')?.textContent.toLowerCase();
-                        if (label && label.includes(TABLE_NAMES[tableNameIndex].toLowerCase())) cell.classList.add('highlight');
-                    }
-                });
-            } else {
-                tableModeContainer.querySelectorAll('.viva-box').forEach((box, idx) => {
-                    const cand = box.querySelector('.candidate-row .candidate-name')?.textContent.trim();
-                    const obs = box.querySelector('.observer-row .candidate-name')?.textContent.trim();
-                    if (cand === searchValue || obs === searchValue) box.classList.add('highlight');
-                    if (tableNum === idx + 1) box.classList.add('highlight');
-                    if (tableNameIndex === idx) box.classList.add('highlight');
-                });
-            }
-        }
-
-        function doSearch() {
-            lastSearchValue = searchInput.value.trim();
-            highlightBoxes(lastSearchValue);
-        }
-
-        searchInput.addEventListener('keydown', e => e.key === 'Enter' && doSearch());
-        searchBtn.addEventListener('click', doSearch);
-        searchInput.addEventListener('input', () => {
-            if (!searchInput.value.trim()) {
-                lastSearchValue = '';
-                highlightBoxes('');
-            }
-        });
-
         function renderSections() {
             sectionsList.innerHTML = '';
-            for (let i = 0; i < NUM_SESSIONS; i++) {
+            for (let i = 0; i < SESSION_PHASES.length; i++) {
                 const li = document.createElement('li');
-                li.textContent = i === BREAK_SESSION ? 'Break' : (i > BREAK_SESSION ? `Session ${i}` : `Session ${i + 1}`);
+                if (ENABLE_PREPARATION && i === PREPARATION_SESSION_INDEX) {
+                    li.textContent = 'Preparation';
+                } else if (ENABLE_BREAK && i === BREAK_SESSION_INDEX) {
+                    li.textContent = 'Break';
+                } else {
+                    const baseSessionIndex = i - (ENABLE_PREPARATION ? 1 : 0) - (ENABLE_BREAK && i > BREAK_SESSION_INDEX ? 1 : 0);
+                    li.textContent = baseSessionIndex >= 0 ? `Session ${baseSessionIndex + 1}` : `Session ${i + 1}`;
+                }
                 if (i === selectedSessionIndex) li.classList.add('selected');
                 li.addEventListener('click', () => {
                     if (isRunning) return;
@@ -317,51 +280,80 @@
         function renderBottomContent() {
             const phase = SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex];
             updateTimerDisplay();
-            const sessionNumber = selectedSessionIndex === BREAK_SESSION ? 'Break' : (selectedSessionIndex > BREAK_SESSION ? selectedSessionIndex : selectedSessionIndex + 1);
+
+            let sessionLabel = '';
+            if (ENABLE_PREPARATION && selectedSessionIndex === PREPARATION_SESSION_INDEX) {
+                sessionLabel = 'Preparation';
+            } else if (ENABLE_BREAK && selectedSessionIndex === BREAK_SESSION_INDEX) {
+                sessionLabel = 'Break';
+            } else {
+                let baseSessionNum = selectedSessionIndex;
+                if (ENABLE_PREPARATION && selectedSessionIndex > PREPARATION_SESSION_INDEX) baseSessionNum--;
+                if (ENABLE_BREAK) {
+                    if (selectedSessionIndex > BREAK_SESSION_INDEX) baseSessionNum -= 1;
+                    else if (selectedSessionIndex === BREAK_SESSION_INDEX) baseSessionNum = -1;
+                }
+                sessionLabel = baseSessionNum >= 0 ? `Session ${baseSessionNum + 1}` : '';
+            }
+
             const heading = 'SAHK Final Examination Preparation Course - Viva Examination';
             const sessionTime = SESSION_TIMES[selectedSessionIndex] || '';
             const schedSec = scheduledTimes[selectedSessionIndex]?.[selectedPhaseIndex];
             const schedTimeStr = schedSec ? formatTimeHMSSec(schedSec) : '';
-
             const displayStartTime = isRunning && startTime !== null ? formatAbsoluteTime(startTime) : schedTimeStr;
             const displayEndTime = isRunning && endTime !== null ? formatAbsoluteTime(endTime) : '';
-
             const sessionLine = isRunning
-                ? `Session ${sessionNumber} (${phase.title}), ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Current Session Time: ${displayStartTime} - ${displayEndTime}</span>`
-                : `Session ${sessionNumber} (${phase.title}), ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Scheduled Start: ${displayStartTime}</span>`;
-
+                ? `${sessionLabel} (${phase.title}), ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Current Session Time: ${displayStartTime} - ${displayEndTime}</span>`
+                : `${sessionLabel} (${phase.title}), ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Scheduled Start: ${displayStartTime}</span>`;
             infoDisplay.innerHTML = `<div style="font-weight:700;font-size:1em;margin-bottom:6px;text-align:center;">${heading}</div><div style="font-weight:600;font-size:1em;margin-bottom:10px;text-align:center;">${sessionLine}</div>`;
-
             isCandidateMode ? renderCandidateMode() : renderTableMode();
         }
+
+        // Render functions for mode display (unchanged)
 
         function renderTableMode() {
             candidateModeContainer.style.display = 'none';
             tableModeContainer.style.display = 'flex';
-            const sessionKey = selectedSessionIndex === BREAK_SESSION ? 'Break' : (selectedSessionIndex > BREAK_SESSION ? `Session ${selectedSessionIndex}` : `Session ${selectedSessionIndex + 1}`);
+            const sessionKey = (() => {
+                if (ENABLE_PREPARATION && selectedSessionIndex === 0) return "Preparation";
+                if (ENABLE_BREAK && selectedSessionIndex === BREAK_SESSION_INDEX) return "Break";
+                let baseIdx = selectedSessionIndex;
+                if (ENABLE_PREPARATION && selectedSessionIndex > 0) baseIdx--;
+                if (ENABLE_BREAK && selectedSessionIndex > BREAK_SESSION_INDEX) baseIdx--;
+                return `Session ${baseIdx + 1}`;
+            })();
             const details = vivaData[sessionKey];
-
             if (!details) {
-                tableModeContainer.innerHTML = '<p style="text-align:center;color:#666;">No candidate/observer data available.</p>';
+                tableModeContainer.innerHTML = '<p style="text-align:center; color:#666;">No data available.</p>';
                 return;
             }
-            tableModeContainer.innerHTML = Array(NUM_TABLES).fill(0).map((_, i) => `
+            tableModeContainer.innerHTML = Array(NUM_TABLES).fill(0).map((_, i) => {
+                const candidate = details.Candidate[i] || '—';
+                const observer = details.Observer[i] || '—';
+                return `
           <div class="viva-box" tabindex="0" aria-label="Table ${i + 1} details">
-            <div class="viva-title">Table ${i + 1}<br><span style="font-size:0.7em;color:#555;">${TABLE_NAMES[i]}</span></div>
+            <div class="viva-title">Table ${i + 1}<br><span style="font-size:0.7em;color:#555;">${TABLE_NAMES_AM[i]}</span></div>
             <div class="candidate-row"><div class="role-label">Candidate</div><div class="candidate-name">${details.Candidate[i] || '—'}</div></div>
             <div class="observer-row"><div class="role-label">Observer</div><div class="candidate-name">${details.Observer[i] || '—'}</div></div>
-          </div>
-        `).join('');
+          </div>`;
+            }).join('');
             highlightBoxes(lastSearchValue);
         }
 
         function renderCandidateMode() {
             tableModeContainer.style.display = 'none';
             candidateModeContainer.style.display = 'flex';
-            const sessionKey = selectedSessionIndex === BREAK_SESSION ? 'Break' : (selectedSessionIndex > BREAK_SESSION ? `Session ${selectedSessionIndex}` : `Session ${selectedSessionIndex + 1}`);
-            const details = vivaData[sessionKey];
+            const sessionKey = (() => {
+                if (ENABLE_PREPARATION && selectedSessionIndex === 0) return "Preparation";
+                if (ENABLE_BREAK && selectedSessionIndex === BREAK_SESSION_INDEX) return "Break";
+                let baseIdx = selectedSessionIndex;
+                if (ENABLE_PREPARATION && selectedSessionIndex > 0) baseIdx--;
+                if (ENABLE_BREAK && selectedSessionIndex > BREAK_SESSION_INDEX) baseIdx--;
+                return `Session ${baseIdx + 1}`;
+            })();
+            const details = osceData[sessionKey];
             if (!details) {
-                candidateModeContainer.innerHTML = '<p style="text-align:center;color:#666;">No candidate/observer data available.</p>';
+                candidateModeContainer.innerHTML = '<p style="text-align:center; color:#666;">No data available.</p>';
                 return;
             }
             const entries = [];
@@ -378,17 +370,65 @@
           <div class="${role === 'Observer' ? 'candidate-cell observer-cell' : 'candidate-cell'}" tabindex="0" aria-label="${role} ${number}, Table ${tableIndex + 1}">
             <div class="candidate-number">${number}</div>
             <div class="candidate-role ${role.toLowerCase()}">${role}</div>
-            <div class="candidate-table">Table ${tableIndex + 1}<br><span style="font-size:0.8em;color:#555;">${TABLE_NAMES[tableIndex]}</span></div>
+            <div class="candidate-table">Table ${tableIndex + 1}<br><span style="font-size:0.8em;color:#555;">${TABLE_NAMES_AM[tableIndex]}</span></div>
           </div>
         `).join('');
             highlightBoxes(lastSearchValue);
         }
 
-        function formatTime(seconds) {
-            const m = Math.floor(seconds / 60);
-            const s = seconds % 60;
-            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        function highlightBoxes(searchValue) {
+            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+            if (!searchValue) return;
+            const search = searchValue.trim().toLowerCase();
+            let tableNum = null;
+            const match = search.match(/^table\s*(\d{1,2})$/i);
+
+            if (match) {
+                tableNum = parseInt(match[1], 10);
+                if (tableNum < 1 || tableNum > NUM_TABLES) tableNum = null;
+            }
+            let tableNameIndex = null;
+            if (!tableNum) {
+                tableNameIndex = TABLE_NAMES_AM.findIndex(t => t.toLowerCase().includes(search));
+            }
+            if (isCandidateMode) {
+                candidateModeContainer.querySelectorAll('.candidate-cell').forEach(cell => {
+                    const num = cell.querySelector('.candidate-number')?.textContent.trim();
+                    if (num === searchValue) cell.classList.add('highlight');
+                    if (tableNum) {
+                        const label = cell.querySelector('.candidate-table')?.textContent.match(/Table\s*(\d+)/i);
+                        if (label && +label[1] === tableNum) cell.classList.add('highlight');
+                    }
+                    if (tableNameIndex >= 0) {
+                        const label = cell.querySelector('.candidate-table')?.textContent.toLowerCase();
+                        if (label && label.includes(TABLE_NAMES_AM[tableNameIndex].toLowerCase())) cell.classList.add('highlight');
+                    }
+                });
+            } else {
+                tableModeContainer.querySelectorAll('.viva-box').forEach((box, idx) => {
+                    const cand = box.querySelector('.candidate-row .candidate-name')?.textContent.trim();
+                    const obs = box.querySelector('.observer-row .candidate-name')?.textContent.trim();
+                    if (cand === searchValue || obs === searchValue) box.classList.add('highlight');
+                    if (tableNum === idx + 1) box.classList.add('highlight');
+                    if (tableNameIndex === idx) box.classList.add('highlight');
+                });
+            }
         }
+
+        function doSearch() {
+            lastSearchValue = searchInput.value.trim();
+            highlightBoxes(lastSearchValue);
+        }
+        searchInput.addEventListener('keydown', e => {
+            if (e.key === "Enter") doSearch();
+        });
+        searchBtn.addEventListener('click', doSearch);
+        searchInput.addEventListener('input', () => {
+            if (!searchInput.value.trim()) {
+                lastSearchValue = '';
+                highlightBoxes('');
+            }
+        });
 
         function updateTimerDisplay() {
             timerDisplay.textContent = formatTime(countdownSecondsLeft);
@@ -404,7 +444,7 @@
             if (p >= SESSION_PHASES[s].length) {
                 s++;
                 p = 0;
-                if (s >= NUM_SESSIONS) {
+                if (s >= SESSION_PHASES.length) {
                     stopTimers();
                     alert('All sessions completed!');
                     return;
@@ -451,6 +491,7 @@
             startBtn.disabled = true;
             pauseBtn.disabled = false;
             stopBtn.disabled = false;
+            scheduleStartBtn.disabled = true;
             setSessionPhaseMenusEnabled(false);
             if (countdownSecondsLeft <= 0) resetTimerToCurrentPhase();
             startTime = getCorrectedNow();
@@ -465,6 +506,7 @@
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             stopBtn.disabled = false;
+            scheduleStartBtn.disabled = false;
             clearInterval(countdownInterval);
             const diff = endTime - getCorrectedNow();
             countdownSecondsLeft = diff > 0 ? Math.ceil(diff / 1000) : 0;
@@ -473,12 +515,12 @@
             updateTimerDisplay();
         }
 
-
         function stopTimers() {
             isRunning = false;
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             stopBtn.disabled = true;
+            scheduleStartBtn.disabled = false;
             clearInterval(countdownInterval);
             resetTimerToCurrentPhase();
             startTime = null;
@@ -488,6 +530,53 @@
             setSessionPhaseMenusEnabled(true);
         }
 
+        scheduleStartBtn.onclick = () => {
+            const now = new Date();
+            const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+            let found = false;
+            outerLoop: for (let s = 0; s < scheduledTimes.length; s++) {
+                for (let p = 0; p < scheduledTimes[s].length; p++) {
+                    const phaseStart = scheduledTimes[s][p];
+                    let phaseEnd;
+                    if (p + 1 < scheduledTimes[s].length) {
+                        phaseEnd = scheduledTimes[s][p + 1];
+                    } else if (s + 1 < scheduledTimes.length) {
+                        phaseEnd = scheduledTimes[s + 1][0];
+                    } else {
+                        phaseEnd = phaseStart + SESSION_PHASES[s][p].duration;
+                    }
+                    if (nowSeconds >= phaseStart && nowSeconds < phaseEnd) {
+                        selectedSessionIndex = s;
+                        selectedPhaseIndex = p;
+                        countdownSecondsLeft = phaseEnd - nowSeconds;
+                        startTime = getCorrectedNow();
+                        endTime = startTime + countdownSecondsLeft * 1000;
+                        found = true;
+                        break outerLoop;
+                    }
+                }
+            }
+            if (!found) {
+                selectedSessionIndex = 0;
+                selectedPhaseIndex = 0;
+                resetTimerToCurrentPhase();
+                startTime = getCorrectedNow();
+                endTime = startTime + countdownSecondsLeft * 1000;
+            }
+            renderSections();
+            renderPhases();
+            renderBottomContent();
+            startTimers();
+        };
+
+        startBtn.onclick = startTimers;
+        pauseBtn.onclick = pauseTimers;
+        stopBtn.onclick = stopTimers;
+        muteBtn.onclick = () => {
+            isMuted = !isMuted;
+            muteBtn.textContent = isMuted ? 'Mute' : 'Sound On';
+            muteBtn.setAttribute('aria-pressed', (!isMuted).toString());
+        };
         toggleModeBtn.onclick = () => {
             isCandidateMode = !isCandidateMode;
             toggleModeBtn.textContent = isCandidateMode ? 'Switch to Table Mode' : 'Switch to Candidate Mode';
@@ -495,13 +584,10 @@
             renderBottomContent();
         };
 
-        startBtn.onclick = startTimers;
-        pauseBtn.onclick = pauseTimers;
-        stopBtn.onclick = stopTimers;
-
         applyStartTimeBtn.onclick = () => {
-            startTimeStr = startTimeInput.value || START_TIME;
+            startTimeStr = startTimeInput.value || START_TIME_AM;
             recalculateScheduledTimes();
+            SESSION_TIMES = generateSessionTimes();
             renderSections();
             renderPhases();
             renderBottomContent();
@@ -534,6 +620,7 @@
         renderPhases();
         resetTimerToCurrentPhase();
         renderBottomContent();
+        startTime = endTime = null;
 
         async function fetchStandardTime() {
             try {
@@ -567,7 +654,6 @@
 
         fetchStandardTime();
         setInterval(fetchStandardTime, 60000);
-
     })();
 </script>
 </body>

@@ -9,10 +9,9 @@ const STATION_NAMES = [
     "Long Case 2",
     "Rest",
     "Crisis",
-    "Communi-cation",
+    "Communication",
     "Rest",
     "Anatomy 2",
-    "ACLS / ATLS",
+    "ACLS/ATLS",
     "Rest"
-
 ];
