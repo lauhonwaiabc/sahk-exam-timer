@@ -51,8 +51,10 @@
     <div id="mapModeContainer" aria-live="polite" style="display:none; position: relative; text-align: center;">
         <!-- Map and overlays rendered here -->
         <div id="mapWrapper" style="position:relative; display:inline-block;">
-            <img id="mapImage" src="OSCE_map.jpg" alt="OSCE Map" style="max-width: 100%; height: auto;"/>
-            <svg id="mapSvgOverlay" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+            <img id="mapImage" src="config/OSCE_map.jpg" alt="OSCE Map" style="max-width: 100%; height: auto;"/>
+            <svg id="mapSvgOverlay"
+                 style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"
+                 xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
             </svg>
         </div>
     </div>
@@ -155,21 +157,26 @@
                 }
             }
         }
+
         recalculateScheduledTimes();
 
         // Audio beep setup
         function initBeep() {
             if (!beepAudioCtx) beepAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
+
         function resumeAudioContext() {
             if (beepAudioCtx?.state === 'suspended') beepAudioCtx.resume();
         }
+
         document.body.addEventListener('click', resumeAudioContext, {once: true});
         document.body.addEventListener('keydown', resumeAudioContext, {once: true});
+
         function beep(times = 1) {
             if (isMuted) return;
             initBeep();
             let count = 0;
+
             function play() {
                 if (count >= times) return;
                 const osc = beepAudioCtx.createOscillator();
@@ -185,6 +192,7 @@
                     setTimeout(play, 150);
                 }, 200);
             }
+
             play();
         }
 
@@ -193,6 +201,7 @@
             const now = new Date();
             clockEl.textContent = now.toTimeString().slice(0, 8);
         }
+
         setInterval(updateClock, 1000);
         updateClock();
 
@@ -399,158 +408,135 @@
             highlightBoxes(lastSearchValue);
         }
 
-        const stationPositions = [
-            {x: 205, y: 250}, {x: 205, y: 75}, {x: 300, y: 150}, {x: 360, y: 75},
-            {x: 360, y: 250}, {x: 450, y: 150}, {x: 510, y: 75}, {x: 510, y: 250},
-            {x: 590, y: 150}, {x: 650, y: 75}, {x: 725, y: 75}, {x: 780, y: 225},
-            {x: 810, y: 75}, {x: 900, y: 75}, {x: 200, y: 325},
-        ];
+        function renderMapMode() {
+            stationModeContainer.style.display = 'none';
+            candidateModeContainer.style.display = 'none';
+            mapModeContainer.style.display = 'block';
 
-function renderMapMode() {
-    stationModeContainer.style.display = 'none';
-    candidateModeContainer.style.display = 'none';
-    mapModeContainer.style.display = 'block';
+            const sessionKey = (() => {
+                if (ENABLE_PREPARATION && selectedSessionIndex === PREPARATION_SESSION_INDEX) return "Preparation";
+                if (ENABLE_BREAK && selectedSessionIndex === BREAK_SESSION_INDEX) return "Break";
+                let baseIdx = selectedSessionIndex;
+                if (ENABLE_PREPARATION && selectedSessionIndex > PREPARATION_SESSION_INDEX) baseIdx--;
+                if (ENABLE_BREAK && selectedSessionIndex > BREAK_SESSION_INDEX) baseIdx--;
+                return `Session ${baseIdx + 1}`;
+            })();
+            const details = osceData[sessionKey];
+            const svg = document.getElementById('mapSvgOverlay');
 
-    const sessionKey = (() => {
-        if (ENABLE_PREPARATION && selectedSessionIndex === PREPARATION_SESSION_INDEX) return "Preparation";
-        if (ENABLE_BREAK && selectedSessionIndex === BREAK_SESSION_INDEX) return "Break";
-        let baseIdx = selectedSessionIndex;
-        if (ENABLE_PREPARATION && selectedSessionIndex > PREPARATION_SESSION_INDEX) baseIdx--;
-        if (ENABLE_BREAK && selectedSessionIndex > BREAK_SESSION_INDEX) baseIdx--;
-        return `Session ${baseIdx + 1}`;
-    })();
-    const details = osceData[sessionKey];
-    const svg = document.getElementById('mapSvgOverlay');
-
-    // Clear previous SVG content
-    while(svg.firstChild) {
-        svg.removeChild(svg.firstChild);
-    }
-
-    if (!details) {
-        svg.innerHTML = `<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#666">No data available.</text>`;
-        return;
-    }
-
-    const search = (lastSearchValue || '').trim().toLowerCase();
-    let stationNumSearch = null;
-    const match = search.match(/^station\s*(\d{1,2})$/i);
-    if (match) {
-        const n = parseInt(match[1], 10);
-        if (n >= 1 && n <= NUM_STATIONS) {
-            stationNumSearch = n;
-        }
-    }
-    let stationNameIndex = null;
-    if (!stationNumSearch) {
-        stationNameIndex = STATION_NAMES.findIndex(t => t.toLowerCase().includes(search));
-    }
-
-    const createHighlightGroup = (x, y, stationIndex, highlighted) => {
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        g.setAttribute("tabindex", "0");
-        g.setAttribute("aria-label", `Station ${stationIndex + 1}: ${STATION_NAMES[stationIndex]}`);
-        g.style.cursor = "pointer";
-
-        // Colors for highlight and text
-
-        // Bigger translucent rectangle behind the station number square
-        const rectBg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        rectBg.setAttribute("x", x - 40); // 40px left of center to make it bigger
-        rectBg.setAttribute("y", y - 20);
-        rectBg.setAttribute("width", 50);
-        rectBg.setAttribute("height", 40);
-        rectBg.setAttribute("fill", "#1976d2");
-        rectBg.setAttribute("opacity", "0.2");
-        rectBg.setAttribute("rx", "6"); // rounded corners
-        rectBg.setAttribute("ry", "6");
-        g.appendChild(rectBg);
-
-        // Station number square (instead of circle)
-        const square = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        square.setAttribute("x", x - 40);
-        square.setAttribute("y", y - 15);
-        square.setAttribute("width", 30);
-        square.setAttribute("height", 30);
-        square.setAttribute("fill", highlighted ? "#83ea83" : "#a55353");
-        square.setAttribute("stroke", highlighted ? "#769e76" : "#5c3838");
-        square.setAttribute("stroke-width", "2");
-        square.setAttribute("rx", "4");
-        square.setAttribute("ry", "4");
-        g.appendChild(square);
-
-        const numberText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        numberText.setAttribute("x", x - 25); // center of square x: x-40 + 15
-        numberText.setAttribute("y", y + 5);  // center y
-        numberText.setAttribute("text-anchor", "middle");
-        numberText.setAttribute("font-size", "16");
-        numberText.setAttribute("fill", highlighted ? "#000000" : "#000000");
-        numberText.style.userSelect = "none";
-        numberText.textContent = stationIndex + 1;
-        g.appendChild(numberText);
-
-        const candidateCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        candidateCircle.setAttribute("cx", x); // right side + 5px
-        candidateCircle.setAttribute("cy", y - 7);
-        candidateCircle.setAttribute("r", 8);
-        candidateCircle.setAttribute("fill", "#90caf9"); // light blue
-        candidateCircle.setAttribute("stroke", "#1976d2");
-        candidateCircle.setAttribute("stroke-width", "1");
-        g.appendChild(candidateCircle);
-
-        const candidateText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        candidateText.setAttribute("x", x);
-        candidateText.setAttribute("y", y - 2);
-        candidateText.setAttribute("text-anchor", "middle");
-        candidateText.setAttribute("font-size", "12");
-        candidateText.setAttribute("fill", "#0d47a1");
-        candidateText.style.userSelect = "none";
-        candidateText.textContent = details.Candidate[stationIndex] || '';
-        g.appendChild(candidateText);
-
-        const observerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        observerCircle.setAttribute("cx", x);
-        observerCircle.setAttribute("cy", y + 10);
-        observerCircle.setAttribute("r", 8);
-        observerCircle.setAttribute("fill", "#fff59d"); // light yellow
-        observerCircle.setAttribute("stroke", "#fbc02d");
-        observerCircle.setAttribute("stroke-width", "1");
-        g.appendChild(observerCircle);
-
-        // Observer number text inside observer circle
-        const observerText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        observerText.setAttribute("x", x);
-        observerText.setAttribute("y", y + 15);
-        observerText.setAttribute("text-anchor", "middle");
-        observerText.setAttribute("font-size", "12");
-        observerText.setAttribute("fill", "#f9a825");
-        observerText.style.userSelect = "none";
-        observerText.textContent = details.Observer[stationIndex] || '';
-        g.appendChild(observerText);
-
-        svg.appendChild(g);
-    };
-
-    for (let i = 0; i < NUM_STATIONS; i++) {
-        let highlighted = false;
-        if (search) {
-            const candidate = details.Candidate[i] || '';
-            const observer = details.Observer[i] || '';
-
-            if (candidate.toLowerCase() === search || observer.toLowerCase() === search) {
-                highlighted = true;
+            // Clear previous SVG content
+            while (svg.firstChild) {
+                svg.removeChild(svg.firstChild);
             }
-            if (stationNumSearch === i + 1) {
-                highlighted = true;
+
+            if (!details) {
+                svg.innerHTML = `<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#666">No data available.</text>`;
+                return;
             }
-            if (stationNameIndex === i) {
-                highlighted = true;
+
+            const search = (lastSearchValue || '').trim().toLowerCase();
+            let stationNumSearch = null;
+            const match = search.match(/^station\s*(\d{1,2})$/i);
+            if (match) {
+                const n = parseInt(match[1], 10);
+                if (n >= 1 && n <= NUM_STATIONS) {
+                    stationNumSearch = n;
+                }
+            }
+            let stationNameIndex = null;
+            if (!stationNumSearch) {
+                stationNameIndex = STATION_NAMES.findIndex(t => t.toLowerCase().includes(search));
+            }
+
+            const createHighlightGroup = (x, y, stationIndex, highlighted) => {
+                const SVG_NS = "http://www.w3.org/2000/svg";
+
+                const g = document.createElementNS(SVG_NS, "g");
+                g.setAttribute("tabindex", "0");
+                g.setAttribute("aria-label", `Station ${stationIndex + 1}: ${STATION_NAMES[stationIndex]}`);
+                g.classList.add("station-group");
+
+                // Background rectangle (bigger translucent rect)
+                const rectBg = document.createElementNS(SVG_NS, "rect");
+                rectBg.setAttribute("x", x - 40);
+                rectBg.setAttribute("y", y - 20);
+                rectBg.setAttribute("width", 50);
+                rectBg.setAttribute("height", 40);
+                rectBg.classList.add("station-bg");
+                g.appendChild(rectBg);
+
+                // Station number square
+                const square = document.createElementNS(SVG_NS, "rect");
+                square.setAttribute("x", x - 40);
+                square.setAttribute("y", y - 15);
+                square.classList.add("station-square");
+                if (highlighted) square.classList.add("highlighted");
+                g.appendChild(square);
+
+                // Station number text
+                const numberText = document.createElementNS(SVG_NS, "text");
+                numberText.setAttribute("x", x - 25);
+                numberText.setAttribute("y", y + 5);
+                numberText.setAttribute("text-anchor", "middle");
+                numberText.classList.add("station-number-text");
+                numberText.textContent = stationIndex + 1;
+                g.appendChild(numberText);
+
+                // Candidate circle
+                const candidateCircle = document.createElementNS(SVG_NS, "circle");
+                candidateCircle.setAttribute("cx", x);
+                candidateCircle.setAttribute("cy", y - 7);
+                candidateCircle.classList.add("candidate-circle");
+                g.appendChild(candidateCircle);
+
+                // Candidate number text
+                const candidateText = document.createElementNS(SVG_NS, "text");
+                candidateText.setAttribute("x", x);
+                candidateText.setAttribute("y", y - 2);
+                candidateText.setAttribute("text-anchor", "middle");
+                candidateText.classList.add("candidate-text");
+                candidateText.textContent = details.Candidate[stationIndex] || '';
+                g.appendChild(candidateText);
+
+                // Observer circle
+                const observerCircle = document.createElementNS(SVG_NS, "circle");
+                observerCircle.setAttribute("cx", x);
+                observerCircle.setAttribute("cy", y + 10);
+                observerCircle.classList.add("observer-circle");
+                g.appendChild(observerCircle);
+
+                // Observer number text
+                const observerText = document.createElementNS(SVG_NS, "text");
+                observerText.setAttribute("x", x);
+                observerText.setAttribute("y", y + 15);
+                observerText.setAttribute("text-anchor", "middle");
+                observerText.classList.add("observer-text");
+                observerText.textContent = details.Observer[stationIndex] || '';
+                g.appendChild(observerText);
+
+                svg.appendChild(g);
+            };
+
+            for (let i = 0; i < NUM_STATIONS; i++) {
+                let highlighted = false;
+                if (search) {
+                    const candidate = details.Candidate[i] || '';
+                    const observer = details.Observer[i] || '';
+
+                    if (candidate.toLowerCase() === search || observer.toLowerCase() === search) {
+                        highlighted = true;
+                    }
+                    if (stationNumSearch === i + 1) {
+                        highlighted = true;
+                    }
+                    if (stationNameIndex === i) {
+                        highlighted = true;
+                    }
+                }
+                const pos = stationPositions[i] || {x: 100 + i * 50, y: 100};
+                createHighlightGroup(pos.x, pos.y, i, highlighted);
             }
         }
-        const pos = stationPositions[i] || {x: 100 + i * 50, y: 100};
-        createHighlightGroup(pos.x, pos.y, i, highlighted);
-    }
-}
 
         function highlightBoxes(searchValue) {
             document.querySelectorAll('.osce-box.highlight, .candidate-cell.highlight').forEach(el => el.classList.remove('highlight'));
@@ -598,6 +584,7 @@ function renderMapMode() {
                 renderMapMode();
             }
         }
+
         searchInput.addEventListener('keydown', e => {
             if (e.key === "Enter") doSearch();
         });
@@ -832,6 +819,7 @@ function renderMapMode() {
                 return Date.now();
             }
         }
+
         // Fetch standard time offset for better timer accuracy
         async function fetchStandardTimeOffset() {
             try {
@@ -844,6 +832,7 @@ function renderMapMode() {
                 timeOffset = 0;
             }
         }
+
         function getCorrectedNow() {
             return Date.now() + timeOffset;
         }

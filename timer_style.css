@@ -297,6 +297,66 @@ button:hover:not(:disabled) {
     background: #e3f2fd !important;
 }
 
+/* Map Mode*/
+.station-group {
+    cursor: pointer;
+    outline: none; /* optional style for focus */
+}
+
+.station-bg {
+    fill: #1976d2;
+    opacity: 0.2;
+    rx: 6;
+    ry: 6;
+}
+
+.station-square {
+    width: 30px;
+    height: 30px;
+    rx: 4;
+    ry: 4;
+    stroke-width: 2;
+    fill: #a55353;
+    stroke: #5c3838;
+}
+
+.station-square.highlighted {
+    fill: #83ea83;
+    stroke: #769e76;
+}
+
+.station-number-text {
+    font-size: 16px;
+    fill: #000000;
+    user-select: none;
+}
+
+.candidate-circle {
+    r: 8;
+    fill: #90caf9;
+    stroke: #1976d2;
+    stroke-width: 1;
+}
+
+.candidate-text {
+    font-size: 12px;
+    fill: #0d47a1;
+    user-select: none;
+}
+
+.observer-circle {
+    r: 8;
+    fill: #fff59d;
+    stroke: #fbc02d;
+    stroke-width: 1;
+}
+
+.observer-text {
+    font-size: 12px;
+    fill: #f9a825;
+    user-select: none;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 600px) {
     body {
@@ -412,7 +472,3 @@ button:hover:not(:disabled) {
         font-size: 0.85em;
     }
 }
-
-
-
-
