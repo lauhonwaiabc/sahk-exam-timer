@@ -386,8 +386,8 @@
             const match = search.match(/^station\s*(\d{1,2})$/i);
 
             if (match) {
-                tableNum = parseInt(match[1], 10);
-                if (tableNum < 1 || tableNum > NUM_TABLES) tableNum = null;
+                stationNum = parseInt(match[1], 10);
+                if (stationNum < 1 || stationNum > NUM_STATIONS) stationNum = null;
             }
             let stationNameIndex = null;
             if (!stationNum) {
