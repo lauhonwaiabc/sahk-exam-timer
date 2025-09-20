@@ -3,15 +3,15 @@ const STATION_NAMES = [
     "Anatomy 1",
     "Rest",
     "Regional",
-    "Equipment",
+    "Equip-ment",
     "Rest",
     "Long Case 1",
     "Long Case 2",
     "Rest",
     "Crisis",
-    "Communication",
+    "Communi-cation",
     "Rest",
     "Anatomy 2",
-    "ACLS/ATLS",
+    "ACLS/ ATLS",
     "Rest"
 ];
