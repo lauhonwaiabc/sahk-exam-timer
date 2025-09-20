@@ -17,11 +17,10 @@
     <button id="pauseBtn" disabled>Pause</button>
     <button id="stopBtn" disabled>Stop &amp; Reset</button>
     <button id="muteBtn" aria-pressed="true" aria-label="Toggle mute/sound">Mute</button>
-    <button id="toggleModeBtn" aria-pressed="false" aria-label="Toggle between Station Mode and Candidate Mode">
+    <button id="toggleModeBtn" aria-pressed="false" aria-label="Toggle between Station, Candidate, and Map Modes">
         Switch to Candidate Mode
     </button>
 </div>
-
 <div id="startTimeContainer" style="text-align:center;margin:10px 0;">
     <label for="startTimeInput" style="font-weight:700;margin-right:8px;">Start Time (hh:mm:ss):</label>
     <input id="startTimeInput" type="time" step="1"
@@ -31,7 +30,6 @@
         Apply
     </button>
 </div>
-
 <div id="searchContainer" style="display:flex;justify-content:center;align-items:center;margin:10px 0;">
     <input id="searchInput" type="text" placeholder="Enter Candidate ID, Station Name or Station Number"
            style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:320px;margin-right:8px;"/>
@@ -40,23 +38,28 @@
         Search
     </button>
 </div>
-
 <div id="topMenu">
     <ul id="sectionsList"></ul>
     <br/>
     <ul id="subsectionsList"></ul>
 </div>
-
 <div id="bottomContent">
     <div class="timer" id="timerDisplay">00:00</div>
     <div class="info" id="infoDisplay">Select a session and phase to see information here.</div>
     <div id="stationModeContainer" aria-live="polite"></div>
     <div id="candidateModeContainer" aria-live="polite" style="display:none;"></div>
+    <div id="mapModeContainer" aria-live="polite" style="display:none; position: relative; text-align: center;">
+        <!-- Map and overlays rendered here -->
+        <div id="mapWrapper" style="position:relative; display:inline-block;">
+            <img id="mapImage" src="OSCE_map.jpg" alt="OSCE Map" style="max-width: 100%; height: auto;"/>
+            <svg id="mapSvgOverlay" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+            </svg>
+        </div>
+    </div>
 </div>
-
 <script>
     (() => {
-        // Elements
+        // Elements references
         const clockEl = document.getElementById('clock');
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
@@ -70,6 +73,7 @@
         const infoDisplay = document.getElementById('infoDisplay');
         const stationModeContainer = document.getElementById('stationModeContainer');
         const candidateModeContainer = document.getElementById('candidateModeContainer');
+        const mapModeContainer = document.getElementById('mapModeContainer');
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
         const startTimeInput = document.getElementById('startTimeInput');
@@ -77,25 +81,26 @@
         const toHHMM = s => s.slice(0, 5);
         const REST_INDICES = STATION_NAMES.reduce((acc, name, i) => (name === "Rest" ? acc.concat(i) : acc), []);
 
+        let modeIndex = 0;
         let isRunning = false;
         let selectedSessionIndex = 0;
         let selectedPhaseIndex = 0;
         let countdownInterval = null;
         let countdownSecondsLeft = 0;
-        let isCandidateMode = false;
         let lastSearchValue = '';
         let startTime = null;
         let endTime = null;
         let isMuted = true;
         let timeOffset = 0;
         let beepAudioCtx = null;
-
         let startTimeStr = START_TIME_AM;
         startTimeInput.value = startTimeStr;
 
+        // Scheduled times array for all sessions/phases
         let scheduledTimes = [];
         let SESSION_TIMES = generateSessionTimes();
 
+        // Function to add seconds to a time string HH:MM:SS
         function addSeconds(timeStr, seconds) {
             let [h, m, s] = timeStr.split(':').map(Number);
             let date = new Date(0, 0, 0, h, m, s);
@@ -103,6 +108,7 @@
             return date.toTimeString().slice(0, 8);
         }
 
+        // Generate session times strings like "08:00-08:10"
         function generateSessionTimes() {
             let times = [], current = startTimeStr;
             for (const phases of SESSION_PHASES) {
@@ -114,13 +120,14 @@
             return times;
         }
 
+        // Parse HH:MM:SS string to total seconds
         function parseTimeString(str) {
             if (!str) return 0;
             const [h, m, s = 0] = str.split(':').map(Number);
             return h * 3600 + m * 60 + s;
         }
 
-
+        // Format seconds to HH:MM:SS string
         function formatTimeHMSSec(secs) {
             secs %= 86400;
             const h = Math.floor(secs / 3600);
@@ -129,12 +136,14 @@
             return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
+        // Format seconds to MM:SS string
         function formatTime(s) {
             const m = Math.floor(s / 60);
             s %= 60;
             return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
+        // Recalculate scheduled times based on start time
         function recalculateScheduledTimes() {
             scheduledTimes = [];
             let t = parseTimeString(startTimeStr);
@@ -146,25 +155,21 @@
                 }
             }
         }
-
         recalculateScheduledTimes();
 
+        // Audio beep setup
         function initBeep() {
             if (!beepAudioCtx) beepAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
-
         function resumeAudioContext() {
             if (beepAudioCtx?.state === 'suspended') beepAudioCtx.resume();
         }
-
         document.body.addEventListener('click', resumeAudioContext, {once: true});
         document.body.addEventListener('keydown', resumeAudioContext, {once: true});
-
         function beep(times = 1) {
             if (isMuted) return;
             initBeep();
             let count = 0;
-
             function play() {
                 if (count >= times) return;
                 const osc = beepAudioCtx.createOscillator();
@@ -180,18 +185,18 @@
                     setTimeout(play, 150);
                 }, 200);
             }
-
             play();
         }
 
+        // Update clock element with current time
         function updateClock() {
             const now = new Date();
             clockEl.textContent = now.toTimeString().slice(0, 8);
         }
-
         setInterval(updateClock, 1000);
         updateClock();
 
+        // Enable or disable sections/phases menus during timer run
         function setSessionPhaseMenusEnabled(enabled) {
             const toggleElements = (list, selectedIdx) => {
                 [...list.children].forEach((li, idx) => {
@@ -220,6 +225,7 @@
             toggleElements(subsectionsList, selectedPhaseIndex);
         }
 
+        // Render session sections (Preparation, Break, Session 1..N)
         function renderSections() {
             sectionsList.innerHTML = '';
             for (let i = 0; i < SESSION_PHASES.length; i++) {
@@ -243,7 +249,6 @@
                         renderSections();
                         renderPhases();
                         renderBottomContent();
-                        if (isRunning) startCountdownForSelected();
                     }
                 });
                 sectionsList.appendChild(li);
@@ -251,6 +256,7 @@
             setSessionPhaseMenusEnabled(!isRunning);
         }
 
+        // Render phases for selected session
         function renderPhases() {
             subsectionsList.innerHTML = '';
             const phases = SESSION_PHASES[selectedSessionIndex];
@@ -266,7 +272,6 @@
                         startTime = endTime = null;
                         renderPhases();
                         renderBottomContent();
-                        if (isRunning) startCountdownForSelected();
                     }
                 });
                 subsectionsList.appendChild(li);
@@ -274,14 +279,15 @@
             setSessionPhaseMenusEnabled(!isRunning);
         }
 
+        // Format a timestamp ms to HH:MM:SS
         function formatAbsoluteTime(ms) {
             return new Date(ms).toTimeString().slice(0, 8);
         }
 
+        // Render the bottom content depending on mode
         function renderBottomContent() {
             const phase = SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex];
             updateTimerDisplay();
-
             let sessionLabel = '';
             if (ENABLE_PREPARATION && selectedSessionIndex === PREPARATION_SESSION_INDEX) {
                 sessionLabel = 'Preparation';
@@ -296,7 +302,6 @@
                 }
                 sessionLabel = baseSessionNum >= 0 ? `Session ${baseSessionNum + 1}` : '';
             }
-
             const heading = 'SAHK Final Examination Preparation Course - OSCE Examination';
             const sessionTime = SESSION_TIMES[selectedSessionIndex] || '';
             const schedSec = scheduledTimes[selectedSessionIndex]?.[selectedPhaseIndex];
@@ -307,21 +312,33 @@
                 ? `${sessionLabel} (${phase.title}), ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Current Session Time: ${displayStartTime} - ${displayEndTime}</span>`
                 : `${sessionLabel} (${phase.title}), ${sessionTime} (${phase.info})<br><span style="color:#1976d2;">Scheduled Start: ${displayStartTime}</span>`;
             infoDisplay.innerHTML = `<div style="font-weight:700;font-size:1em;margin-bottom:6px;text-align:center;">${heading}</div><div style="font-weight:600;font-size:1em;margin-bottom:10px;text-align:center;">${sessionLine}</div>`;
-            isCandidateMode ? renderCandidateMode() : renderStationMode();
+
+            // Display the selected mode content
+            if (modeIndex === 0) {
+                renderStationMode();
+            } else if (modeIndex === 1) {
+                renderCandidateMode();
+            } else {
+                renderMapMode();
+            }
         }
 
+        // Render station mode bottom content
         function renderStationMode() {
             candidateModeContainer.style.display = 'none';
+            mapModeContainer.style.display = 'none';
             stationModeContainer.style.display = 'flex';
+
             const sessionKey = (() => {
-                if (ENABLE_PREPARATION && selectedSessionIndex === 0) return "Preparation";
+                if (ENABLE_PREPARATION && selectedSessionIndex === PREPARATION_SESSION_INDEX) return "Preparation";
                 if (ENABLE_BREAK && selectedSessionIndex === BREAK_SESSION_INDEX) return "Break";
                 let baseIdx = selectedSessionIndex;
-                if (ENABLE_PREPARATION && selectedSessionIndex > 0) baseIdx--;
+                if (ENABLE_PREPARATION && selectedSessionIndex > PREPARATION_SESSION_INDEX) baseIdx--;
                 if (ENABLE_BREAK && selectedSessionIndex > BREAK_SESSION_INDEX) baseIdx--;
                 return `Session ${baseIdx + 1}`;
             })();
             const details = osceData[sessionKey];
+
             if (!details) {
                 stationModeContainer.innerHTML = '<p style="text-align:center; color:#666;">No data available.</p>';
                 return;
@@ -340,18 +357,22 @@
             highlightBoxes(lastSearchValue);
         }
 
+        // Render candidate mode bottom content
         function renderCandidateMode() {
             stationModeContainer.style.display = 'none';
+            mapModeContainer.style.display = 'none';
             candidateModeContainer.style.display = 'flex';
+
             const sessionKey = (() => {
-                if (ENABLE_PREPARATION && selectedSessionIndex === 0) return "Preparation";
+                if (ENABLE_PREPARATION && selectedSessionIndex === PREPARATION_SESSION_INDEX) return "Preparation";
                 if (ENABLE_BREAK && selectedSessionIndex === BREAK_SESSION_INDEX) return "Break";
                 let baseIdx = selectedSessionIndex;
-                if (ENABLE_PREPARATION && selectedSessionIndex > 0) baseIdx--;
+                if (ENABLE_PREPARATION && selectedSessionIndex > PREPARATION_SESSION_INDEX) baseIdx--;
                 if (ENABLE_BREAK && selectedSessionIndex > BREAK_SESSION_INDEX) baseIdx--;
                 return `Session ${baseIdx + 1}`;
             })();
             const details = osceData[sessionKey];
+
             if (!details) {
                 candidateModeContainer.innerHTML = '<p style="text-align:center; color:#666;">No data available.</p>';
                 return;
@@ -378,13 +399,120 @@
             highlightBoxes(lastSearchValue);
         }
 
+        const stationPositions = [
+            {x: 250, y: 250}, {x: 250, y: 75}, {x: 325, y: 150}, {x: 420, y: 75},
+            {x: 420, y: 225}, {x: 480, y: 150}, {x: 550, y: 75}, {x: 550, y: 250},
+            {x: 600, y: 150}, {x: 675, y: 110}, {x: 750, y: 75}, {x: 800, y: 200},
+            {x: 850, y: 75}, {x: 925, y: 125}, {x: 225, y: 325},
+        ];
+
+        function renderMapMode() {
+            stationModeContainer.style.display = 'none';
+            candidateModeContainer.style.display = 'none';
+            mapModeContainer.style.display = 'block';
+
+            const sessionKey = (() => {
+                if (ENABLE_PREPARATION && selectedSessionIndex === PREPARATION_SESSION_INDEX) return "Preparation";
+                if (ENABLE_BREAK && selectedSessionIndex === BREAK_SESSION_INDEX) return "Break";
+                let baseIdx = selectedSessionIndex;
+                if (ENABLE_PREPARATION && selectedSessionIndex > PREPARATION_SESSION_INDEX) baseIdx--;
+                if (ENABLE_BREAK && selectedSessionIndex > BREAK_SESSION_INDEX) baseIdx--;
+                return `Session ${baseIdx + 1}`;
+            })();
+            const details = osceData[sessionKey];
+            const svg = document.getElementById('mapSvgOverlay');
+
+            // Clear previous SVG content
+            while(svg.firstChild) {
+                svg.removeChild(svg.firstChild);
+            }
+
+            if (!details) {
+                svg.innerHTML = `<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#666">No data available.</text>`;
+                return;
+            }
+
+            // Prepare search value for highlighting logic
+            const search = (lastSearchValue || '').trim().toLowerCase();
+            let stationNumSearch = null;
+            const match = search.match(/^station\s*(\d{1,2})$/i);
+            if (match) {
+                const n = parseInt(match[1], 10);
+                if (n >= 1 && n <= NUM_STATIONS) {
+                    stationNumSearch = n;
+                }
+            }
+            // Find matching station index by name substring
+            let stationNameIndex = null;
+            if (!stationNumSearch) {
+                stationNameIndex = STATION_NAMES.findIndex(t => t.toLowerCase().includes(search));
+            }
+
+            const createHighlightGroup = (x, y, stationIndex, highlighted) => {
+                // Create a group of SVG elements representing one station on map
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                g.setAttribute("tabindex", "0");
+                g.setAttribute("aria-label", `Station ${stationIndex + 1}: ${STATION_NAMES[stationIndex]}`);
+                g.style.cursor = "pointer";
+
+                // Background shape around station number and name
+                const highlightColor = highlighted ? "#1976d2" : "#cccccc";
+                const textColor = highlighted ? "#ffffff" : "#333333";
+
+                // Station number circle
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", x - 25);
+                circle.setAttribute("cy", y);
+                circle.setAttribute("r", 15);
+                circle.setAttribute("fill", highlighted ? "#ffffff" : "#bbbbbb");
+                circle.setAttribute("stroke", highlighted ? "#1976d2" : "#999999");
+                circle.setAttribute("stroke-width", "2");
+                g.appendChild(circle);
+
+                // Station number text
+                const numberText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                numberText.setAttribute("x", x - 25);
+                numberText.setAttribute("y", y + 5);
+                numberText.setAttribute("text-anchor", "middle");
+                numberText.setAttribute("font-size", "16");
+                numberText.setAttribute("fill", highlighted ? "#1976d2" : "#555");
+                numberText.style.userSelect = "none";
+                numberText.textContent = stationIndex + 1;
+                g.appendChild(numberText);
+
+                svg.appendChild(g);
+            };
+
+            // For each station, determine highlight status and render
+            for (let i = 0; i < NUM_STATIONS; i++) {
+                // Determine if station should be highlighted base on search match
+                let highlighted = false;
+                if (search) {
+                    // Match candidate or observer in this station
+                    const candidate = details.Candidate[i] || '';
+                    const observer = details.Observer[i] || '';
+
+                    if (candidate.toLowerCase() === search || observer.toLowerCase() === search) {
+                        highlighted = true;
+                    }
+                    if (stationNumSearch === i + 1) {
+                        highlighted = true;
+                    }
+                    if (stationNameIndex === i) {
+                        highlighted = true;
+                    }
+                }
+                const pos = stationPositions[i] || {x: 100 + i * 50, y: 100}; // Fallback position
+                createHighlightGroup(pos.x, pos.y, i, highlighted);
+            }
+        }
+
         function highlightBoxes(searchValue) {
             document.querySelectorAll('.osce-box.highlight, .candidate-cell.highlight').forEach(el => el.classList.remove('highlight'));
             if (!searchValue) return;
             const search = searchValue.trim().toLowerCase();
             let stationNum = null;
             const match = search.match(/^station\s*(\d{1,2})$/i);
-
             if (match) {
                 stationNum = parseInt(match[1], 10);
                 if (stationNum < 1 || stationNum > NUM_STATIONS) stationNum = null;
@@ -393,10 +521,9 @@
             if (!stationNum) {
                 stationNameIndex = STATION_NAMES.findIndex(t => t.toLowerCase().includes(search));
             }
-            if (isCandidateMode) {
+            if (modeIndex === 1) { // Candidate mode
                 candidateModeContainer.querySelectorAll('.candidate-cell').forEach(cell => {
                     const num = cell.querySelector('.candidate-number')?.textContent.trim();
-                    if (num === searchValue) cell.classList.add('highlight');
                     if (stationNum) {
                         const label = cell.querySelector('.candidate-station')?.textContent.match(/Station\s*(\d+)/i);
                         if (label && +label[1] === stationNum) cell.classList.add('highlight');
@@ -406,7 +533,7 @@
                         if (label && label.includes(STATION_NAMES[stationNameIndex].toLowerCase())) cell.classList.add('highlight');
                     }
                 });
-            } else {
+            } else if (modeIndex === 0) { // Station mode
                 stationModeContainer.querySelectorAll('.osce-box').forEach((box, idx) => {
                     const cand = box.querySelector('.candidate-row .candidate-name')?.textContent.trim();
                     const obs = box.querySelector('.observer-row .candidate-name')?.textContent.trim();
@@ -417,9 +544,13 @@
             }
         }
 
+        // Search functionality
         function doSearch() {
             lastSearchValue = searchInput.value.trim();
             highlightBoxes(lastSearchValue);
+            if (modeIndex === 2) { // Map mode
+                renderMapMode();
+            }
         }
         searchInput.addEventListener('keydown', e => {
             if (e.key === "Enter") doSearch();
@@ -429,17 +560,21 @@
             if (!searchInput.value.trim()) {
                 lastSearchValue = '';
                 highlightBoxes('');
+                if (modeIndex === 2) renderMapMode();
             }
         });
 
+        // Timer Display update
         function updateTimerDisplay() {
             timerDisplay.textContent = formatTime(countdownSecondsLeft);
         }
 
+        // Reset timer to currently selected phase duration
         function resetTimerToCurrentPhase() {
             countdownSecondsLeft = SESSION_PHASES[selectedSessionIndex][selectedPhaseIndex].duration;
         }
 
+        // Move to next phase in session
         function moveToNextPhase() {
             let s = selectedSessionIndex;
             let p = selectedPhaseIndex + 1;
@@ -470,6 +605,7 @@
             if (isRunning) startCountdownForSelected();
         }
 
+        // Start interval countdown for current phase
         function startCountdownForSelected() {
             clearInterval(countdownInterval);
             updateTimerDisplay();
@@ -486,6 +622,7 @@
             }, 200);
         }
 
+        // Start timers, enable interface accordingly
         async function startTimers() {
             if (isRunning) return;
             await fetchStandardTimeOffset();
@@ -502,6 +639,7 @@
             startCountdownForSelected();
         }
 
+        // Pause timers
         function pauseTimers() {
             if (!isRunning) return;
             isRunning = false;
@@ -517,6 +655,7 @@
             updateTimerDisplay();
         }
 
+        // Stop and reset timers
         function stopTimers() {
             isRunning = false;
             startBtn.disabled = false;
@@ -532,6 +671,7 @@
             setSessionPhaseMenusEnabled(true);
         }
 
+        // Schedule start button handler
         scheduleStartBtn.onclick = () => {
             const now = new Date();
             const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
@@ -570,22 +710,35 @@
             renderBottomContent();
             startTimers();
         };
-
         startBtn.onclick = startTimers;
         pauseBtn.onclick = pauseTimers;
         stopBtn.onclick = stopTimers;
+
+        // Mute button toggle
         muteBtn.onclick = () => {
             isMuted = !isMuted;
             muteBtn.textContent = isMuted ? 'Mute' : 'Sound On';
             muteBtn.setAttribute('aria-pressed', (!isMuted).toString());
         };
+
+        // Toggle mode button cycles between Station -> Candidate -> Map Modes
         toggleModeBtn.onclick = () => {
-            isCandidateMode = !isCandidateMode;
-            toggleModeBtn.textContent = isCandidateMode ? 'Switch to Station Mode' : 'Switch to Candidate Mode';
-            toggleModeBtn.setAttribute('aria-pressed', isCandidateMode.toString());
+            modeIndex = (modeIndex + 1) % 3;
+            if (modeIndex === 0) {
+                toggleModeBtn.textContent = "Switch to Candidate Mode";
+                toggleModeBtn.setAttribute('aria-pressed', 'false');
+            } else if (modeIndex === 1) {
+                toggleModeBtn.textContent = "Switch to Map Mode";
+                toggleModeBtn.setAttribute('aria-pressed', 'false');
+            } else {
+                toggleModeBtn.textContent = "Switch to Station Mode";
+                toggleModeBtn.setAttribute('aria-pressed', 'false');
+            }
             renderBottomContent();
+            highlightBoxes(lastSearchValue); // refresh highlight for current mode
         };
 
+        // Apply start time input change
         applyStartTimeBtn.onclick = () => {
             startTimeStr = startTimeInput.value || START_TIME_AM;
             recalculateScheduledTimes();
@@ -595,6 +748,7 @@
             renderBottomContent();
         };
 
+        // Periodic scheduled time event to auto start at right session/phase
         setInterval(() => {
             if (isRunning) return;
             const now = new Date();
@@ -618,13 +772,7 @@
             }
         }, 200);
 
-        renderSections();
-        renderPhases();
-        resetTimerToCurrentPhase();
-        renderBottomContent();
-        startTime = endTime = null;
-
-        // Standard time sync
+        // Fetch standard time from worldtimeapi for sync (returns timestamp in ms)
         async function fetchStandardTime() {
             try {
                 const response = await fetch('http://worldtimeapi.org/api/ip');
@@ -638,7 +786,7 @@
                 return Date.now();
             }
         }
-
+        // Fetch standard time offset for better timer accuracy
         async function fetchStandardTimeOffset() {
             try {
                 const response = await fetch('http://worldtimeapi.org/api/ip');
@@ -650,10 +798,16 @@
                 timeOffset = 0;
             }
         }
-
         function getCorrectedNow() {
             return Date.now() + timeOffset;
         }
+
+        // Initial render calls
+        renderSections();
+        renderPhases();
+        resetTimerToCurrentPhase();
+        renderBottomContent();
+        startTime = endTime = null;
 
         fetchStandardTime();
         setInterval(fetchStandardTime, 60000);

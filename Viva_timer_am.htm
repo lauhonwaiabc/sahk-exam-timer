@@ -343,17 +343,12 @@
         function renderCandidateMode() {
             tableModeContainer.style.display = 'none';
             candidateModeContainer.style.display = 'flex';
-            const sessionKey = (() => {
-                if (ENABLE_PREPARATION && selectedSessionIndex === 0) return "Preparation";
-                if (ENABLE_BREAK && selectedSessionIndex === BREAK_SESSION_INDEX) return "Break";
-                let baseIdx = selectedSessionIndex;
-                if (ENABLE_PREPARATION && selectedSessionIndex > 0) baseIdx--;
-                if (ENABLE_BREAK && selectedSessionIndex > BREAK_SESSION_INDEX) baseIdx--;
-                return `Session ${baseIdx + 1}`;
-            })();
-            const details = osceData[sessionKey];
+            const sessionKey = (ENABLE_BREAK && selectedSessionIndex === BREAK_SESSION_INDEX) ? 'Break' :
+                (selectedSessionIndex > BREAK_SESSION_INDEX && ENABLE_BREAK ? `Session ${selectedSessionIndex - 1}` :
+                    (selectedSessionIndex >= (ENABLE_PREPARATION ? 1 : 0) ? `Session ${selectedSessionIndex - (ENABLE_PREPARATION ? 1 : 0) + 1}` : ""));
+            const details = vivaData[sessionKey];
             if (!details) {
-                candidateModeContainer.innerHTML = '<p style="text-align:center; color:#666;">No data available.</p>';
+                candidateModeContainer.innerHTML = '<p style="text-align:center;color:#666;">No candidate/observer data available.</p>';
                 return;
             }
             const entries = [];
