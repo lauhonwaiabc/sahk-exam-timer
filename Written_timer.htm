@@ -452,9 +452,8 @@
                 const endParts = parts[1].split(':');
                 const startSec = parseInt(startParts[0]) * 3600 + parseInt(startParts[1]) * 60;
                 const endSec = parseInt(endParts[0]) * 3600 + parseInt(endParts[1]) * 60;
-                const isTimeMatch = currentSec >= startSec && currentSec < endSec;
                 const isTimerMatch = isRunning && idx === getTimetableIndex(selectedSessionIndex, selectedPhaseIndex);
-                if (isTimeMatch || isTimerMatch) {
+                if (isTimerMatch) {
                     tr.classList.add('active');
                 }
             }
