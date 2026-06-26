@@ -1,6 +1,6 @@
 const START_TIME_AM = "08:30:00";
 const START_TIME_PM = "13:25:00";
-const NUM_TABLES = 12;
+const NUM_TABLES = 10;
 const BASE_NUM_SESSIONS = 10;
 
 const ENABLE_PREPARATION = true;

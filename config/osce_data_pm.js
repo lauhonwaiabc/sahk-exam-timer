@@ -1,62 +1,66 @@
 const osceData = {
-    "Session 1": {
-        "Candidate": ["1", "7", "10", "11", "12", "16", "18", null, "21", "24", "25", "26", "29", "32", "36"],
-        "Observer": ["13", null, null, "28", null, null, "33", null, null, "35", null, null, null, null, null]
-    },
-    "Session 2": {
-        "Candidate": ["36", "1", "7", "10", "11", "12", "16", "18", null, "21", "24", "25", "26", "29", "32"],
-        "Observer": [null, "13", null, null, "28", null, null, "33", null, null, "35", null, null, null, null]
-    },
-    "Session 3": {
-        "Candidate": ["32", "36", "1", "7", "10", "11", "12", "16", "18", null, "21", "24", "25", "26", "29"],
-        "Observer": [null, "13", null, null, "28", null, null, "33", null, null, "35", null, null, null, null]
-    },
-    "Session 4": {
-        "Candidate": ["29", "32", "36", "1", "7", "10", "11", "12", "16", "18", null, "21", "24", "25", "26"],
-        "Observer": ["28", null, null, "33", null, null, "35", null, null, null, null, null, "13", null, null]
-    },
-    "Session 5": {
-        "Candidate": ["26", "29", "32", "36", "1", "7", "10", "11", "12", "16", "18", null, "21", "24", "25"],
-        "Observer": [null, "28", null, null, "33", null, null, "35", null, null, null, null, null, "13", null]
-    },
-    "Session 6": {
-        "Candidate": ["25", "26", "29", "32", "36", "1", "7", "10", "11", "12", "16", "18", null, "21", "24"],
-        "Observer": [null, "28", null, null, "33", null, null, "35", null, null, null, null, null, "13", null]
-    },
-    "Session 7": {
-        "Candidate": ["24", "25", "26", "29", "32", "36", "1", "7", "10", "11", "12", "16", "18", null, "21"],
-        "Observer": ["33", null, null, "35", null, null, null, null, null, "13", null, null, "28", null, null]
-    },
-    "Session 8": {
-        "Candidate": ["21", "24", "25", "26", "29", "32", "36", "1", "7", "10", "11", "12", "16", "18", null],
-        "Observer": [null, "33", null, null, "35", null, null, null, null, null, "13", null, "28", null, null]
-    },
-    "Session 9": {
-        "Candidate": [null, "21", "24", "25", "26", "29", "32", "36", "1", "7", "10", "11", "12", "16", "18"],
-        "Observer": [null, "33", null, null, "35", null, null, null, null, null, "13", null, null, "28", null]
-    },
-    "Session 10": {
-        "Candidate": ["18", null, "21", "24", "25", "26", "29", "32", "36", "1", "7", "10", "11", "12", "16"],
-        "Observer": ["35", null, null, null, null, null, "13", null, null, "28", null, null, "33", null, null]
-    },
-    "Session 11": {
-        "Candidate": ["16", "18", null, "21", "24", "25", "26", "29", "32", "36", "1", "7", "10", "11", "12"],
-        "Observer": [null, "35", null, null, null, null, null, "13", null, null, "28", null, "33", null, null]
-    },
-    "Session 12": {
-        "Candidate": ["12", "16", "18", null, "21", "24", "25", "26", "29", "32", "36", "1", "7", "10", "11"],
-        "Observer": [null, "35", null, null, null, null, null, "13", null, null, "28", null, null, "33", null]
-    },
-    "Session 13": {
-        "Candidate": ["11", "12", "16", "18", null, "21", "24", "25", "26", "29", "32", "36", "1", "7", "10"],
-        "Observer": [null, null, null, "13", null, null, "28", null, null, "33", null, null, "35", null, null]
-    },
-    "Session 14": {
-        "Candidate": ["10", "11", "12", "16", "18", null, "21", "24", "25", "26", "29", "32", "36", "1", "7"],
-        "Observer": [null, null, null, null, "13", null, null, "28", null, null, "33", null, "35", null, null]
-    },
-    "Session 15": {
-        "Candidate": ["7", "10", "11", "12", "16", "18", null, "21", "24", "25", "26", "29", "32", "36", "1"],
-        "Observer": [null, null, null, null, "13", null, null, "28", null, null, "33", null, null, "35", null]
-    }
+  "Session 1": {
+    "Candidate": ["06","28","26","23","16","07","29",null,"11","04","01","25","20","17","14"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 2": {
+    "Candidate": ["14","06","28","26","23","16","07","29","32","11","04","01","25","20","17"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 3": {
+    "Candidate": ["17","14","06","28","26","23","16","07","29","32","11","04","01","25","20"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 4": {
+    "Candidate": ["20","17","14","06","28","26","23","16","07","29","32","11","04","01","25"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 5": {
+    "Candidate": ["25","20","17","14","06","28","26","23","16","07","29","32","11","04","01"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 6": {
+    "Candidate": ["01","25","20","17","14","06","28","26","23","16","07","29","32","11","04"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 7": {
+    "Candidate": ["04","01","25","20","17","14","06","28","26","23","16","07","29","32","11"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 8": {
+    "Candidate": ["11","04","01","25","20","17","14","06","28","26","23","16","07","29","32"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 9": {
+    "Candidate": ["32","11","04","01","25","20","17","14","06","28","26","23","16","07","29"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 10": {
+    "Candidate": ["29","32","11","04","01","25","20","17","14","06","28","26","23","16","07"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 11": {
+    "Candidate": ["07","29","32","11","04","01","25","20","17","14","06","28","26","23","16"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 12": {
+    "Candidate": ["16","07","29","32","11","04","01","25","20","17","14","06","28","26","23"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 13": {
+    "Candidate": ["23","16","07","29","32","11","04","01","25","20","17","14","06","28","26"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 14": {
+    "Candidate": ["26","23","16","07","29","32","11","04","01","25","20","17","14","06","28"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 15": {
+    "Candidate": ["28","26","23","16","07","29","32","11","04","01","25","20","17","14","06"],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "Session 16": {
+    "Candidate": [null,null,null,null,null,null,null,"32",null,null,null,null,null,null,null],
+    "Observer": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+  }
 };

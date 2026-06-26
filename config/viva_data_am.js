@@ -1,42 +1,42 @@
 const vivaData = {
     "Session 1": {
-        "Candidate": ["4", "25", "17", "9", "8", "5", "22", "35", "27", "3", "14", "6"],
-        "Observer": ["34", "37", null, null, null, "38", "30", null, "15", null, "2", null]
+        "Candidate": ["10","21","18","15","05","22","03","19","07","12"],
+        "Observer": [null,null,null,"24","31",null,null,"30","13","27"]
     },
     "Session 2": {
-        "Candidate": ["15", "22", "35", "4", "37", "8", "6", "30", "9", "17", "38", "27"],
-        "Observer": [null, null, null, null, null, null, "2", "25", "5", "34", "3", "14"]
+        "Candidate": ["05","07","15","27","19","10","13","21","03","22"],
+        "Observer": [null,"24",null,"30","12","31","18",null,null,null]
     },
     "Session 3": {
-        "Candidate": ["3", "38", "8", "2", "22", "34", "27", "37", "25", "4", "6", "9"],
-        "Observer": ["14", null, "5", "15", null, "30", null, null, "17", null, null, "35"]
+        "Candidate": ["30","05","03","12","18","13","27","10","15","21"],
+        "Observer": [null,"19","31",null,"07",null,"22","24",null,null]
     },
     "Session 4": {
-        "Candidate": ["8", "27", "22", "17", "15", "35", "14", "2", "34", "9", "37", "25"],
-        "Observer": [null, "30", null, null, null, null, null, "6", "4", "38", "5", "3"]
+        "Candidate": ["13","22","30","05","03","12","19","31","27","24"],
+        "Observer": [null,null,"21","18",null,"15",null,"07",null,"10"]
     },
     "Session 5": {
-        "Candidate": ["38", "3", "6", "34", "2", "17", "9", "15", "8", "5", "30", "4"],
-        "Observer": ["37", "35", null, null, "25", null, null, "14", null, null, "27", "22"]
+        "Candidate": ["31","18","19","21","15","07","12","27","22","30"],
+        "Observer": ["24",null,"13",null,null,null,"10",null,"05","03"]
     },
     "Session 6": {
-        "Candidate": ["6", "4", "25", "5", "14", "15", "3", "17", "30", "37", "8", "38"],
-        "Observer": [null, "9", null, "27", "35", "2", "34", null, null, null, "22", null]
+        "Candidate": ["07","15","12","31","30","27","05","03","24","18"],
+        "Observer": ["21",null,null,"10",null,null,null,"22","19","13"]
     },
     "Session 7": {
-        "Candidate": ["22", "5", "15", "3", "30", "9", "35", "34", "14", "2", "25", "37"],
-        "Observer": [null, "8", "27", "38", "4", null, "17", null, "6", null, null, null]
+        "Candidate": ["19","30","10","07","13","18","24","15","31","05"],
+        "Observer": ["03","12","27",null,"22","21",null,null,null,null]
     },
     "Session 8": {
-        "Candidate": ["5", "2", "14", "35", "34", "27", "15", "22", "3", "6", "4", "8"],
-        "Observer": [null, null, "38", null, "17", null, "37", "9", null, "25", null, "30"]
+        "Candidate": ["15","31","22","03","10","24","21","18","12","07"],
+        "Observer": [null,"27",null,"13",null,"19","30","05",null,null]
     },
     "Session 9": {
-        "Candidate": ["2", "34", "9", "14", "5", "37", "4", "3", "38", "30", "35", "17"],
-        "Observer": [null, null, null, "8", "6", "22", "25", null, null, "27", null, "15"]
+        "Candidate": ["22","10","05","19","24","30","07","13","18","31"],
+        "Observer": ["12","03",null,null,"27",null,null,null,"21","15"]
     },
     "Session 10": {
-        "Candidate": ["25", "15", "30", "37", "27", "6", "38", "5", "22", "14", "17", "34"],
-        "Observer": [null, null, null, null, "3", "4", null, null, "35", "8", "9", "2"]
+        "Candidate": ["27","13","24","22","21","03","31","12","10","19"],
+        "Observer": ["18",null,"07",null,null,"05","15",null,"30",null]
     }
 };
