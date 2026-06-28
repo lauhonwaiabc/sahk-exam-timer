@@ -562,3 +562,51 @@ input.locked {
   text-align: center;
   width: 100%;
 }
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .scoring-table-wrapper {
+    max-height: 55vh;
+  }
+
+  .scoring-matrix {
+    min-width: 0;
+    font-size: 0.75em;
+  }
+
+  .scoring-matrix th,
+  .scoring-matrix td {
+    padding: 5px 3px;
+  }
+
+  .scoring-matrix .scoring-corner {
+    min-width: 50px;
+    font-size: 0.85em;
+  }
+
+  .scoring-col-header {
+    min-width: 75px;
+    white-space: normal;
+    font-size: 0.85em;
+  }
+
+  .scoring-row-label {
+    min-width: 50px;
+    font-size: 0.85em;
+  }
+
+  .scoring-cell-inner .score-value {
+    font-size: 1.4em;
+    min-width: 28px;
+  }
+
+  .scoring-cell-inner .score-scroll-btn {
+    font-size: 0.75em;
+    padding: 1px 5px;
+  }
+
+  .scoring-cell-inner .score-submit-btn {
+    font-size: 0.7em;
+    padding: 2px 6px;
+  }
+}
