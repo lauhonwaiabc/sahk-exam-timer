@@ -1,3 +1,4 @@
+'use strict';
 const START_TIME = "08:45:00";
 const EXAM_TITLE = "SAHK Final Examination Preparation Course - Written Examination";
 const SESSION_TITLES = ["Pre-Examination", "Paper I", "Break", "Paper II", "Lunch", "Paper III"];
@@ -33,8 +34,6 @@ const SESSION_PHASES = [
         {title: "Paper Collection", duration: 300, info: "5 min"}
     ]
 ];
-
-const NUM_SESSIONS = SESSION_PHASES.length;
 
 const PAPER_I_PAGES = 4;
 const PAPER_CA_PAGES = 5;

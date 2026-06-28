@@ -1,3 +1,4 @@
+'use strict';
 const vivaData = {
     "Session 1": {
         "Candidate": ["10","21","18","15","05","22","03","19","07","12"],

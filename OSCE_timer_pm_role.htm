@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OSCE Exam Timer - PM</title>
+<link rel="stylesheet" href="timer_style.css"/><link rel="stylesheet" href="timer_style_scoring.css"/>
+<script src="config/osce_config.js"></script><script src="config/osce_stations.js"></script><script src="config/osce_data_pm.js"></script><script src="config/timer-core.js"></script><script src="config/common_timer.js"></script><script src="config/osce_timer.js"></script><script src="config/scoring.js"></script>
+</head>
+<body>
+<div id="clock">00:00:00</div><div id="roleHeader"></div><div id="syncWarning" style="display:none;background:#fff3e0;color:#e65100;text-align:center;padding:6px;font-weight:700;font-size:.9em"></div>
+<div id="controls"><button id="scheduleStartBtn">Schedule Start</button><button id="startBtn">Start</button><button id="pauseBtn" disabled>Pause</button><button id="stopBtn" disabled>Stop &amp; Reset</button><button id="muteBtn" aria-pressed="false">Mute</button><button id="toggleModeBtn" aria-pressed="false">Scoring Mode</button><button id="transitModeBtn" class="transit-btn" aria-pressed="false">Transit: Prev</button></div>
+<div id="startTimeContainer"><label for="startTimeInput" style="font-weight:700;margin-right:8px">Start Time (hh:mm:ss):</label><input id="startTimeInput" type="time" step="1" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:140px"/><button id="applyStartTimeBtn" style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer">Apply</button><div style="margin-top:6px"><button class="offset-btn" data-offset="-3600">-60m</button><button class="offset-btn" data-offset="-900">-15m</button><button class="offset-btn" data-offset="-300">-5m</button><button class="offset-btn" data-offset="-60">-1m</button><button class="offset-btn" data-offset="60">+1m</button><button class="offset-btn" data-offset="300">+5m</button><button class="offset-btn" data-offset="900">+15m</button><button class="offset-btn" data-offset="3600">+60m</button></div></div>
+<div id="searchContainer"><input id="searchInput" type="text" placeholder="Enter Candidate ID, Station Name or Station Number" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:320px;margin-right:8px"/><button id="isolateBtn" style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer">Isolate</button></div>
+<div id="topMenu"><ul id="sectionsList"></ul><br/><ul id="subsectionsList"></ul></div>
+<div id="bottomContent"><div class="timer" id="timerDisplay">00:00</div><div class="info" id="infoDisplay">Select a session and phase to see information here.</div><div id="stationModeContainer" aria-live="polite"></div><div id="candidateModeContainer" aria-live="polite" style="display:none"></div><div id="scoringModeContainer" style="display:none"></div><div id="adminPanelContainer" style="display:none"></div></div>
+<script>
+var roleConfig=null,currentRole='candidate',activeStationNo=1;
+var SCORE_OPTIONS=['-',2,3,4,5,6,7,8];
+var SCORE_COLORS={'-':'#2e7d32',2:'#d32f2f',3:'#d32f2f',4:'#d32f2f',5:'#1565c0',6:'#1565c0',7:'#1565c0',8:'#1565c0'};
+var isInScoringMode=false,scoringIsolateStation=null,scoringRefreshId=null;
+window.showInlineScoring=false;
+try{var raw=sessionStorage.getItem('sahk_role_config');if(raw){roleConfig=JSON.parse(raw);currentRole=roleConfig.role||'candidate';activeStationNo=roleConfig.stationNo!=null?roleConfig.stationNo:1;}}catch(e){activeStationNo=1;}
+(function initRole(){var h=document.getElementById('roleHeader');if(currentRole==='examiner'){h.textContent='Examiner Mode - Station '+activeStationNo+': '+(roleConfig.stationName||'');h.className='examiner-role';}else if(currentRole==='admin'){h.textContent='Admin Mode';h.className='admin-role';}})();
+OsceTimer.start({startTimeStr:START_TIME_PM,examTitle:'SAHK Final Examination Preparation Course - OSCE Examination'});
+setTimeout(function(){applyRoleConfig();},150);
+function applyRoleConfig(){if(currentRole==='candidate'){applyCandidateConfig();return;}window.showInlineScoring=true;initScoringModule();if(currentRole==='examiner')applyExaminerConfig();else if(currentRole==='admin')applyAdminConfig();setupExtendedToggle();setupInlineScoringDelegate();}
+function initScoringModule(){SahkScoring.init({examId:roleConfig.exam,role:currentRole,stationNo:activeStationNo,stationName:roleConfig.stationName||'',identifier:currentRole=='admin'?'admin':(roleConfig.stationName||'')+' '+activeStationNo,onScoresUpdated:function(){if(isInScoringMode)renderScoringMode();}});}
+function applyExaminerConfig(){var sp=roleConfig.searchPrefix||((roleConfig.stationName||'')+' '+activeStationNo);var si=document.getElementById('searchInput');if(si){si.value=sp;si.classList.add('locked');si.readOnly=true;si.placeholder='';}setTimeout(function(){var ib=document.getElementById('isolateBtn');if(ib){if(ib.textContent=='Isolate')ib.click();ib.style.display='none';}if(si)si.dispatchEvent(new Event('input'));},350);}
+function applyAdminConfig(){var apc=document.getElementById('adminPanelContainer');if(apc){apc.innerHTML=SahkScoring.createAdminPanel();SahkScoring.initAdminEvents();}setTimeout(function(){var tb=document.getElementById('transitModeBtn');if(tb&&tb.textContent==='Transit: Prev'){tb.click();setTimeout(function(){if(tb.textContent==='Transit: Next')tb.click();},100);}},400);}
+function applyCandidateConfig(){
+  var cn=roleConfig.candidateNumber;
+  if(!cn)return;
+  var si=document.getElementById('searchInput');
+  if(si){si.value=cn;si.classList.add('locked');si.readOnly=true;si.placeholder='';}
+  var tb=document.getElementById('toggleModeBtn');if(tb)tb.style.display='none';
+  setTimeout(function(){
+    var ib=document.getElementById('isolateBtn');
+    if(ib&&ib.textContent=='Isolate')ib.click();
+    if(ib)ib.style.display='none';
+    if(si)si.dispatchEvent(new Event('input'));
+    var tbn=document.getElementById('transitModeBtn');if(tbn&&tbn.textContent==='Transit: Prev')tbn.click();
+  },350);
+}
+
+function setupExtendedToggle(){
+  var btn=document.getElementById('toggleModeBtn');if(!btn)return;
+  btn.onclick=function(){
+    var text=this.textContent||'';
+    if(text=='Station Mode'){
+      exitScoringMode();
+      this.textContent='Scoring Mode';
+      return;
+    }
+    if(text=='Scoring Mode'){
+      enterScoringMode();renderScoringMode();
+      return;
+    }
+    enterScoringMode();renderScoringMode();
+  };
+}
+function enterScoringMode(){
+  isInScoringMode=true;
+  scoringIsolateStation=currentRole=='examiner'?activeStationNo:(window.scoringIsolateStation!=null?Number(window.scoringIsolateStation):null);
+  var tr=document.getElementById('transitModeBtn');if(tr)tr.style.display='none';
+  var tb=document.getElementById('toggleModeBtn');if(tb)tb.textContent='Station Mode';
+  SahkScoring.fetchAllScores().then(function(){renderScoringMode();});
+  if(scoringRefreshId!==null)clearInterval(scoringRefreshId);
+  scoringRefreshId=setInterval(function(){if(isInScoringMode)SahkScoring.fetchAllScores().then(function(){renderScoringMode();});},10000);
+}
+function exitScoringMode(){
+  isInScoringMode=false;
+  var tr=document.getElementById('transitModeBtn');if(tr)tr.style.display='';
+  if(scoringRefreshId!==null){clearInterval(scoringRefreshId);scoringRefreshId=null;}
+  renderScoringMode();
+  if(typeof window.refreshTimerDisplay==='function')window.refreshTimerDisplay();
+}
+
+function buildAllCandidates(){
+  var seen={},arr=[];
+  Object.keys(osceData).forEach(function(sn){var d=osceData[sn];if(!d)return;
+    d.Candidate.forEach(function(cn){if(cn&&!seen[cn]){seen[cn]=true;arr.push(cn);}});
+  });
+  arr.sort(function(a,b){return a.localeCompare(b);});
+  return arr;
+}
+
+function renderScoringMode(){
+  var stationC=document.getElementById('stationModeContainer');
+  var candidateC=document.getElementById('candidateModeContainer');
+  var scoringC=document.getElementById('scoringModeContainer');
+  var adminC=document.getElementById('adminPanelContainer');
+  if(!isInScoringMode){
+    if(scoringC)scoringC.style.display='none';if(adminC)adminC.style.display='none';
+    if(stationC)stationC.style.display='';return;
+  }
+  if(stationC)stationC.style.display='none';if(candidateC)candidateC.style.display='none';
+  if(scoringC)scoringC.style.display='block';
+  if(adminC)adminC.style.display='block';
+
+  var candidates=buildAllCandidates();
+  var isoSt=scoringIsolateStation!=null?Number(scoringIsolateStation):null;
+  var si=window.curTimerSessionIdx!=null?window.curTimerSessionIdx:0;
+  var pi=window.curTimerPhaseIdx!=null?window.curTimerPhaseIdx:0;
+  var phase=SESSION_PHASES[si]&&SESSION_PHASES[si][pi];
+  var isTr=phase&&phase.title==='Transit';
+  var C=VivaOsceCommon;
+  var curKey=C.getDataSessionKey(si);
+  var prevIdx=isTr?C.getPrevExamSession(si,osceData):null;
+  var prevKey=prevIdx!==null?C.getDataSessionKey(prevIdx):null;
+
+  var html='<div class="scoring-panel scoring-table-panel"><h3 class="scoring-header">Scoring Table - OSCE PM</h3>';
+  var cols=[];for(var s=1;s<=NUM_STATIONS;s++){if(isoSt===null||isoSt===s)cols.push({no:s,name:STATION_NAMES[s-1]});}
+  html+='<div class="scoring-table-wrapper"><table class="scoring-matrix"><thead><tr><th class="scoring-corner">Candidate</th>';
+  cols.forEach(function(cl){html+='<th class="scoring-col-header">Station '+cl.no+'<br><span class="scoring-col-sub">'+cl.name+'</span></th>';});
+  html+='</tr></thead><tbody>';
+
+  candidates.forEach(function(cn){
+    html+='<tr><td class="scoring-row-label">'+cn+'</td>';
+    cols.forEach(function(cl){
+      var isRest=STATION_NAMES[cl.no-1]==='Rest';
+      var isObsAny=false,isCandAny=false;
+      Object.keys(osceData).forEach(function(sn){var d=osceData[sn];if(!d)return;
+        if(d.Observer&&d.Observer[cl.no-1]===cn)isObsAny=true;
+        if(d.Candidate&&d.Candidate[cl.no-1]===cn)isCandAny=true;
+      });
+      if(isRest||isObsAny||!isCandAny){
+        var rc=isRest?'scoring-cell-rest':'scoring-cell-obs';
+        html+='<td class="scoring-matrix-cell '+rc+'"><div class="scoring-cell-inner"><span class="score-value" style="color:#aaa">-</span></div></td>';
+        return;
+      }
+      var sc=SahkScoring.getLatestScoreForStation(cn,cl.no),co=SCORE_COLORS[sc]||'#888';
+      var cellClass='scoring-matrix-cell';
+      var isCurSess=false,isPrevSess=false;
+      if(curKey){var d=osceData[curKey];if(d){if(d.Candidate&&d.Candidate[cl.no-1]===cn)isCurSess=true;}}
+      if(isTr&&prevKey){var pd=osceData[prevKey];if(pd){if(pd.Candidate&&pd.Candidate[cl.no-1]===cn)isPrevSess=true;}}
+      if(isTr&&isPrevSess)cellClass+=' scoring-prev-session';
+      else if(isTr&&isCurSess)cellClass+=' scoring-curr-transit';
+      else if(!isTr&&isCurSess)cellClass+=' scoring-curr-exam';
+      html+='<td class="'+cellClass+'"><div class="scoring-cell-inner"><div class="scoring-score-row"><button class="score-scroll-btn score-down" data-cn="'+cn+'" data-st="'+cl.no+'" data-dir="-1">&#9664;</button><span class="score-value" data-cn="'+cn+'" data-st="'+cl.no+'" data-dirty="0" style="color:'+co+'">'+sc+'</span><button class="score-scroll-btn score-up" data-cn="'+cn+'" data-st="'+cl.no+'" data-dir="1">&#9654;</button></div><button class="score-submit-btn" data-cn="'+cn+'" data-st="'+cl.no+'">Submit</button><span class="score-status"></span></div></td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div></div>';
+  scoringC.innerHTML=html;bindScoringEvents(scoringC);
+}
+
+function setupInlineScoringDelegate(){
+  var bc=document.getElementById('bottomContent');if(!bc)return;
+  bc.addEventListener('click',function(e){
+    var t=e.target;
+    if(t.classList.contains('box-score-btn')){
+      var dir=parseInt(t.dataset.dir),cn=t.dataset.cn,st=t.dataset.st;
+      var row=t.closest('.box-score-row');if(!row)return;
+      var cell=row.querySelector('.box-score-value');
+      if(!cell)return;
+      var cur=cell.textContent,idx=SCORE_OPTIONS.indexOf(cur=='-'?'-':Number(cur));
+      idx=(idx+dir+SCORE_OPTIONS.length)%SCORE_OPTIONS.length;
+      var ns=SCORE_OPTIONS[idx];cell.textContent=ns;cell.style.color=SCORE_COLORS[ns]||'#888';
+      cell.setAttribute('data-dirty','1');
+      var box=row.closest('.osce-box,.viva-box');if(!box)box=row.parentNode;
+      var stEl=box?box.querySelector('.box-score-status'):null;if(stEl)stEl.textContent='Pending Submit';
+    }else if(t.classList.contains('box-score-save')){
+      var cn=t.dataset.cn,st=parseInt(t.dataset.st);
+      var box=t.closest('.osce-box,.viva-box');if(!box)box=t.parentNode;if(!box)return;
+      var row=box.querySelector('.box-score-row');if(!row)return;
+      var cell=row.querySelector('.box-score-value');if(!cell)return;
+      var score=cell.textContent;
+      t.textContent='...';t.disabled=true;
+      SahkScoring.submitScoreForStation(cn,null,score,st).then(function(r){
+        t.textContent='Submit';t.disabled=false;
+        if(r.success){
+          cell.setAttribute('data-dirty','0');
+          var stEl=box.querySelector('.box-score-status');if(stEl){stEl.textContent='Confirmed';setTimeout(function(){stEl.textContent='';},5000);}
+        } else alert('Failed: '+(r.error||'Unknown'));
+      });
+    }
+  });
+}
+
+function bindScoringEvents(container){
+  if(!container)return;
+  container.querySelectorAll('.score-scroll-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var dir=parseInt(btn.dataset.dir),cn=btn.dataset.candidate||btn.dataset.cn,st=btn.dataset.st;
+      var inner=btn.closest('.scoring-cell-inner');if(!inner)return;
+      var cell=inner.querySelector('.score-value');if(!cell)return;
+      var cur=cell.textContent,idx=SCORE_OPTIONS.indexOf(cur=='-'?'-':Number(cur));
+      idx=(idx+dir+SCORE_OPTIONS.length)%SCORE_OPTIONS.length;
+      var ns=SCORE_OPTIONS[idx];cell.textContent=ns;cell.style.color=SCORE_COLORS[ns]||'#888';
+      cell.setAttribute('data-dirty','1');
+      var stEl=inner.querySelector('.score-status');if(stEl)stEl.textContent='Pending Submit';
+    });
+  });
+  container.querySelectorAll('.score-submit-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var cn=btn.dataset.candidate||btn.dataset.cn,st=parseInt(btn.dataset.st);
+      var inner=btn.closest('.scoring-cell-inner');if(!inner)return;
+      var cell=inner.querySelector('.score-value');if(!cell)return;
+      var score=cell.textContent;
+      btn.textContent='...';btn.disabled=true;
+      SahkScoring.submitScoreForStation(cn,null,score,st).then(function(r){
+        btn.textContent='Submit';btn.disabled=false;
+        if(r.success){
+          cell.setAttribute('data-dirty','0');
+          var stEl=inner.querySelector('.score-status');if(stEl){stEl.textContent='Confirmed';setTimeout(function(){stEl.textContent='';},5000);}
+        } else alert('Failed: '+(r.error||'Unknown'));
+      });
+    });
+  });
+}
+</script></body></html>

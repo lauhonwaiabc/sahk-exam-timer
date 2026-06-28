@@ -1,3 +1,4 @@
+'use strict';
 const SCRIPT_DATA = [
     {
         session: 1, phase: 0, offset: 60,

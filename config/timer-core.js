@@ -1,4 +1,5 @@
 window.TimerCore = (() => {
+  'use strict';
   function addSeconds(timeStr, seconds) {
     let [h, m, s] = timeStr.split(':').map(Number);
     let date = new Date(0, 0, 0, h, m, s);
@@ -228,7 +229,7 @@ window.TimerCore = (() => {
       const td = el('timerDisplay');
       if (td) {
         td.classList.remove('transit', 'debriefing');
-        if (phase.title === 'Transit' || phase.title === 'Preparation') td.classList.add('transit');
+        if (phase.title === 'Transit' || phase.title === 'Preparation' || phase.title === 'Conclusion') td.classList.add('transit');
         else if (phase.title === 'Debriefing') td.classList.add('debriefing');
       }
 
@@ -525,7 +526,6 @@ window.TimerCore = (() => {
       pauseTimers,
       stopTimers,
       scheduleStart,
-      startTimerAPI: { start: startTimers, pause: pauseTimers, stop: stopTimers, schedule: scheduleStart },
       get isRunning() { return isRunning; },
       get selectedSessionIndex() { return selectedSessionIndex; },
       get selectedPhaseIndex() { return selectedPhaseIndex; },
