@@ -35,7 +35,7 @@ window.VivaTimer = (() => {
       }
       return `<div class="viva-box" tabindex="0" aria-label="Table ${i + 1} details">
         ${labelHtml}
-        <div class="viva-title">Table ${i + 1}<br><span style="font-size:0.7em;color:#555;">${TABLE_NAMES[i]}</span></div>
+        <div class="viva-title">Table ${i + 1}<br><span style="font-size:0.84em;color:#555;">${TABLE_NAMES[i]}</span></div>
         <div class="candidate-row"><div class="role-label">Candidate</div><div class="candidate-name">${cnRaw || '\u2014'}</div></div>
         <div class="observer-row"><div class="role-label">Observer</div><div class="candidate-name">${observer}</div></div>
         ${scoreHtml}

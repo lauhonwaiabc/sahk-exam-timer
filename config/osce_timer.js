@@ -37,7 +37,7 @@ window.OsceTimer = (() => {
       }
       return `<div class="osce-box${isRest}" tabindex="0" aria-label="Station ${i + 1} details">
         ${labelHtml}
-        <div class="osce-title">${STATION_NAMES[i]}<br><span style="font-size:0.7em;color:#555;">Station ${i + 1}</span></div>
+        <div class="osce-title">Station ${i + 1}<br><span style="font-size:0.84em;color:#555;">${STATION_NAMES[i]}</span></div>
         <div class="candidate-row"><div class="role-label">Candidate</div><div class="candidate-name">${cnRaw || '\u2014'}</div></div>
         <div class="observer-row"><div class="role-label">Observer</div><div class="candidate-name">${details.Observer[i] || '\u2014'}</div></div>
         ${scoreHtml}
