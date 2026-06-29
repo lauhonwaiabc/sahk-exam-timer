@@ -6,6 +6,10 @@
   <title>SAHK Exam Timer - Login</title>
   <script src="../config/osce_stations.js"></script>
   <script src="../config/viva_tables.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="../config/firebase-auth.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -75,6 +79,7 @@
       margin-top: 10px;
     }
     .login-btn:hover { background: #388e3c; }
+    .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .login-error {
       color: #d32f2f;
       font-weight: 700;
@@ -143,10 +148,7 @@
 <script>
 'use strict';
 
-const PASSWORDS = {
-  examiner: 'examiner',
-  admin: 'sahk_admin'
-};
+SahkAuth.init();
 
 const EXAM_PAGES = {
   osce_am: 'OSCE_timer.htm?mode=am',
@@ -156,10 +158,10 @@ const EXAM_PAGES = {
 };
 
 const CANDIDATES_BY_EXAM = {
-  osce_am: ["05","24","21","13","08","27","19","10","03","31","22","18","15","12","30"],
-  osce_pm: ["06","28","26","23","16","07","29","11","04","01","25","20","17","14","32"],
-  viva_am: ["10","21","18","15","05","22","03","19","07","12","24","31","30","13","27"],
-  viva_pm: ["11","23","20","17","06","25","04","29","08","14","26","01","32","16","28"]
+  osce_am: ["00","05","24","21","13","08","27","19","10","03","31","22","18","15","12","30"],
+  osce_pm: ["00","06","28","26","23","16","07","29","11","04","01","25","20","17","14","32"],
+  viva_am: ["00","10","21","18","15","05","22","03","19","07","12","24","31","30","13","27"],
+  viva_pm: ["00","11","23","20","17","06","25","04","29","08","14","26","01","32","16","28"]
 };
 
 function populateCandidateSelect() {
@@ -204,29 +206,25 @@ function onRoleChange() {
   const candidateGroup = document.getElementById('candidateSetupGroup');
   const loginBtn = document.getElementById('loginBtn');
 
+  pwGroup.style.display = 'none';
+  examinerGroup.style.display = 'none';
+  candidateGroup.style.display = 'none';
+
   if (!role) {
-    pwGroup.style.display = 'none';
-    examinerGroup.style.display = 'none';
-    candidateGroup.style.display = 'none';
     loginBtn.disabled = true;
     return;
   }
   loginBtn.disabled = false;
 
   if (role === 'candidate') {
-    pwGroup.style.display = 'none';
-    examinerGroup.style.display = 'none';
     candidateGroup.style.display = 'block';
     populateCandidateSelect();
   } else if (role === 'examiner') {
     pwGroup.style.display = 'block';
     examinerGroup.style.display = 'block';
-    candidateGroup.style.display = 'none';
     populateStationSelect();
   } else if (role === 'admin') {
     pwGroup.style.display = 'block';
-    examinerGroup.style.display = 'none';
-    candidateGroup.style.display = 'none';
   }
 }
 
@@ -243,11 +241,9 @@ document.getElementById('passwordInput').addEventListener('keydown', function(e)
   if (e.key === 'Enter') doLogin();
 });
 
-document.getElementById('candidateNumberSelect').addEventListener('change', function(e) {
-  if (this.value) setTimeout(doLogin, 100);
-});
 
-function doLogin() {
+
+async function doLogin() {
   const role = document.getElementById('roleSelect').value;
   const exam = document.getElementById('examSelect').value;
   const password = document.getElementById('passwordInput').value;
@@ -266,38 +262,52 @@ function doLogin() {
     return;
   }
 
-  const expectedPw = PASSWORDS[role];
-  if (password !== expectedPw) {
-    errorEl.textContent = role === 'examiner'
-      ? 'Incorrect password. Hint: the default examiner password'
-      : 'Incorrect password. Hint: the default admin password';
+  if (!password) {
+    errorEl.textContent = 'Please enter the password';
     errorEl.style.display = 'block';
     return;
   }
 
-  errorEl.style.display = 'none';
+  try {
+    var user = await SahkAuth.signIn(role, password);
+    var userRole = await SahkAuth.getUserRole(user.uid);
 
-  let config = {
-    role: role,
-    exam: exam
-  };
-
-  if (role === 'examiner') {
-    const val = document.getElementById('stationSelect').value;
-    if (!val) {
-      errorEl.textContent = 'Please select a station/examiner';
+    if (userRole !== role) {
+      errorEl.textContent = 'This account does not have ' + role + ' privileges';
       errorEl.style.display = 'block';
+      await SahkAuth.signOut();
       return;
     }
-    var parts = val.split(':');
-    config.stationNo = parseInt(parts[0], 10);
-    config.stationName = parts[1];
-    const examType = exam.startsWith('osce') ? 'osce' : 'viva';
-    config.searchPrefix = (examType === 'osce' ? 'Station ' : 'Table ') + config.stationNo;
-  }
 
-  sessionStorage.setItem('sahk_role_config', JSON.stringify(config));
-  window.location.href = EXAM_PAGES[exam];
+    errorEl.style.display = 'none';
+
+    let config = {
+      role: role,
+      exam: exam,
+      uid: user.uid,
+      email: user.email
+    };
+
+    if (role === 'examiner') {
+      const val = document.getElementById('stationSelect').value;
+      if (!val) {
+        errorEl.textContent = 'Please select a station/examiner';
+        errorEl.style.display = 'block';
+        return;
+      }
+      var parts = val.split(':');
+      config.stationNo = parseInt(parts[0], 10);
+      config.stationName = parts[1];
+      const examType = exam.startsWith('osce') ? 'osce' : 'viva';
+      config.searchPrefix = (examType === 'osce' ? 'Station ' : 'Table ') + config.stationNo;
+    }
+
+    sessionStorage.setItem('sahk_role_config', JSON.stringify(config));
+    window.location.href = EXAM_PAGES[exam];
+  } catch (e) {
+    errorEl.textContent = 'Incorrect password';
+    errorEl.style.display = 'block';
+  }
 }
 onRoleChange();
 </script>

@@ -51,17 +51,44 @@ window.SahkScoring = (function() {
     } catch(e) { return { success: false, error: e.message }; }
   }
 
-  function getExamInfo() { var n = { osce_am:'OSCE AM', osce_pm:'OSCE PM', viva_am:'Viva AM', viva_pm:'Viva PM' }; return n[examId] || examId; }
+  function getExamInfo() { var n = { osce_am:'OSCE AM', osce_pm:'OSCE PM', viva_am:'Viva AM', viva_pm:'Viva PM', written:'Written' }; return n[examId] || examId; }
 
   function scoreColor(score) { var m = { '-':'#000000', 2:'#d32f2f', 3:'#ff9800', 4:'#fdd835', 5:'#4caf50', 6:'#2196f3', 7:'#3f51b5', 8:'#9c27b0' }; return m[score] || '#888'; }
 
   // Admin
-  async function adminExportCSV() { var pw=prompt('Admin password:'); if(pw!=='sahk_admin'){alert('Wrong');return;} try{var r=await fetch(API_BASE+'/export/'+examId+'?admin_password='+encodeURIComponent(pw));if(r.ok){var b=await r.blob();var u=window.URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download=examId+'_scores.csv';a.click();window.URL.revokeObjectURL(u);}else alert('Failed');}catch(e){alert('Failed: '+e.message);} }
-  async function adminClearDatabase() { var pw=prompt('Admin password:');if(pw!=='sahk_admin'){alert('Wrong');return;}if(!confirm('Delete ALL scores for '+getExamInfo()+'?'))return;try{var r=await fetch(API_BASE+'/scores/'+examId,{method:'DELETE',headers:{'X-Admin-Password':pw}});if(r.ok){alert('Cleared');latestScores={};allScoresCache=[];if(onScoresUpdated)onScoresUpdated();}else alert('Failed');}catch(e){alert('Failed: '+e.message);} }
-  async function adminResetDatabase() { var pw=prompt('Admin password:');if(pw!=='sahk_admin'){alert('Wrong');return;}if(!confirm('FACTORY RESET all exams?'))return;if(!confirm('ARE YOU SURE?'))return;try{var r=await fetch(API_BASE+'/scores',{method:'DELETE',headers:{'X-Admin-Password':pw}});if(r.ok){alert('All reset');latestScores={};allScoresCache=[];if(onScoresUpdated)onScoresUpdated();}else alert('Failed');}catch(e){alert('Failed: '+e.message);} }
+  var _adminPw = '';
 
-  function createAdminPanel() { return '<div class="admin-panel"><h3 class="admin-header">Admin Controls</h3><button class="admin-btn" id="adminExportCSV">Export CSV</button><button class="admin-btn admin-btn-danger" id="adminClearDB">Clear Database</button><button class="admin-btn admin-btn-danger" id="adminResetDB">Factory Reset All</button><span class="admin-exam-label">'+getExamInfo()+'</span><div class="admin-status" id="adminStatus"></div></div>'; }
-  function initAdminEvents() { var eb=document.getElementById('adminExportCSV');if(eb)eb.onclick=adminExportCSV;var cb=document.getElementById('adminClearDB');if(cb)cb.onclick=adminClearDatabase;var rb=document.getElementById('adminResetDB');if(rb)rb.onclick=adminResetDatabase; }
+  function _getAdminPw() {
+    if (!_adminPw) _adminPw = prompt('Enter admin password:');
+    if (!_adminPw) return null;
+    return _adminPw;
+  }
+
+  async function adminExportCSV() {
+    var pw = _getAdminPw();
+    if (!pw) return;
+    try {
+      var r = await fetch(API_BASE + '/export/' + examId + '?admin_password=' + encodeURIComponent(pw));
+      if (r.ok) { var b = await r.blob(); var u = window.URL.createObjectURL(b); var a = document.createElement('a'); a.href = u; a.download = examId + '_scores.csv'; a.click(); window.URL.revokeObjectURL(u); }
+      else if (r.status === 401 || r.status === 403) { _adminPw = ''; alert('Access denied. Check your admin password.'); }
+      else alert('Failed');
+    } catch(e) { alert('Failed: ' + e.message); }
+  }
+
+  async function adminClearDatabase() {
+    var pw = _getAdminPw();
+    if (!pw) return;
+    if (!confirm('Delete ALL scores for ' + getExamInfo() + '?')) return;
+    try {
+      var r = await fetch(API_BASE + '/scores/' + examId, { method:'DELETE', headers: { 'X-Admin-Password': pw } });
+      if (r.ok) { alert('Cleared'); latestScores = {}; allScoresCache = []; if (onScoresUpdated) onScoresUpdated(); }
+      else if (r.status === 401 || r.status === 403) { _adminPw = ''; alert('Access denied. Check your admin password.'); }
+      else alert('Failed');
+    } catch(e) { alert('Failed: ' + e.message); }
+  }
+
+  function createAdminPanel() { return '<div class="admin-panel"><h3 class="admin-header">Admin Controls</h3><button class="admin-btn" id="adminExportCSV">Export CSV</button><button class="admin-btn admin-btn-danger" id="adminClearDB">Clear Database</button><span class="admin-exam-label">'+getExamInfo()+'</span><div class="admin-status" id="adminStatus"></div></div>'; }
+  function initAdminEvents() { var eb=document.getElementById('adminExportCSV');if(eb)eb.onclick=adminExportCSV;var cb=document.getElementById('adminClearDB');if(cb)cb.onclick=adminClearDatabase; }
 
   return { init:init, setStation:setStation, fetchLatestScores:fetchLatestScores, fetchAllScores:fetchAllScores, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, submitScore:submitScore, submitScoreForStation:submitScoreForStation, scoreColor:scoreColor, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get latestScores(){return latestScores;}, get allScoresCache(){return allScoresCache;} };
 })();

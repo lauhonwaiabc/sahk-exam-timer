@@ -193,7 +193,7 @@ window.scoringUI = (function() {
 
   function applyAdminConfig() {
     var apc = document.getElementById('adminPanelContainer');
-    if (apc) { apc.innerHTML = SahkScoring.createAdminPanel(); SahkScoring.initAdminEvents(); }
+    if (apc) { apc.innerHTML = SahkScoring.createAdminPanel(); apc.style.display = 'block'; SahkScoring.initAdminEvents(); }
     setTimeout(function() {
       var tb = document.getElementById('transitModeBtn');
       if (tb && tb.textContent === 'Transit: Prev') {
@@ -206,9 +206,10 @@ window.scoringUI = (function() {
   function applyCandidateConfig() {
     var cn = roleConfig.candidateNumber;
     if (!cn) return;
+    var tb = document.getElementById('toggleModeBtn'); if (tb) tb.style.display = 'none';
+    if (cn === '00') return;
     var si = document.getElementById('searchInput');
     if (si) { si.value = cn; si.classList.add('locked'); si.readOnly = true; si.placeholder = ''; }
-    var tb = document.getElementById('toggleModeBtn'); if (tb) tb.style.display = 'none';
     setTimeout(function() {
       var ib = document.getElementById('isolateBtn');
       if (ib && ib.textContent === 'Isolate') ib.click();
@@ -278,7 +279,8 @@ window.scoringUI = (function() {
     var scoringC = document.getElementById('scoringModeContainer');
     var adminC = document.getElementById('adminPanelContainer');
     if (!isInScoringMode) {
-      if (scoringC) scoringC.style.display = 'none'; if (adminC) adminC.style.display = 'none';
+      if (scoringC) scoringC.style.display = 'none';
+      if (adminC) adminC.style.display = currentRole === 'admin' ? 'block' : 'none';
       if (mainC) mainC.style.display = ''; return;
     }
     if (mainC) mainC.style.display = 'none'; if (candidateC) candidateC.style.display = 'none';

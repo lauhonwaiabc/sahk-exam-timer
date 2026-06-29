@@ -6,6 +6,10 @@
   <title>SAHK Written Score - Login</title>
   <link rel="stylesheet" href="../timer_style.css"/>
   <script src="../config/written_score_data.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="../config/firebase-auth.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -126,10 +130,7 @@
 <script>
 'use strict';
 
-const PASSWORDS = {
-  examiner: 'examiner',
-  admin: 'sahk_admin'
-};
+SahkAuth.init();
 
 function onRoleChange() {
   const role = document.getElementById('roleSelect').value;
@@ -171,7 +172,7 @@ document.getElementById('passwordInput').addEventListener('keydown', function(e)
   });
 })();
 
-function doLogin() {
+async function doLogin() {
   const role = document.getElementById('roleSelect').value;
   const password = document.getElementById('passwordInput').value;
   const errorEl = document.getElementById('loginError');
@@ -182,33 +183,45 @@ function doLogin() {
     return;
   }
 
-  const expectedPw = PASSWORDS[role];
-  if (password !== expectedPw) {
-    errorEl.textContent = role === 'examiner'
-      ? 'Incorrect password. Hint: the default examiner password'
-      : 'Incorrect password. Hint: the default admin password';
+  if (!password) {
+    errorEl.textContent = 'Please enter the password';
     errorEl.style.display = 'block';
     return;
   }
 
-  errorEl.style.display = 'none';
+  try {
+    var user = await SahkAuth.signIn(role, password);
+    var userRole = await SahkAuth.getUserRole(user.uid);
 
-  var config = { role: role };
-
-  if (role === 'examiner') {
-    var name = document.getElementById('examinerNameSelect').value;
-    if (!name) {
-      errorEl.textContent = 'Please select your examiner name';
+    if (userRole !== role) {
+      errorEl.textContent = 'This account does not have ' + role + ' privileges';
       errorEl.style.display = 'block';
+      await SahkAuth.signOut();
       return;
     }
-    config.examinerName = name;
-    var info = getWrittenExaminerInfo(name);
-    if (info) config.group = info.group;
-  }
 
-  sessionStorage.setItem('sahk_role_config', JSON.stringify(config));
-  window.location.href = 'Written_score.htm';
+    errorEl.style.display = 'none';
+
+    var config = { role: role, uid: user.uid, email: user.email };
+
+    if (role === 'examiner') {
+      var name = document.getElementById('examinerNameSelect').value;
+      if (!name) {
+        errorEl.textContent = 'Please select your examiner name';
+        errorEl.style.display = 'block';
+        return;
+      }
+      config.examinerName = name;
+      var info = getWrittenExaminerInfo(name);
+      if (info) config.group = info.group;
+    }
+
+    sessionStorage.setItem('sahk_role_config', JSON.stringify(config));
+    window.location.href = 'Written_score.htm';
+  } catch (e) {
+    errorEl.textContent = 'Incorrect password';
+    errorEl.style.display = 'block';
+  }
 }
 
 onRoleChange();

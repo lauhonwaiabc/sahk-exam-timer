@@ -14,6 +14,10 @@
   <script src="../config/timer-core.js"></script>
   <script src="../config/common_timer.js"></script>
   <script src="../config/viva_timer.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="../config/firebase-auth.js"></script>
   <script src="../config/scoring.js"></script>
   <script src="../config/scoring_ui.js"></script>
 </head>
@@ -33,6 +37,8 @@ var isInScoringMode = false, scoringIsolateStation = null, scoringRefreshId = nu
 window.showInlineScoring = false;
 
 try { var raw = sessionStorage.getItem('sahk_role_config'); if (raw) { roleConfig = JSON.parse(raw); currentRole = roleConfig.role || 'candidate'; activeStationNo = roleConfig.stationNo != null ? roleConfig.stationNo : 1; } } catch (e) { activeStationNo = 1; }
+
+if (currentRole !== 'candidate') { SahkAuth.init(); SahkAuth.onAuthStateChanged(function(user) { if (!user) { sessionStorage.removeItem('sahk_role_config'); } }); }
 
 (function initRole() {
   var h = document.getElementById('roleHeader');

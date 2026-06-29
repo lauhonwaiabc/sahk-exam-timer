@@ -6,6 +6,10 @@
   <title>SAHK Written Score Reporting</title>
   <link rel="stylesheet" href="../timer_style.css"/>
   <script src="../config/written_score_data.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="../config/firebase-auth.js"></script>
   <script src="../config/scoring.js"></script>
   <style>
     body { background: #f9f9f9; }
@@ -251,6 +255,17 @@ try {
     examinerGroup = roleConfig.group || null;
   }
 } catch (e) {}
+
+if (currentRole !== 'candidate') {
+  SahkAuth.init();
+  var unsub = SahkAuth.onAuthStateChanged(function(user) {
+    if (!user) {
+      sessionStorage.removeItem('sahk_role_config');
+      window.location.href = 'Written_score_login.htm';
+    }
+    unsub();
+  });
+}
 
 var h = document.getElementById('roleHeader');
 if (currentRole === 'examiner') {
