@@ -424,13 +424,6 @@ button:hover:not(:disabled) {
         padding: 3px 6px;
     }
 
-    #stationModeContainer.scale-isolate-2 [data-iso],
-    #tableModeContainer.scale-isolate-2 [data-iso],
-    #candidateModeContainer.scale-isolate-2 [data-iso] {
-        transform: scale(1.2) !important;
-        margin: 0 25px;
-    }
-
     #bottomContent {
         padding: 15px 20px 20px;
     }
@@ -1203,14 +1196,6 @@ input.locked {
   transform: scale(2);
   transform-origin: top center;
 }
-#stationModeContainer.scale-isolate-2 [data-iso],
-#tableModeContainer.scale-isolate-2 [data-iso],
-#candidateModeContainer.scale-isolate-2 [data-iso] {
-  transform: scale(1.5);
-  transform-origin: top center;
-  margin: 0 80px;
-}
-
 /* ===== Mobile overrides (at end to win specificity) ===== */
 @media (max-width: 600px) {
     #startTimeContainer { display: none; }

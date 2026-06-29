@@ -84,8 +84,6 @@ window.VivaOsceCommon = (() => {
     c.classList.remove.apply(c.classList, SCALE_CLASSES);
     var count = c.querySelectorAll('[data-iso]').length;
     if (count === 1) c.classList.add('scale-isolate-1');
-    else if (count === 2) c.classList.add('scale-isolate-2');
-    else if (count >= 3) c.classList.add('scale-isolate-3plus');
   }
 
   return {
