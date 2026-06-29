@@ -164,10 +164,10 @@ button:hover:not(:disabled) {
 .viva-box,
 .osce-box {
     background: #f0f7f5;
-    border-radius: 12px;
+    border-radius: 10px;
     box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
-    padding: 20px 25px;
-    width: 220px;
+    padding: 16px 20px;
+    width: 176px;
     display: flex;
     flex-direction: column;
     user-select: none;
@@ -183,11 +183,11 @@ button:hover:not(:disabled) {
 .viva-title,
 .osce-title {
     font-weight: 900;
-    font-size: 2em;
-    margin-bottom: 12px;
+    font-size: 1.2em;
+    margin-bottom: 7px;
     color: #2e7d32;
     text-align: center;
-    letter-spacing: 1.2px;
+    letter-spacing: 0.7px;
 }
 
 /* ===== Candidate / Observer Cells ===== */
@@ -201,33 +201,33 @@ button:hover:not(:disabled) {
 
 .role-label {
     font-weight: 700;
-    font-size: 1.2em;
+    font-size: 0.72em;
     color: #555;
     margin: 0;
 }
 
 .candidate-name {
     font-weight: 900;
-    font-size: 1.2em;
+    font-size: 0.72em;
     color: #1b5e20;
     margin: 0;
 }
 
 .candidate-cell {
     background: #f0f7f5;
-    border-radius: 12px;
+    border-radius: 10px;
     box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
-    padding: 18px 14px;
+    padding: 14px 11px;
     display: flex;
     flex-direction: column;
     align-items: center;
     font-weight: 700;
-    font-size: 1.2em;
+    font-size: 0.96em;
     color: #1b5e20;
     transition: box-shadow 0.3s;
     text-align: center;
-    width: 220px;
-    flex: 0 0 220px;
+    width: 176px;
+    flex: 0 0 176px;
     box-sizing: border-box;
     margin-bottom: 14px;
 }
@@ -253,19 +253,19 @@ button:hover:not(:disabled) {
 /* Text details */
 .candidate-number {
     font-weight: 900;
-    font-size: 1.2em;
-    margin-bottom: 4px;
+    font-size: 0.96em;
+    margin-bottom: 3px;
 }
 
 .candidate-role.candidate {
-    font-size: 0.95em;
+    font-size: 0.76em;
     font-weight: 900;
     color: #5e1b20;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
 }
 
 .candidate-role.observer {
-    font-size: 0.95em;
+    font-size: 0.76em;
     font-weight: 600;
     color: #1b5e20;
 }
@@ -273,7 +273,7 @@ button:hover:not(:disabled) {
 .candidate-table,
 .candidate-station {
     font-weight: 700;
-    font-size: 0.9em;
+    font-size: 0.72em;
     color: #2e7d32;
 }
 
@@ -462,13 +462,13 @@ button:hover:not(:disabled) {
         width: calc(50% - 30px);
         margin-bottom: 14px;
         box-sizing: border-box;
-        font-size: 0.9em;
+        font-size: 0.72em;
     }
 
     .viva-title, 
     .osce-title {
-        font-size: 1.5em;
-        margin-bottom: 8px;
+        font-size: 0.9em;
+        margin-bottom: 5px;
     }
 
     .candidate-row, 
@@ -482,12 +482,12 @@ button:hover:not(:disabled) {
     .candidate-role, 
     .candidate-table, 
     .candidate-station {
-        font-size: 0.9em;
+        font-size: 0.72em;
     }
 
     .candidate-role.candidate,
     .candidate-role.observer {
-        font-size: 0.85em;
+        font-size: 0.68em;
     }
 }
 
