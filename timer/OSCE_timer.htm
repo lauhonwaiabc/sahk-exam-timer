@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OSCE Exam Timer - <script>document.write(new URLSearchParams(window.location.search).get('mode')||'am').toUpperCase()</script></title>
+<link rel="stylesheet" href="../timer_style.css"/>
+<script src="../config/osce_config.js"></script><script src="../config/osce_stations.js"></script>
+<script>var examMode=new URLSearchParams(window.location.search).get('mode')||'am';document.write('<script src="../config/osce_data_'+examMode+'.js"><\/script>');</script>
+<script src="../config/timer-core.js"></script><script src="../config/common_timer.js"></script><script src="../config/osce_timer.js"></script><script src="../config/scoring.js"></script><script src="../config/scoring_ui.js"></script>
+</head>
+<body>
+<div id="clock">00:00:00</div><div id="roleHeader"></div><div id="syncWarning" style="display:none;background:#fff3e0;color:#e65100;text-align:center;padding:6px;font-weight:700;font-size:.9em"></div>
+<div id="controls"><button id="scheduleStartBtn">Schedule Start</button><button id="startBtn">Start</button><button id="pauseBtn" disabled>Pause</button><button id="stopBtn" disabled>Stop &amp; Reset</button><button id="muteBtn" aria-pressed="false">Mute</button><button id="toggleModeBtn" aria-pressed="false">Scoring Mode</button><button id="transitModeBtn" class="transit-btn" aria-pressed="false">Transit: Prev</button></div>
+<div id="startTimeContainer"><label for="startTimeInput" style="font-weight:700;margin-right:8px">Start Time (hh:mm:ss):</label><input id="startTimeInput" type="time" step="1" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:140px"/><button id="applyStartTimeBtn" style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer">Apply</button><div style="margin-top:6px"><button class="offset-btn" data-offset="-3600">-60m</button><button class="offset-btn" data-offset="-900">-15m</button><button class="offset-btn" data-offset="-300">-5m</button><button class="offset-btn" data-offset="-60">-1m</button><button class="offset-btn" data-offset="60">+1m</button><button class="offset-btn" data-offset="300">+5m</button><button class="offset-btn" data-offset="900">+15m</button><button class="offset-btn" data-offset="3600">+60m</button></div></div>
+<div id="searchContainer"><input id="searchInput" type="text" placeholder="Enter Candidate ID, Station Name or Station Number" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:320px;margin-right:8px"/><button id="isolateBtn" style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer">Isolate</button></div>
+<div id="topMenu"><ul id="sectionsList"></ul><br/><ul id="subsectionsList"></ul></div>
+<div id="bottomContent"><div class="timer" id="timerDisplay">00:00</div><div class="info" id="infoDisplay">Select a session and phase to see information here.</div><div id="stationModeContainer" aria-live="polite"></div><div id="candidateModeContainer" aria-live="polite" style="display:none"></div><div id="scoringModeContainer" style="display:none"></div><div id="adminPanelContainer" style="display:none"></div></div>
+<script>
+var roleConfig=null,currentRole='candidate',activeStationNo=1;
+var SCORE_OPTIONS=['-',2,3,4,5,6,7,8];
+var SCORE_COLORS={'-':'#000000',2:'#d32f2f',3:'#ff9800',4:'#fdd835',5:'#4caf50',6:'#2196f3',7:'#3f51b5',8:'#9c27b0'};
+var isInScoringMode=false,scoringIsolateStation=null,scoringRefreshId=null;
+window.showInlineScoring=false;
+try{var raw=sessionStorage.getItem('sahk_role_config');if(raw){roleConfig=JSON.parse(raw);currentRole=roleConfig.role||'candidate';activeStationNo=roleConfig.stationNo!=null?roleConfig.stationNo:1;}}catch(e){activeStationNo=1;}
+(function initRole(){var h=document.getElementById('roleHeader');if(currentRole==='examiner'){h.textContent='Examiner Mode - Station '+activeStationNo+': '+(roleConfig.stationName||'');h.className='examiner-role';}else if(currentRole==='admin'){h.textContent='Admin Mode';h.className='admin-role';}})();
+var startTime=examMode==='am'?START_TIME_AM:START_TIME_PM;
+OsceTimer.start({startTimeStr:startTime,examTitle:'SAHK Final Examination Preparation Course - OSCE Examination'});
+scoringUI.init({data:osceData,names:STATION_NAMES,numItems:NUM_STATIONS,type:'station',title:'OSCE '+examMode.toUpperCase(),modeLabel:'Station Mode',hasRest:true});
+setTimeout(function(){scoringUI.applyRoleConfig();},150);
+</script></body></html>

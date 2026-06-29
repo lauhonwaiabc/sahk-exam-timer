@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>SAHK Written Score - Login</title>
+  <link rel="stylesheet" href="../timer_style.css"/>
+  <script src="../config/written_score_data.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #f9f9f9;
+      color: #222;
+      justify-content: center;
+      align-items: center;
+    }
+    .login-container {
+      max-width: 500px;
+      width: 90%;
+      background: white;
+      padding: 40px 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .login-container h1 {
+      font-weight: 900;
+      margin-bottom: 8px;
+      font-size: 1.8rem;
+      color: #d33;
+      letter-spacing: 1.5px;
+    }
+    .login-container h2 {
+      font-weight: 700;
+      margin-bottom: 25px;
+      font-size: 1rem;
+      color: #555;
+    }
+    .login-select-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    .login-select-group label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    .login-select-group select,
+    .login-select-group input {
+      width: 100%;
+      font-size: 1.05em;
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid #bbb;
+      box-sizing: border-box;
+    }
+    .login-btn {
+      display: inline-block;
+      background: #4caf50;
+      color: white;
+      padding: 12px 30px;
+      font-weight: 700;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .login-btn:hover { background: #388e3c; }
+    .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .login-error {
+      color: #d32f2f;
+      font-weight: 700;
+      margin-top: 10px;
+      display: none;
+    }
+    .login-back {
+      display: block;
+      margin-top: 15px;
+      color: #1976d2;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.9em;
+    }
+    .login-back:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="login-container">
+  <h1>SAHK Written Exam<br>Score Reporting</h1>
+
+  <div class="login-select-group">
+    <label for="roleSelect">Role</label>
+    <select id="roleSelect" onchange="onRoleChange()">
+      <option value="">--Select One--</option>
+      <option value="examiner">Examiner</option>
+      <option value="admin">Admin</option>
+    </select>
+  </div>
+
+  <div class="login-select-group" id="examinerNameGroup" style="display:none;">
+    <label for="examinerNameSelect">Examiner Name</label>
+    <select id="examinerNameSelect">
+      <option value="">--Select Examiner--</option>
+    </select>
+  </div>
+
+  <div class="login-select-group" id="passwordGroup" style="display:none;">
+    <label for="passwordInput">Password</label>
+    <input id="passwordInput" type="password" placeholder="Enter password"/>
+  </div>
+
+  <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>Enter</button>
+  <div class="login-error" id="loginError"></div>
+  <a class="login-back" href="../index.htm">Back to Main Menu</a>
+</div>
+
+<script>
+'use strict';
+
+const PASSWORDS = {
+  examiner: 'examiner',
+  admin: 'sahk_admin'
+};
+
+function onRoleChange() {
+  const role = document.getElementById('roleSelect').value;
+  const pwGroup = document.getElementById('passwordGroup');
+  const examinerGroup = document.getElementById('examinerNameGroup');
+  const loginBtn = document.getElementById('loginBtn');
+
+  pwGroup.style.display = 'none';
+  examinerGroup.style.display = 'none';
+
+  if (!role) {
+    loginBtn.disabled = true;
+    return;
+  }
+  loginBtn.disabled = false;
+
+  if (role === 'examiner') {
+    pwGroup.style.display = 'block';
+    examinerGroup.style.display = 'block';
+  } else if (role === 'admin') {
+    pwGroup.style.display = 'block';
+  }
+}
+
+document.getElementById('roleSelect').addEventListener('change', onRoleChange);
+
+document.getElementById('passwordInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+(function populateExaminers() {
+  var sel = document.getElementById('examinerNameSelect');
+  var names = getWrittenExaminerNames();
+  names.forEach(function(name) {
+    var opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+})();
+
+function doLogin() {
+  const role = document.getElementById('roleSelect').value;
+  const password = document.getElementById('passwordInput').value;
+  const errorEl = document.getElementById('loginError');
+
+  if (!role) {
+    errorEl.textContent = 'Please select a role';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const expectedPw = PASSWORDS[role];
+  if (password !== expectedPw) {
+    errorEl.textContent = role === 'examiner'
+      ? 'Incorrect password. Hint: the default examiner password'
+      : 'Incorrect password. Hint: the default admin password';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  errorEl.style.display = 'none';
+
+  var config = { role: role };
+
+  if (role === 'examiner') {
+    var name = document.getElementById('examinerNameSelect').value;
+    if (!name) {
+      errorEl.textContent = 'Please select your examiner name';
+      errorEl.style.display = 'block';
+      return;
+    }
+    config.examinerName = name;
+    var info = getWrittenExaminerInfo(name);
+    if (info) config.group = info.group;
+  }
+
+  sessionStorage.setItem('sahk_role_config', JSON.stringify(config));
+  window.location.href = 'Written_score.htm';
+}
+
+onRoleChange();
+</script>
+</body>
+</html>

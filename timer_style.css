@@ -381,45 +381,58 @@ button:hover:not(:disabled) {
 
     #controls {
         flex-wrap: wrap;
-        gap: 8px;
-        margin: 10px 0;
+        gap: 6px;
+        margin: 8px 0;
     }
 
-    button {
-        font-size: 1em;
-        padding: 6px 14px;
-        border-radius: 5px;
+    #controls button {
+        font-size: 0.82em;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+
+    #startTimeContainer .offset-btn {
+        font-size: 0.78em;
+        padding: 2px 7px;
+        margin: 1px;
     }
 
     #startTimeContainer label,
     #searchContainer input,
     #searchContainer button {
-        font-size: 1em;
+        font-size: 0.85em;
     }
 
     #startTimeInput {
-        width: 120px;
-        padding: 5px 10px;
+        width: 100px;
+        padding: 4px 8px;
     }
 
     #searchInput {
-        width: 180px;
+        width: 150px;
     }
 
     #topMenu {
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
     #sectionsList, 
     #subsectionsList {
-        gap: 8px;
+        gap: 5px;
     }
 
     #sectionsList li,
     #subsectionsList li {
-        min-width: 90px;
-        font-size: 0.9em;
-        padding: 4px 8px;
+        min-width: 70px;
+        font-size: 0.78em;
+        padding: 3px 6px;
+    }
+
+    #stationModeContainer.scale-isolate-2 [data-iso],
+    #tableModeContainer.scale-isolate-2 [data-iso],
+    #candidateModeContainer.scale-isolate-2 [data-iso] {
+        transform: scale(1.2) !important;
+        margin: 0 25px;
     }
 
     #bottomContent {
