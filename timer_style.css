@@ -423,6 +423,14 @@ button:hover:not(:disabled) {
         display: none;
     }
 
+    .offset-btn {
+        display: none;
+    }
+
+    #searchContainer {
+        display: none;
+    }
+
     #topMenu {
         margin-bottom: 8px;
     }
