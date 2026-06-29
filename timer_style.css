@@ -1028,8 +1028,6 @@ input.locked {
 
 .scoring-table-wrapper {
   overflow-x: auto;
-  max-height: 70vh;
-  overflow-y: auto;
 }
 
 .scoring-matrix {
@@ -1093,14 +1091,32 @@ input.locked {
 
 .scoring-matrix-cell.scoring-prev-session {
   background: #ffcdd2;
+  border-radius: 6px;
+  padding: 4px 8px;
 }
 
 .scoring-matrix-cell.scoring-curr-transit {
   background: #bbdefb;
+  border-radius: 6px;
+  padding: 4px 8px;
 }
 
 .scoring-matrix-cell.scoring-curr-exam {
   background: #c8e6c9;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.scoring-matrix-cell.scoring-past-session {
+  background: #ffebee;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.scoring-matrix-cell.scoring-future-session {
+  background: #e3f2fd;
+  border-radius: 6px;
+  padding: 4px 8px;
 }
 
 .scoring-cell-inner {
@@ -1127,7 +1143,7 @@ input.locked {
 }
 
 .scoring-cell-inner .score-value {
-  font-size: 2em;
+  font-size: 3em;
   min-width: 40px;
 }
 
@@ -1143,9 +1159,6 @@ input.locked {
 
 /* ===== Responsive ===== */
 @media (max-width: 600px) {
-  .scoring-table-wrapper {
-    max-height: 55vh;
-  }
 
   .scoring-matrix {
     min-width: 0;
@@ -1174,7 +1187,7 @@ input.locked {
   }
 
   .scoring-cell-inner .score-value {
-    font-size: 1.4em;
+    font-size: 2.1em;
     min-width: 28px;
   }
 

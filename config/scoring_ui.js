@@ -231,7 +231,7 @@ window.scoringUI = (function() {
     var prevIdx = isTr ? C.getPrevExamSession(si, cfg.data) : null;
     var prevKey = prevIdx !== null ? C.getDataSessionKey(prevIdx) : null;
 
-    var html = '<div class="scoring-panel scoring-table-panel"><h3 class="scoring-header">Scoring Table - ' + cfg.title + '</h3>';
+    var html = '<h3 class="scoring-header">Scoring Table - ' + cfg.title + '</h3>';
     var cols = [];
     for (var s = 1; s <= cfg.numItems; s++) { if (isoSt === null || isoSt === s) cols.push({ no: s, name: cfg.names[s - 1] || '' }); }
     html += '<div class="scoring-table-wrapper"><table class="scoring-matrix"><thead><tr><th class="scoring-corner">Candidate</th>';
@@ -260,14 +260,24 @@ window.scoringUI = (function() {
         var isCurSess = false, isPrevSess = false;
         if (curKey) { var d = cfg.data[curKey]; if (d) { if (d.Candidate && d.Candidate[cl.no - 1] === cn) isCurSess = true; } }
         if (isTr && prevKey) { var pd = cfg.data[prevKey]; if (pd) { if (pd.Candidate && pd.Candidate[cl.no - 1] === cn) isPrevSess = true; } }
+        var cellSessionIdx = -1;
+        for (var si2 = 0; si2 < SESSION_PHASES.length; si2++) {
+          var sk2 = C.getDataSessionKey(si2);
+          var sd2 = cfg.data[sk2];
+          if (sd2 && sd2.Candidate && sd2.Candidate[cl.no - 1] === cn) { cellSessionIdx = si2; break; }
+        }
         if (isTr && isPrevSess) cellClass += ' scoring-prev-session';
         else if (isTr && isCurSess) cellClass += ' scoring-curr-transit';
         else if (!isTr && isCurSess) cellClass += ' scoring-curr-exam';
+        else if (cellSessionIdx >= 0 && cellSessionIdx !== si) {
+          if (cellSessionIdx < si) cellClass += ' scoring-past-session';
+          else cellClass += ' scoring-future-session';
+        }
         html += '<td class="' + cellClass + '"><div class="scoring-cell-inner"><div class="scoring-score-row"><button class="score-scroll-btn score-down" data-cn="' + cn + '" data-st="' + cl.no + '" data-dir="-1">&#9664;</button><span class="score-value" data-cn="' + cn + '" data-st="' + cl.no + '" data-dirty="0" style="color:' + co + '">' + sc + '</span><button class="score-scroll-btn score-up" data-cn="' + cn + '" data-st="' + cl.no + '" data-dir="1">&#9654;</button></div><button class="score-submit-btn" data-cn="' + cn + '" data-st="' + cl.no + '" style="display:none">Submit</button></div></td>';
       });
       html += '</tr>';
     });
-    html += '</tbody></table></div></div>';
+    html += '</tbody></table></div>';
     return html;
   }
 
