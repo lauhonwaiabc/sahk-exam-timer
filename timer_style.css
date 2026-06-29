@@ -408,29 +408,6 @@ button:hover:not(:disabled) {
         padding: 4px 8px;
     }
 
-    #applyStartTimeBtn {
-        font-size: 0.75em;
-        padding: 3px 8px;
-    }
-
-    #searchInput {
-        width: 120px;
-        font-size: 0.78em;
-        padding: 4px 8px;
-    }
-
-    #startBtn, #pauseBtn {
-        display: none;
-    }
-
-    .offset-btn {
-        display: none;
-    }
-
-    #searchContainer {
-        display: none;
-    }
-
     #topMenu {
         margin-bottom: 8px;
     }
@@ -1232,4 +1209,14 @@ input.locked {
   transform: scale(1.5);
   transform-origin: top center;
   margin: 0 80px;
+}
+
+/* ===== Mobile overrides (at end to win specificity) ===== */
+@media (max-width: 600px) {
+    #startTimeContainer { display: none; }
+    #searchContainer { display: none; }
+    #startBtn, #pauseBtn { display: none; }
+    .offset-btn { display: none; }
+    #applyStartTimeBtn { font-size: 0.75em; padding: 3px 8px; }
+    #searchInput { width: 120px; font-size: 0.78em; padding: 4px 8px; }
 }
