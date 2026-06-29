@@ -408,8 +408,19 @@ button:hover:not(:disabled) {
         padding: 4px 8px;
     }
 
+    #applyStartTimeBtn {
+        font-size: 0.75em;
+        padding: 3px 8px;
+    }
+
     #searchInput {
-        width: 150px;
+        width: 120px;
+        font-size: 0.78em;
+        padding: 4px 8px;
+    }
+
+    #startBtn, #pauseBtn {
+        display: none;
     }
 
     #topMenu {
