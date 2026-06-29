@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>SAHK Exam Timer - Login</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #f9f9f9;
+      color: #222;
+      justify-content: center;
+      align-items: center;
+    }
+    .login-container {
+      max-width: 500px;
+      width: 90%;
+      background: white;
+      padding: 40px 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .login-container h1 {
+      font-weight: 900;
+      margin-bottom: 8px;
+      font-size: 1.8rem;
+      color: #d33;
+      letter-spacing: 1.5px;
+    }
+    .login-container h2 {
+      font-weight: 700;
+      margin-bottom: 25px;
+      font-size: 1rem;
+      color: #555;
+    }
+    .login-select-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    .login-select-group label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    .login-select-group select,
+    .login-select-group input {
+      width: 100%;
+      font-size: 1.05em;
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid #bbb;
+      box-sizing: border-box;
+    }
+    .login-btn {
+      display: inline-block;
+      background: #4caf50;
+      color: white;
+      padding: 12px 30px;
+      font-weight: 700;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .login-btn:hover { background: #388e3c; }
+    .login-error {
+      color: #d32f2f;
+      font-weight: 700;
+      margin-top: 10px;
+      display: none;
+    }
+    .login-back {
+      display: block;
+      margin-top: 15px;
+      color: #1976d2;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.9em;
+    }
+    .login-back:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="login-container">
+  <h1>SAHK OSCE / Viva Exam Timer</h1>
+
+  <div class="login-select-group">
+    <label for="examSelect">Exam</label>
+    <select id="examSelect">
+      <option value="osce_am">OSCE - AM</option>
+      <option value="osce_pm">OSCE - PM</option>
+      <option value="viva_am">Viva - AM</option>
+      <option value="viva_pm">Viva - PM</option>
+    </select>
+  </div>
+
+  <div class="login-select-group">
+    <label for="roleSelect">Role</label>
+    <select id="roleSelect" onchange="onRoleChange()">
+      <option value="">--Select One--</option>
+      <option value="candidate">Candidate</option>
+      <option value="examiner">Examiner</option>
+      <option value="admin">Admin</option>
+    </select>
+  </div>
+
+  <div class="login-select-group" id="passwordGroup" style="display:none;">
+    <label for="passwordInput">Password</label>
+    <input id="passwordInput" type="password" placeholder="Enter password"/>
+  </div>
+
+  <div class="login-select-group" id="candidateSetupGroup" style="display:none;">
+    <label for="candidateNumberInput">Candidate Number</label>
+    <input id="candidateNumberInput" type="text" placeholder="Enter your candidate number"/>
+  </div>
+
+  <div class="login-select-group" id="examinerSetupGroup" style="display:none;">
+    <label for="stationNoInput" id="stationNoLabel">Station / Table No</label>
+    <input id="stationNoInput" type="number" min="1" placeholder="e.g. 1"/>
+    <label for="stationNameInput" id="stationNameLabel" style="margin-top:8px;">Station / Table Name</label>
+    <input id="stationNameInput" type="text" placeholder="e.g. Procedure / Max Lau"/>
+    <div style="font-size:0.8em;color:#888;margin-top:4px;">Enter either Station/Table No or Name (at least one required)</div>
+  </div>
+
+  <button class="login-btn" id="loginBtn" onclick="doLogin()">Enter</button>
+  <div class="login-error" id="loginError"></div>
+  <a class="login-back" href="../index.htm">Back to Main Menu</a>
+</div>
+
+<script>
+'use strict';
+
+const PASSWORDS = {
+  examiner: 'examiner',
+  admin: 'sahk_admin'
+};
+
+const EXAM_PAGES = {
+  osce_am: 'OSCE_timer.htm?mode=am',
+  osce_pm: 'OSCE_timer.htm?mode=pm',
+  viva_am: 'Viva_timer.htm?mode=am',
+  viva_pm: 'Viva_timer.htm?mode=pm'
+};
+
+function onRoleChange() {
+  const role = document.getElementById('roleSelect').value;
+  const pwGroup = document.getElementById('passwordGroup');
+  const examinerGroup = document.getElementById('examinerSetupGroup');
+  const candidateGroup = document.getElementById('candidateSetupGroup');
+  const loginBtn = document.getElementById('loginBtn');
+
+  if (!role) {
+    pwGroup.style.display = 'none';
+    examinerGroup.style.display = 'none';
+    candidateGroup.style.display = 'none';
+    loginBtn.disabled = true;
+    return;
+  }
+  loginBtn.disabled = false;
+
+  if (role === 'candidate') {
+    pwGroup.style.display = 'none';
+    examinerGroup.style.display = 'none';
+    candidateGroup.style.display = 'block';
+  } else if (role === 'examiner') {
+    pwGroup.style.display = 'block';
+    examinerGroup.style.display = 'block';
+    candidateGroup.style.display = 'none';
+  } else if (role === 'admin') {
+    pwGroup.style.display = 'block';
+    examinerGroup.style.display = 'none';
+    candidateGroup.style.display = 'none';
+  }
+
+  const isOsc = examSelect.value.startsWith('osce');
+
+  const snLabel = document.getElementById('stationNoLabel');
+  const snNameLabel = document.getElementById('stationNameLabel');
+  if (isOsc) {
+    if (snLabel) snLabel.textContent = 'Station No';
+    if (snNameLabel) snNameLabel.textContent = 'Station Name';
+  } else {
+    if (snLabel) snLabel.textContent = 'Table No';
+    if (snNameLabel) snNameLabel.textContent = 'Examiner Name';
+  }
+}
+
+document.getElementById('examSelect').addEventListener('change', onRoleChange);
+
+document.getElementById('stationNoInput').addEventListener('input', function(){
+  var sn=document.getElementById('stationNameInput');
+  if(this.value.trim()){sn.disabled=true;sn.style.background='#eee';sn.placeholder='Locked — clear number first';}
+  else{sn.disabled=false;sn.style.background='';sn.placeholder='e.g. Procedure / Max Lau';}
+});
+document.getElementById('stationNameInput').addEventListener('input', function(){
+  var no=document.getElementById('stationNoInput');
+  if(this.value.trim()){no.disabled=true;no.style.background='#eee';no.placeholder='Locked — clear name first';}
+  else{no.disabled=false;no.style.background='';no.placeholder='e.g. 1';}
+});
+
+document.getElementById('passwordInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+document.getElementById('candidateNumberInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogin() {
+  const role = document.getElementById('roleSelect').value;
+  const exam = document.getElementById('examSelect').value;
+  const password = document.getElementById('passwordInput').value;
+  const errorEl = document.getElementById('loginError');
+
+  if (role === 'candidate') {
+    const cn = document.getElementById('candidateNumberInput').value.trim();
+    if (!cn) {
+      errorEl.textContent = 'Please enter your candidate number';
+      errorEl.style.display = 'block';
+      return;
+    }
+    errorEl.style.display = 'none';
+    sessionStorage.setItem('sahk_role_config', JSON.stringify({ role:'candidate', exam:exam, candidateNumber:cn }));
+    window.location.href = EXAM_PAGES[exam];
+    return;
+  }
+
+  const expectedPw = PASSWORDS[role];
+  if (password !== expectedPw) {
+    errorEl.textContent = role === 'examiner'
+      ? 'Incorrect password. Hint: the default examiner password'
+      : 'Incorrect password. Hint: the default admin password';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  errorEl.style.display = 'none';
+
+  let config = {
+    role: role,
+    exam: exam
+  };
+
+  if (role === 'examiner') {
+    const stNo = document.getElementById('stationNoInput').value;
+    const stName = document.getElementById('stationNameInput').value.trim();
+    if (!stNo && !stName) {
+      errorEl.textContent = 'Please enter at least one of Station/Table No or Name';
+      errorEl.style.display = 'block';
+      return;
+    }
+    config.stationNo = stNo ? parseInt(stNo, 10) : null;
+    config.stationName = stName;
+    // Build search prefix for the timer page
+    const examType = exam.startsWith('osce') ? 'osce' : 'viva';
+    if (stNo) {
+      config.searchPrefix = (examType === 'osce' ? 'Station ' : 'Table ') + stNo;
+    } else {
+      config.searchPrefix = stName;
+    }
+  }
+
+  sessionStorage.setItem('sahk_role_config', JSON.stringify(config));
+  window.location.href = EXAM_PAGES[exam];
+}
+onRoleChange();
+</script>
+</body>
+</html>
