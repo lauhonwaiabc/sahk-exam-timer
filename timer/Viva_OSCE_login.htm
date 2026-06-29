@@ -157,22 +157,66 @@ const EXAM_PAGES = {
   viva_pm: 'Viva_timer.htm?mode=pm'
 };
 
-const CANDIDATES_BY_EXAM = {
-  osce_am: ["00","05","24","21","13","08","27","19","10","03","31","22","18","15","12","30"],
-  osce_pm: ["00","06","28","26","23","16","07","29","11","04","01","25","20","17","14","32"],
-  viva_am: ["00","10","21","18","15","05","22","03","19","07","12","24","31","30","13","27"],
-  viva_pm: ["00","11","23","20","17","06","25","04","29","08","14","26","01","32","16","28"]
-};
+var _examDataCache = {};
+
+function _loadExamData(exam, callback) {
+  if (_examDataCache[exam]) {
+    callback(_examDataCache[exam]);
+    return;
+  }
+  var type = exam.startsWith('osce') ? 'osce' : 'viva';
+  var suffix = exam.endsWith('am') ? 'am' : 'pm';
+  var scriptId = 'dynamic-exam-data';
+  var old = document.getElementById(scriptId);
+  if (old) old.remove();
+  var script = document.createElement('script');
+  script.id = scriptId;
+  script.src = '../config/' + type + '_data_' + suffix + '.js';
+  script.onload = function() {
+    var data = type === 'osce' ? osceData : vivaData;
+    _examDataCache[exam] = data;
+    callback(data);
+  };
+  script.onerror = function() {
+    callback(null);
+  };
+  document.head.appendChild(script);
+}
+
+function _extractCandidates(data) {
+  var seen = {};
+  var candidates = [];
+  Object.keys(data).forEach(function(session) {
+    ['Candidate', 'Observer'].forEach(function(role) {
+      data[session][role].forEach(function(c) {
+        if (c !== null && !seen[c]) {
+          seen[c] = true;
+          candidates.push(c);
+        }
+      });
+    });
+  });
+  candidates.sort();
+  candidates.unshift('00');
+  return candidates;
+}
 
 function populateCandidateSelect() {
-  const exam = document.getElementById('examSelect').value;
-  const sel = document.getElementById('candidateNumberSelect');
-  sel.innerHTML = '<option value="">--Select--</option>';
-  (CANDIDATES_BY_EXAM[exam] || []).forEach(function(cn) {
-    var opt = document.createElement('option');
-    opt.value = cn;
-    opt.textContent = cn;
-    sel.appendChild(opt);
+  var exam = document.getElementById('examSelect').value;
+  var sel = document.getElementById('candidateNumberSelect');
+  sel.innerHTML = '<option value="">Loading...</option>';
+  sel.disabled = true;
+  _loadExamData(exam, function(data) {
+    sel.innerHTML = '<option value="">--Select--</option>';
+    if (data) {
+      _extractCandidates(data).forEach(function(cn) {
+        var opt = document.createElement('option');
+        opt.value = cn;
+        opt.textContent = cn;
+        sel.appendChild(opt);
+      });
+    }
+    sel.disabled = false;
   });
 }
 

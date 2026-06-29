@@ -86,6 +86,16 @@ window.scoringUI = (function() {
     input.addEventListener('blur', finish);
   }
 
+  function updateScoringSubmitAllVisibility() {
+    var btn = document.getElementById('scoringSubmitAllBtn');
+    if (!btn) return;
+    if (document.querySelector('.score-value[data-dirty="1"], .box-score-value[data-dirty="1"]')) {
+      btn.style.display = '';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
   function setupInlineScoringDelegate() {
     var bc = document.getElementById('bottomContent'); if (!bc) return;
     bc.addEventListener('click', function(e) {
@@ -97,15 +107,17 @@ window.scoringUI = (function() {
           var box = row.closest('.osce-box,.viva-box'); if (!box) box = row.parentNode;
           var saveBtn = box ? box.querySelector('.box-score-save') : null;
           if (saveBtn) saveBtn.style.display = '';
+          updateScoringSubmitAllVisibility();
         });
         return;
       }
-      if (t.classList.contains('score-value') && !t.querySelector('input')) {
+      if (t.classList.contains('score-value') && !t.querySelector('input') && !t.closest('.scoring-cell-obs') && !t.closest('.scoring-cell-rest')) {
         makeScoreEditable(t, function(val, cell) {
           cell.setAttribute('data-dirty', '1');
           var inner = cell.closest('.scoring-cell-inner'); if (!inner) return;
           var subBtn = inner.querySelector('.score-submit-btn');
           if (subBtn) subBtn.style.display = '';
+          updateScoringSubmitAllVisibility();
         });
         return;
       }
@@ -119,6 +131,7 @@ window.scoringUI = (function() {
         cell.setAttribute('data-dirty', '1');
         var box = row.closest('.osce-box,.viva-box'); if (!box) box = row.parentNode;
         var saveBtn = box ? box.querySelector('.box-score-save') : null; if (saveBtn) saveBtn.style.display = '';
+        updateScoringSubmitAllVisibility();
       } else if (t.classList.contains('box-score-save')) {
         var cn = t.dataset.cn, st = parseInt(t.dataset.st);
         var box = t.closest('.osce-box,.viva-box'); if (!box) box = t.parentNode; if (!box) return;
@@ -130,6 +143,7 @@ window.scoringUI = (function() {
           t.textContent = 'Submit'; t.disabled = false;
           if (r.success) {
             t.style.display = 'none'; cell.setAttribute('data-dirty', '0');
+            updateScoringSubmitAllVisibility();
             if (!document.querySelector('.box-score-value[data-dirty="1"], .score-value[data-dirty="1"]')) SahkScoring.fetchAllScores().then(function() { if (typeof renderScoringMode === 'function') renderScoringMode(); });
           }
           else alert('Failed: ' + (r.error || 'Unknown'));
@@ -150,6 +164,7 @@ window.scoringUI = (function() {
         var ns = SCORE_OPTIONS[idx]; cell.textContent = ns; cell.style.color = SCORE_COLORS[ns] || '#888';
         cell.setAttribute('data-dirty', '1');
         var subBtn = inner.querySelector('.score-submit-btn'); if (subBtn) subBtn.style.display = '';
+        updateScoringSubmitAllVisibility();
       });
     });
     container.querySelectorAll('.score-submit-btn').forEach(function(btn) {
@@ -163,12 +178,52 @@ window.scoringUI = (function() {
           btn.textContent = 'Submit'; btn.disabled = false;
           if (r.success) {
             btn.style.display = 'none'; cell.setAttribute('data-dirty', '0');
+            updateScoringSubmitAllVisibility();
             if (!document.querySelector('.score-value[data-dirty="1"], .box-score-value[data-dirty="1"]')) SahkScoring.fetchAllScores().then(function() { if (typeof renderScoringMode === 'function') renderScoringMode(); });
           }
           else alert('Failed: ' + (r.error || 'Unknown'));
         });
       });
     });
+    var submitAllBtn = document.getElementById('scoringSubmitAllBtn');
+    if (submitAllBtn) {
+      submitAllBtn.addEventListener('click', function() {
+        var dirtyCells = document.querySelectorAll('.score-value[data-dirty="1"]');
+        if (!dirtyCells.length) return;
+        var entries = [];
+        dirtyCells.forEach(function(cell) {
+          var st = cell.dataset.st != null ? cell.dataset.st : (cell.dataset.q || null);
+          if (st == null) return;
+          entries.push({
+            candidate: cell.dataset.cn,
+            station: Number(st),
+            score: cell.textContent
+          });
+        });
+        if (!entries.length) return;
+        submitAllBtn.textContent = 'Submitting...';
+        submitAllBtn.disabled = true;
+        SahkScoring.submitScoreBatch(entries).then(function(r) {
+          submitAllBtn.textContent = 'Submit All Changes';
+          submitAllBtn.disabled = false;
+          if (r.success) {
+            dirtyCells.forEach(function(cell) {
+              cell.setAttribute('data-dirty', '0');
+              var inner = cell.closest('.scoring-cell-inner');
+              if (inner) {
+                var subBtn = inner.querySelector('.score-submit-btn');
+                if (subBtn) subBtn.style.display = 'none';
+              }
+            });
+            updateScoringSubmitAllVisibility();
+            SahkScoring.fetchAllScores().then(function() { if (typeof renderScoringMode === 'function') renderScoringMode(); });
+          } else {
+            alert('Failed: ' + (r.error || 'Unknown'));
+          }
+        });
+      });
+    }
+    updateScoringSubmitAllVisibility();
   }
 
   function initScoringModule() {
@@ -278,6 +333,7 @@ window.scoringUI = (function() {
       html += '</tr>';
     });
     html += '</tbody></table></div>';
+    html += '<div style="text-align:center;margin-top:16px"><button id="scoringSubmitAllBtn" style="font-size:1.1em;padding:10px 32px;border-radius:8px;border:none;background:#2e7d32;color:white;font-weight:700;cursor:pointer;transition:background 0.3s;display:none">Submit All Changes</button></div>';
     return html;
   }
 

@@ -167,6 +167,23 @@
       max-width: 600px;
       margin: 20px auto;
     }
+    #submitAllContainer {
+      text-align: center;
+      margin-top: 16px;
+    }
+    #submitAllBtn {
+      font-size: 1.1em;
+      padding: 10px 32px;
+      border-radius: 8px;
+      border: none;
+      background: #2e7d32;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #submitAllBtn:hover { background: #1b5e20; }
+    #submitAllBtn:disabled { opacity: 0.5; cursor: not-allowed; }
     .admin-panel {
       background: #fff3e0;
       border-radius: 12px;
@@ -231,6 +248,9 @@
         <thead id="scoringHead"></thead>
         <tbody id="scoringBody"></tbody>
       </table>
+    </div>
+    <div id="submitAllContainer">
+      <button id="submitAllBtn" style="display:none">Submit All Changes</button>
     </div>
     <div id="adminPanelContainer"></div>
     <div class="last-refresh" id="lastRefresh"></div>
@@ -419,6 +439,7 @@ function handleScoreClick(e) {
         var subBtn = inner.querySelector('.score-submit-btn');
         if (subBtn) subBtn.style.display = '';
       }
+      updateSubmitAllVisibility();
     }
 
     input.addEventListener('keydown', function(ev) {
@@ -451,6 +472,7 @@ function handleScoreClick(e) {
     cell.setAttribute('data-dirty', '1');
     var subBtn = inner.querySelector('.score-submit-btn');
     if (subBtn) subBtn.style.display = '';
+    updateSubmitAllVisibility();
     return;
   }
 
@@ -470,6 +492,7 @@ function handleScoreClick(e) {
       if (r.success) {
         t.style.display = 'none';
         cell2.setAttribute('data-dirty', '0');
+        updateSubmitAllVisibility();
         if (!document.querySelector('.score-value[data-dirty="1"]')) SahkScoring.fetchAllScores().then(function() { renderTable(); });
       } else {
         alert('Failed: ' + (r.error || 'Unknown'));
@@ -479,6 +502,49 @@ function handleScoreClick(e) {
 }
 
 document.getElementById('scoringTable').addEventListener('click', handleScoreClick);
+
+function updateSubmitAllVisibility() {
+  var btn = document.getElementById('submitAllBtn');
+  if (document.querySelector('.score-value[data-dirty="1"]')) {
+    btn.style.display = '';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+document.getElementById('submitAllBtn').addEventListener('click', function() {
+  var dirtyCells = document.querySelectorAll('.score-value[data-dirty="1"]');
+  if (!dirtyCells.length) return;
+  var entries = [];
+  dirtyCells.forEach(function(cell) {
+    entries.push({
+      candidate: cell.dataset.cn,
+      station: Number(cell.dataset.q),
+      score: cell.textContent
+    });
+  });
+  var btn = this;
+  btn.textContent = 'Submitting...';
+  btn.disabled = true;
+  SahkScoring.submitScoreBatch(entries).then(function(r) {
+    btn.textContent = 'Submit All Changes';
+    btn.disabled = false;
+    if (r.success) {
+      dirtyCells.forEach(function(cell) {
+        cell.setAttribute('data-dirty', '0');
+        var inner = cell.closest('.scoring-cell-inner');
+        if (inner) {
+          var subBtn = inner.querySelector('.score-submit-btn');
+          if (subBtn) subBtn.style.display = 'none';
+        }
+      });
+      updateSubmitAllVisibility();
+      SahkScoring.fetchAllScores().then(function() { renderTable(); });
+    } else {
+      alert('Failed: ' + (r.error || 'Unknown'));
+    }
+  });
+});
 
 function setupAdminPanel() {
   if (currentRole !== 'admin') return;
