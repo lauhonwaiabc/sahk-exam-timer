@@ -1,0 +1,259 @@
+/* ===== Scoring Panel ===== */
+#scoringPanelContainer {
+    margin-top: 20px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.scoring-panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+    padding: 20px 25px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.scoring-header {
+    font-weight: 900;
+    font-size: 1.3em;
+    color: #1b5e20;
+    margin: 0 0 15px 0;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+/* ===== Score Values ===== */
+.score-value {
+    font-weight: 900;
+    font-size: 2em;
+    min-width: 50px;
+    text-align: center;
+    user-select: none;
+}
+
+.score-scroll-btn {
+    font-size: 1.1em;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid #bbb;
+    background: #f5f5f5;
+    color: #333;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.score-scroll-btn:hover { background: #e0e0e0; }
+
+.score-submit-btn {
+    font-size: 0.95em;
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: none;
+    background: #4caf50;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.score-submit-btn:hover { background: #388e3c; }
+.score-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ===== Admin Panel ===== */
+.admin-panel {
+    background: #fff3e0;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+    padding: 20px 25px;
+    max-width: 600px;
+    margin: 20px auto 0;
+    text-align: center;
+}
+
+.admin-header {
+    font-weight: 900;
+    font-size: 1.2em;
+    color: #e65100;
+    margin: 0 0 12px 0;
+}
+
+.admin-btn {
+    font-size: 1em;
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: none;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    margin: 4px 6px;
+    background: #1976d2;
+    transition: background 0.3s;
+}
+.admin-btn:hover { background: #1565c0; }
+.admin-btn-danger { background: #d32f2f; }
+.admin-btn-danger:hover { background: #b71c1c; }
+
+.admin-exam-label {
+    display: block;
+    margin-top: 10px;
+    font-weight: 700;
+    color: #555;
+    font-size: 0.9em;
+}
+
+.admin-status {
+    margin-top: 6px;
+    font-weight: 600;
+    color: #2e7d32;
+    font-size: 0.85em;
+}
+
+/* ===== In-box score row ===== */
+.box-score-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    justify-content: center;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    font-size: 0.8em;
+}
+
+.box-score-value {
+    font-weight: 900;
+    font-size: 2.6em;
+    min-width: 28px;
+    text-align: center;
+    user-select: none;
+}
+
+.box-score-btn {
+    font-size: 0.65em;
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    background: #f5f5f5;
+    color: #555;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1.2;
+    transition: background 0.15s;
+}
+.box-score-btn:hover { background: #e0e0e0; }
+
+.box-score-save {
+    font-size: 0.65em;
+    padding: 2px 4px;
+    border-radius: 3px;
+    border: none;
+    background: #4caf50;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.3s;
+    line-height: 1.2;
+    align-self: center;
+    width: auto;
+    min-width: 0;
+}
+.box-score-save:hover { background: #388e3c; }
+.box-score-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ===== Scoring Matrix Table ===== */
+.scoring-table-wrapper { overflow-x: auto; }
+
+.scoring-matrix {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 600px;
+    font-size: 0.9em;
+}
+
+.scoring-matrix th,
+.scoring-matrix td {
+    border: 1px solid #ddd;
+    padding: 8px 6px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.scoring-matrix thead th {
+    background: #1b5e20;
+    color: #fff;
+    font-weight: 900;
+    font-size: 1em;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.scoring-matrix .scoring-corner {
+    background: #263238;
+    min-width: 80px;
+    position: sticky;
+    left: 0;
+    z-index: 3;
+}
+
+.scoring-col-header { min-width: 130px; white-space: nowrap; }
+.scoring-col-sub { font-weight: 600; font-size: 0.85em; color: #c8e6c9; }
+
+.scoring-row-label {
+    background: #37474f;
+    color: #fff;
+    font-weight: 900;
+    font-size: 1.05em;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 80px;
+}
+
+.scoring-matrix-cell { transition: background 0.3s; }
+
+.scoring-matrix-cell.scoring-prev-session { background: #ffcdd2; border-radius: 6px; padding: 4px 8px; }
+.scoring-matrix-cell.scoring-curr-transit { background: #bbdefb; border-radius: 6px; padding: 4px 8px; }
+.scoring-matrix-cell.scoring-curr-exam { background: #c8e6c9; border-radius: 6px; padding: 4px 8px; }
+.scoring-matrix-cell.scoring-past-session { background: #ffebee; border-radius: 6px; padding: 4px 8px; }
+.scoring-matrix-cell.scoring-future-session { background: #e3f2fd; border-radius: 6px; padding: 4px 8px; }
+
+.scoring-cell-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.scoring-score-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.scoring-matrix-cell.scoring-cell-rest { background: #e0e0e0; color: #999; }
+.scoring-matrix-cell.scoring-cell-obs { background: #e0e0e0; color: #999; }
+
+.scoring-cell-inner .score-value { font-size: 3em; min-width: 40px; }
+.scoring-cell-inner .score-scroll-btn { font-size: 0.65em; padding: 1px 5px; }
+.scoring-cell-inner .score-submit-btn { font-size: 0.8em; padding: 3px 10px; }
+
+/* ===== Print & Responsive ===== */
+@media print {
+    .scoring-matrix { font-size: 8pt; }
+    .scoring-matrix thead th { position: static; background: #eee !important; color: black !important; }
+    .scoring-row-label { position: static; background: #f5f5f5 !important; color: black !important; }
+    .score-value { font-size: 14pt; }
+}
+
+@media (max-width: 600px) {
+    .scoring-matrix { min-width: 0; font-size: 0.75em; }
+    .scoring-matrix th, .scoring-matrix td { padding: 5px 3px; }
+    .scoring-matrix .scoring-corner { min-width: 50px; font-size: 0.85em; }
+    .scoring-col-header { min-width: 75px; white-space: normal; font-size: 0.85em; }
+    .scoring-row-label { min-width: 50px; font-size: 0.85em; }
+    .scoring-cell-inner .score-value { font-size: 2.1em; min-width: 28px; }
+    .scoring-cell-inner .score-scroll-btn { font-size: 0.65em; padding: 1px 4px; }
+    .scoring-cell-inner .score-submit-btn { font-size: 0.7em; padding: 2px 6px; }
+}

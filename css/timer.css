@@ -1,0 +1,243 @@
+/* ===== Content Area ===== */
+#bottomContent {
+    flex-grow: 1;
+    padding: 25px 40px 40px;
+    overflow-y: auto;
+    background: white;
+    box-shadow: inset 0 0 15px rgb(0 0 0 / 0.05);
+}
+
+.timer {
+    font-size: 7em;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #d33;
+    user-select: none;
+    letter-spacing: 4px;
+}
+
+.timer.transit { color: #999; }
+.timer.debriefing { color: #2e7d32; }
+
+.info {
+    font-size: 1.3em;
+    color: #444;
+    max-width: 900px;
+    margin: 0 auto 20px;
+    line-height: 1.6;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* ===== Containers ===== */
+#tableModeContainer,
+#stationModeContainer,
+#candidateModeContainer {
+    max-width: 1800px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: center;
+}
+
+/* ===== Box Styles (Shared Viva / OSCE) ===== */
+.viva-box,
+.osce-box {
+    background: #f0f7f5;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
+    padding: 16px 20px;
+    width: 176px;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+    transition: box-shadow 0.3s;
+    margin-bottom: 14px;
+}
+
+.viva-box:hover,
+.osce-box:hover {
+    box-shadow: 0 6px 16px rgb(0 0 0 / 0.2);
+}
+
+.viva-title,
+.osce-title {
+    font-weight: 900;
+    font-size: 1.2em;
+    margin-bottom: 7px;
+    color: #2e7d32;
+    text-align: center;
+    letter-spacing: 0.7px;
+}
+
+/* ===== Candidate / Observer Cells ===== */
+.candidate-row,
+.observer-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+}
+
+.role-label {
+    font-weight: 700;
+    font-size: 0.72em;
+    color: #555;
+    margin: 0;
+}
+
+.candidate-name {
+    font-weight: 900;
+    font-size: 0.72em;
+    color: #1b5e20;
+    margin: 0;
+}
+
+.candidate-cell {
+    background: #f0f7f5;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
+    padding: 14px 11px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-weight: 700;
+    font-size: 0.96em;
+    color: #1b5e20;
+    transition: box-shadow 0.3s;
+    text-align: center;
+    width: 176px;
+    flex: 0 0 176px;
+    box-sizing: border-box;
+    margin-bottom: 14px;
+}
+
+.candidate-cell:hover {
+    box-shadow: 0 6px 16px rgb(0 0 0 / 0.2);
+}
+
+.candidate-cell.observer-cell {
+    background: #fff9c4 !important;
+}
+
+.candidate-cell.rest-station {
+    background: #f0e3fa !important;
+    border: 2px solid #9621f3 !important;
+}
+
+.candidate-cell.observer-cell.rest-station {
+    background: #fff9c4 !important;
+    border: 2px solid #2196f3 !important;
+}
+
+.candidate-number {
+    font-weight: 900;
+    font-size: 0.96em;
+    margin-bottom: 3px;
+}
+
+.candidate-role.candidate {
+    font-size: 0.76em;
+    font-weight: 900;
+    color: #5e1b20;
+    letter-spacing: 0.8px;
+}
+
+.candidate-role.observer {
+    font-size: 0.76em;
+    font-weight: 600;
+    color: #1b5e20;
+}
+
+.candidate-table,
+.candidate-station {
+    font-weight: 700;
+    font-size: 0.72em;
+    color: #2e7d32;
+}
+
+/* Rest station styling */
+.osce-box.rest-station {
+    background: #f0e3fa !important;
+    border: 2px solid #9621f3;
+}
+
+.osce-box.rest-station .osce-title,
+.osce-box.rest-station .candidate-station {
+    color: #1565c0 !important;
+}
+
+/* Observer row */
+.observer-row {
+    background: #fff9c4;
+    border-radius: 8px;
+    padding: 2px 4px;
+    margin-top: 6px;
+}
+
+/* ===== Highlight for search ===== */
+.viva-box.highlight,
+.osce-box.highlight,
+.candidate-cell.highlight {
+    outline: 4px solid #1976d2 !important;
+    box-shadow: 0 0 18px #1976d2cc !important;
+    background: #e3f2fd !important;
+}
+
+/* Isolate mode */
+#stationModeContainer.scale-isolate-1 [data-iso],
+#tableModeContainer.scale-isolate-1 [data-iso],
+#candidateModeContainer.scale-isolate-1 [data-iso] {
+    transform: scale(2);
+    transform-origin: top center;
+}
+
+/* ===== Print Styles ===== */
+@media print {
+    #bottomContent { box-shadow: none; padding: 10px; }
+    .timer { font-size: 24pt; color: black; margin-bottom: 5px; }
+    .viva-box, .osce-box, .candidate-cell {
+        box-shadow: none; border: 1px solid #ccc; break-inside: avoid;
+    }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+    body { font-size: 14px; padding: 10px 8px; }
+
+    #clock { font-size: 1.5em; padding: 10px 0; letter-spacing: 1.5px; }
+
+    #controls { flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    #controls button { font-size: 0.82em; padding: 4px 8px; border-radius: 4px; }
+
+    #startTimeContainer .offset-btn { font-size: 0.78em; padding: 2px 7px; margin: 1px; }
+    #startTimeContainer label, #searchContainer input, #searchContainer button { font-size: 0.85em; }
+    #startTimeInput { width: 100px; padding: 4px 8px; }
+    #topMenu { margin-bottom: 8px; }
+    #sectionsList, #subsectionsList { gap: 5px; }
+    #sectionsList li, #subsectionsList li { min-width: 70px; font-size: 0.78em; padding: 3px 6px; }
+    #bottomContent { padding: 15px 20px 20px; }
+    .timer { font-size: 4.5em; margin-bottom: 8px; }
+    .info { font-size: 1em; max-width: 100%; margin-bottom: 15px; }
+
+    #tableModeContainer, #stationModeContainer, #candidateModeContainer {
+        display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+    }
+    .viva-box, .osce-box, .candidate-cell {
+        flex: 0 0 calc(50% - 30px); width: calc(50% - 30px);
+        margin-bottom: 14px; box-sizing: border-box; font-size: 0.72em;
+    }
+    .viva-title, .osce-title { font-size: 0.9em; margin-bottom: 5px; }
+    .candidate-row, .observer-row { gap: 6px; }
+    .role-label, .candidate-name, .candidate-number, .candidate-role,
+    .candidate-table, .candidate-station { font-size: 0.72em; }
+    .candidate-role.candidate, .candidate-role.observer { font-size: 0.68em; }
+    #startTimeContainer { display: none; }
+    #searchContainer { display: none; }
+    #startBtn, #pauseBtn { display: none; }
+    .offset-btn { display: none; }
+    #applyStartTimeBtn { font-size: 0.75em; padding: 3px 8px; }
+    #searchInput { width: 120px; font-size: 0.78em; padding: 4px 8px; }
+}
