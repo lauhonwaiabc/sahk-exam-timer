@@ -13,7 +13,7 @@ Sahk.register('WrittenTimer', function() {
   var _synth, _synthSupported, _voicesReady;
   var _ttsRate = 1.0;
   var _ttsPitch = 1.0;
-  var _ttsVoiceMode = 'auto';
+  var _ttsVoiceURI = 'auto';
   var _activeUtterance = null;
 
   function isMuted() { return Audio.isMuted; }
@@ -31,32 +31,13 @@ Sahk.register('WrittenTimer', function() {
   }
 
   function getEnglishVoice() {
-    if (!_synthSupported) return null;
+    if (!_synthSupported || _ttsVoiceURI === 'auto') return null;
     var voices = _synth.getVoices();
     if (!voices || !voices.length) return null;
-    var candidates = [];
     for (var i = 0; i < voices.length; i++) {
-      if (voices[i].lang && voices[i].lang.startsWith('en') && !/chinese|cantonese|hong.?kong/i.test(voices[i].name))
-        candidates.push(voices[i]);
+      if (voices[i].voiceURI === _ttsVoiceURI) return voices[i];
     }
-    if (!candidates.length) {
-      for (var i = 0; i < voices.length; i++) {
-        if (voices[i].lang && voices[i].lang.startsWith('en')) candidates.push(voices[i]);
-      }
-    }
-    if (!candidates.length) return voices[0];
-    if (_ttsVoiceMode === 'male') {
-      var male = candidates.filter(function(v) {
-        return /male|guy|man\b/i.test(v.name);
-      });
-      if (male.length) return male[0];
-    } else if (_ttsVoiceMode === 'female') {
-      var female = candidates.filter(function(v) {
-        return /female|woman|lady|zira|samantha/i.test(v.name);
-      });
-      if (female.length) return female[0];
-    }
-    return candidates[0];
+    return null;
   }
 
   function prepareSpeechText(text) {
@@ -393,12 +374,53 @@ Sahk.register('WrittenTimer', function() {
       });
     }
 
-    var voiceSelect = document.getElementById('voiceSelect');
-    if (voiceSelect) {
-      voiceSelect.value = _ttsVoiceMode;
-      voiceSelect.addEventListener('change', function() {
-        _ttsVoiceMode = this.value;
-      });
+    setupVoiceSelect();
+  }
+
+  function populateVoiceSelect() {
+    if (!_synthSupported) return;
+    var voices = _synth.getVoices();
+    if (!voices || !voices.length) return;
+    var sel = document.getElementById('voiceSelect');
+    if (!sel) return;
+    var currentVal = sel.value;
+    sel.innerHTML = '<option value="auto">Auto (default)</option>';
+    var added = {};
+    for (var i = 0; i < voices.length; i++) {
+      var v = voices[i];
+      if (!v.lang || !v.lang.startsWith('en')) continue;
+      if (added[v.voiceURI]) continue;
+      added[v.voiceURI] = true;
+      var opt = document.createElement('option');
+      opt.value = v.voiceURI;
+      opt.textContent = v.name + ' (' + v.lang + ')';
+      sel.appendChild(opt);
+    }
+    if (currentVal && currentVal !== 'auto') {
+      var match = sel.querySelector('option[value="' + CSS.escape(currentVal) + '"]');
+      if (match) { sel.value = currentVal; _ttsVoiceURI = currentVal; }
+    }
+  }
+
+  function setupVoiceSelect() {
+    var sel = document.getElementById('voiceSelect');
+    if (!sel) return;
+    sel.addEventListener('change', function() {
+      _ttsVoiceURI = this.value;
+      try { localStorage.setItem('sahk_tts_voice_uri', _ttsVoiceURI); } catch(e) {}
+    });
+    var saved;
+    try { saved = localStorage.getItem('sahk_tts_voice_uri'); } catch(e) { saved = null; }
+    if (saved) {
+      _ttsVoiceURI = saved;
+      var opt = sel.querySelector('option[value="' + CSS.escape(saved) + '"]');
+      if (opt) sel.value = saved;
+    }
+    if (_synthSupported) {
+      var voices = _synth.getVoices();
+      if (voices && voices.length) {
+        populateVoiceSelect();
+      }
     }
   }
 
@@ -428,12 +450,14 @@ Sahk.register('WrittenTimer', function() {
       var voices = _synth.getVoices();
       if (voices && voices.length) {
         _voicesReady = true;
+        populateVoiceSelect();
       } else {
         _synth.addEventListener('voiceschanged', function() {
           var v = _synth.getVoices();
           if (v && v.length) {
             _voicesReady = true;
             warmupSynth();
+            populateVoiceSelect();
             var s = document.getElementById('speechStatus');
             if (s) s.textContent = 'Speech engine ready (' + v.length + ' voices)';
           }
