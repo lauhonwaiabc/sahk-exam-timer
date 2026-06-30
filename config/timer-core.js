@@ -12,6 +12,7 @@ Sahk.register('TimerCore', function() {
     var getSessionLabel = config.getSessionLabel;
     var renderContent = config.renderContent;
     var mutedByDefault = config.mutedByDefault !== undefined ? config.mutedByDefault : true;
+    var enableBeep = config.enableBeep !== undefined ? config.enableBeep : true;
 
     var el = function(id) { return document.getElementById(id); };
 
@@ -266,7 +267,7 @@ Sahk.register('TimerCore', function() {
         }
 
         if (countdownSecondsLeft <= 0) {
-          Audio.beep(5);
+          if (enableBeep) Audio.beep(5);
           moveToNextPhase();
         }
       }, 100);

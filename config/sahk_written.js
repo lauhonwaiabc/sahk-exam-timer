@@ -146,6 +146,8 @@ Sahk.register('WrittenTimer', function() {
   }
 
   function clearBanner() {
+    if (_synthSupported && _synth) { try { _synth.cancel(); } catch(e) {} }
+    _activeUtterance = null;
     var b = document.getElementById('scriptBanner');
     if (!b) return;
     b.innerHTML = '<div class="script-placeholder">Script announcements will appear here automatically</div>';
@@ -447,12 +449,34 @@ Sahk.register('WrittenTimer', function() {
       examTitle: _examTitle,
       getSessionLabel: getSessionLabel,
       mutedByDefault: true,
+      enableBeep: false,
       renderContent: renderWrittenContent
     });
 
     initTtsControls();
 
     _ctrl.init();
+
+    var stpBtn = document.getElementById('stopBtn');
+    if (stpBtn) {
+      stpBtn.addEventListener('click', function() {
+        if (_synthSupported && _synth) { try { _synth.cancel(); } catch(e) {} }
+        _activeUtterance = null;
+        _speechGen++;
+        _currentScriptGroup = -1;
+        _scriptSentenceIndex = 0;
+        if (_advanceTimer) { clearTimeout(_advanceTimer); _advanceTimer = null; }
+        if (_clearTimeout) { clearTimeout(_clearTimeout); _clearTimeout = null; }
+        _processedGroups = {};
+        var b = document.getElementById('scriptBanner');
+        if (b) {
+          b.innerHTML = '<div class="script-placeholder">Script announcements will appear here automatically</div>';
+          b.classList.remove('speaking', 'done');
+        }
+        var s = document.getElementById('speechStatus');
+        if (s) s.textContent = '';
+      });
+    }
 
     var muteBtn = document.getElementById('muteBtn');
     if (muteBtn) {
