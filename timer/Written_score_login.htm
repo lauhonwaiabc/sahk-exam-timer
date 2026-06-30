@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>SAHK Written Score - Login</title>
+  <link rel="stylesheet" href="../timer_style.css"/>
+  <script src="../config/written_score_data.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="../config/firebase-auth.js"></script>
+  <style>
+    body { justify-content: center; align-items: center; }
+    .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+<noscript><p style="text-align:center;font-weight:700;color:#d32f2f;">JavaScript is required for this exam timer.</p></noscript>
+<div class="login-container">
+  <h1>SAHK Written Exam<br>Score Reporting</h1>
+
+  <div class="login-select-group">
+    <label for="roleSelect">Role</label>
+    <select id="roleSelect" onchange="onRoleChange()">
+      <option value="">--Select One--</option>
+      <option value="examiner">Examiner</option>
+      <option value="admin">Admin</option>
+    </select>
+  </div>
+
+  <div class="login-select-group" id="examinerNameGroup" style="display:none;">
+    <label for="examinerNameSelect">Examiner Name</label>
+    <select id="examinerNameSelect">
+      <option value="">--Select Examiner--</option>
+    </select>
+  </div>
+
+  <div class="login-select-group" id="passwordGroup" style="display:none;">
+    <label for="passwordInput">Password</label>
+    <input id="passwordInput" type="password" placeholder="Enter password"/>
+  </div>
+
+  <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>Enter</button>
+  <div class="login-error" id="loginError"></div>
+  <a class="login-back" href="../index.htm">Back to Main Menu</a>
+</div>
+
+<script>
+'use strict';
+
+SahkAuth.init();
+
+function onRoleChange() {
+  const role = document.getElementById('roleSelect').value;
+  const pwGroup = document.getElementById('passwordGroup');
+  const examinerGroup = document.getElementById('examinerNameGroup');
+  const loginBtn = document.getElementById('loginBtn');
+
+  pwGroup.style.display = 'none';
+  examinerGroup.style.display = 'none';
+
+  if (!role) {
+    loginBtn.disabled = true;
+    return;
+  }
+  loginBtn.disabled = false;
+
+  if (role === 'examiner') {
+    pwGroup.style.display = 'block';
+    examinerGroup.style.display = 'block';
+  } else if (role === 'admin') {
+    pwGroup.style.display = 'block';
+  }
+}
+
+document.getElementById('roleSelect').addEventListener('change', onRoleChange);
+
+document.getElementById('passwordInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+(function populateExaminers() {
+  var sel = document.getElementById('examinerNameSelect');
+  var names = getWrittenExaminerNames();
+  names.forEach(function(name) {
+    var opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+})();
+
+async function doLogin() {
+  const role = document.getElementById('roleSelect').value;
+  const password = document.getElementById('passwordInput').value;
+  const errorEl = document.getElementById('loginError');
+
+  if (!role) {
+    errorEl.textContent = 'Please select a role';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  if (!password) {
+    errorEl.textContent = 'Please enter the password';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    var user = await SahkAuth.signIn(role, password);
+    var userRole = await SahkAuth.getUserRole(user.uid);
+
+    if (userRole !== role) {
+      errorEl.textContent = 'This account does not have ' + role + ' privileges';
+      errorEl.style.display = 'block';
+      await SahkAuth.signOut();
+      return;
+    }
+
+    errorEl.style.display = 'none';
+
+    var config = { role: role, uid: user.uid, email: user.email };
+
+    if (role === 'examiner') {
+      var name = document.getElementById('examinerNameSelect').value;
+      if (!name) {
+        errorEl.textContent = 'Please select your examiner name';
+        errorEl.style.display = 'block';
+        return;
+      }
+      config.examinerName = name;
+      var info = getWrittenExaminerInfo(name);
+      if (info) config.group = info.group;
+    }
+
+    sessionStorage.setItem('sahk_role_config', JSON.stringify(config));
+    window.location.href = 'Written_score.htm';
+  } catch (e) {
+    errorEl.textContent = 'Incorrect password';
+    errorEl.style.display = 'block';
+  }
+}
+
+onRoleChange();
+</script>
+</body>
+</html>

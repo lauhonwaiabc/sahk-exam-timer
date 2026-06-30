@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>SAHK Written Score Reporting</title>
+  <link rel="stylesheet" href="../timer_style.css"/>
+  <script src="../config/written_score_data.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="../config/firebase-auth.js"></script>
+  <script src="../config/scoring.js"></script>
+  <style>
+    body { background: #f9f9f9; }
+    #scoreContainer {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 20px 40px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    #scoreHeader {
+      text-align: center;
+      margin: 20px 0;
+    }
+    #scoreHeader h1 {
+      font-weight: 900;
+      font-size: 1.8rem;
+      color: #d33;
+      margin: 0 0 4px;
+      letter-spacing: 1.5px;
+    }
+    #scoreHeader .subtitle {
+      font-weight: 600;
+      color: #555;
+      font-size: 1rem;
+    }
+    #roleHeader {
+      background: #e3f2fd;
+      padding: 8px 20px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.95em;
+      color: #1565c0;
+      display: none;
+    }
+    #roleHeader.examiner-role {
+      background: #e8f5e9;
+      color: #2e7d32;
+      display: block;
+    }
+    #roleHeader.admin-role {
+      background: #fff3e0;
+      color: #e65100;
+      display: block;
+    }
+    .score-group-header {
+      background: #1a237e;
+      color: #fff;
+      text-align: center;
+      font-weight: 900;
+      font-size: 1em;
+      padding: 8px 4px;
+      border: 1px solid #283593;
+    }
+    .score-group-header.scope-group {
+      background: #2e7d32;
+      border-color: #388e3c;
+    }
+    .scoring-table-wrapper {
+      overflow-x: auto;
+    }
+    .scoring-matrix {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 700px;
+      font-size: 0.9em;
+    }
+    .scoring-matrix th,
+    .scoring-matrix td {
+      border: 1px solid #ddd;
+      padding: 8px 6px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .scoring-matrix thead th {
+      background: #1b5e20;
+      color: #fff;
+      font-weight: 900;
+      font-size: 1em;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .scoring-matrix thead th.group-header {
+      top: 0;
+      z-index: 3;
+    }
+    .scoring-matrix thead th.question-header {
+      top: 36px;
+      z-index: 2;
+    }
+    .scoring-matrix .scoring-corner {
+      background: #263238;
+      min-width: 80px;
+      position: sticky;
+      left: 0;
+      z-index: 3;
+    }
+    .scoring-row-label {
+      background: #37474f;
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.05em;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      min-width: 80px;
+    }
+    .scoring-cell-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .scoring-score-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .score-value {
+      font-weight: 900;
+      font-size: 2em;
+      min-width: 40px;
+      text-align: center;
+      user-select: none;
+    }
+    .score-scroll-btn {
+      font-size: 0.65em;
+      padding: 1px 5px;
+      border-radius: 6px;
+      border: 1px solid #bbb;
+      background: #f5f5f5;
+      color: #333;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .score-scroll-btn:hover { background: #e0e0e0; }
+    .score-submit-btn {
+      font-size: 0.8em;
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: none;
+      background: #4caf50;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .score-submit-btn:hover { background: #388e3c; }
+    .score-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #adminPanelContainer {
+      max-width: 600px;
+      margin: 20px auto;
+    }
+    #submitAllContainer {
+      text-align: center;
+      margin-top: 16px;
+    }
+    #submitAllBtn {
+      font-size: 1.1em;
+      padding: 10px 32px;
+      border-radius: 8px;
+      border: none;
+      background: #2e7d32;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #submitAllBtn:hover { background: #1b5e20; }
+    #submitAllBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .admin-panel {
+      background: #fff3e0;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+      padding: 20px 25px;
+      text-align: center;
+    }
+    .admin-header {
+      font-weight: 900;
+      font-size: 1.2em;
+      color: #e65100;
+      margin: 0 0 12px;
+    }
+    .admin-btn {
+      font-size: 1em;
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: none;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      margin: 4px 6px;
+      background: #1976d2;
+      transition: background 0.3s;
+    }
+    .admin-btn:hover { background: #1565c0; }
+    .admin-btn-danger { background: #d32f2f; }
+    .admin-btn-danger:hover { background: #b71c1c; }
+    .admin-exam-label { display: block; margin-top: 10px; font-weight: 700; color: #555; font-size: 0.9em; }
+    .admin-status { margin-top: 6px; font-weight: 600; color: #2e7d32; font-size: 0.85em; }
+    .last-refresh {
+      text-align: center;
+      font-size: 0.8em;
+      color: #999;
+      margin-top: 10px;
+    }
+    @media (max-width: 600px) {
+      .scoring-matrix { min-width: 0; font-size: 0.75em; }
+      .scoring-matrix th, .scoring-matrix td { padding: 5px 3px; }
+      .scoring-matrix .scoring-corner { min-width: 50px; font-size: 0.85em; }
+      .scoring-row-label { min-width: 50px; font-size: 0.85em; }
+      .score-value { font-size: 1.4em; min-width: 28px; }
+      .score-scroll-btn { font-size: 0.65em; padding: 1px 4px; }
+      .score-submit-btn { font-size: 0.7em; padding: 2px 6px; }
+      #scoreContainer { padding: 0 10px 20px; }
+      .score-group-header { white-space: nowrap; font-size: 0.8em; padding: 5px 3px; }
+      .scoring-matrix thead th.question-header { top: 22px; }
+    }
+  </style>
+</head>
+<body>
+<div id="roleHeader"></div>
+<div id="syncWarning" style="display:none;background:#fff3e0;color:#e65100;text-align:center;padding:6px;font-weight:700;font-size:0.9em;"></div>
+<div id="scoreContainer">
+  <div id="scoreHeader">
+    <h1>SAHK Written Exam Score Reporting</h1>
+    <div class="subtitle" id="scoreSubtitle">Loading...</div>
+  </div>
+  <div id="bottomContent">
+    <div id="scoringTableContainer" class="scoring-table-wrapper">
+      <table class="scoring-matrix" id="scoringTable">
+        <thead id="scoringHead"></thead>
+        <tbody id="scoringBody"></tbody>
+      </table>
+    </div>
+    <div id="submitAllContainer">
+      <button id="submitAllBtn" style="display:none">Submit All Changes</button>
+    </div>
+    <div id="adminPanelContainer"></div>
+    <div class="last-refresh" id="lastRefresh"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+var roleConfig = null, currentRole = 'candidate', examinerName = null, examinerGroup = null;
+var SCORE_OPTIONS = ['-', 2, 3, 4, 5, 6, 7, 8];
+var SCORE_COLORS = { '-': '#000000', 2: '#d32f2f', 3: '#ff9800', 4: '#fdd835', 5: '#4caf50', 6: '#2196f3', 7: '#3f51b5', 8: '#9c27b0' };
+var refreshInterval = null;
+
+try {
+  var raw = sessionStorage.getItem('sahk_role_config');
+  if (raw) {
+    roleConfig = JSON.parse(raw);
+    currentRole = roleConfig.role || 'candidate';
+    examinerName = roleConfig.examinerName || null;
+    examinerGroup = roleConfig.group || null;
+  }
+} catch (e) {}
+
+if (currentRole !== 'candidate') {
+  SahkAuth.init();
+  var unsub = SahkAuth.onAuthStateChanged(function(user) {
+    if (!user) {
+      sessionStorage.removeItem('sahk_role_config');
+      window.location.href = 'Written_score_login.htm';
+    }
+    unsub();
+  });
+}
+
+var h = document.getElementById('roleHeader');
+if (currentRole === 'examiner') {
+  var info = getWrittenExaminerInfo(examinerName);
+  var grp = info ? info.group : '';
+  h.textContent = 'Examiner Mode - ' + examinerName + ' (' + grp + ')';
+  h.className = 'examiner-role';
+} else if (currentRole === 'admin') {
+  h.textContent = 'Admin Mode';
+  h.className = 'admin-role';
+} else {
+  h.textContent = 'Unknown Role - Redirecting...';
+  setTimeout(function() { window.location.href = 'Written_score_login.htm'; }, 2000);
+}
+
+SahkScoring.init({
+  examId: 'written',
+  role: currentRole,
+  stationNo: null,
+  stationName: examinerName || '',
+  identifier: currentRole === 'admin' ? 'admin' : (examinerName || 'unknown'),
+  onScoresUpdated: function() { if (!document.querySelector('.score-value[data-dirty="1"]')) renderTable(); }
+});
+
+function getVisibleQuestions() {
+  if (currentRole === 'admin') return ALL_QUESTIONS;
+  if (examinerGroup) return getWrittenGroupQuestions(examinerGroup);
+  return [];
+}
+
+function getVisibleCandidates() {
+  if (currentRole === 'admin') return getAllWrittenCandidates();
+  if (examinerName) {
+    var info = getWrittenExaminerInfo(examinerName);
+    return info ? info.candidates.slice().sort() : [];
+  }
+  return [];
+}
+
+function qIndexToNumber(q) {
+  var m = q.match(/Q\.(\d+)/);
+  return m ? parseInt(m[1], 10) : 0;
+}
+
+function renderTable() {
+  var head = document.getElementById('scoringHead');
+  var body = document.getElementById('scoringBody');
+  var questions = getVisibleQuestions();
+  var candidates = getVisibleCandidates();
+  var subtitle = document.getElementById('scoreSubtitle');
+
+  if (currentRole === 'examiner') {
+    var info2 = getWrittenExaminerInfo(examinerName);
+    if (info2) {
+      var qRange = questions.join(', ');
+      subtitle.textContent = examinerName + ' — ' + info2.group + ' — Questions: ' + qRange + ' — Candidates: ' + candidates.length;
+    } else {
+      subtitle.textContent = examinerName;
+    }
+  } else {
+    subtitle.textContent = 'Admin — All Questions — All Candidates';
+  }
+
+  if (!questions.length || !candidates.length) {
+    head.innerHTML = '';
+    body.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:40px;color:#888;font-weight:600;">No data available.</td></tr>';
+    return;
+  }
+
+  var groupHtml = '<tr>';
+  groupHtml += '<th class="scoring-corner">Candidate</th>';
+  var groupNames = Object.keys(WRITTEN_QUESTION_GROUPS);
+  groupNames.forEach(function(gn) {
+    var gq = WRITTEN_QUESTION_GROUPS[gn];
+    var visible = gq.filter(function(q) { return questions.indexOf(q) >= 0; });
+    if (visible.length > 0) {
+      groupHtml += '<th class="group-header score-group-header" colspan="' + visible.length + '">' + gn + '</th>';
+    }
+  });
+  groupHtml += '</tr>';
+
+  var qHeadHtml = '<tr><th class="scoring-corner"></th>';
+  questions.forEach(function(q) {
+    qHeadHtml += '<th class="question-header">' + q + '</th>';
+  });
+  qHeadHtml += '</tr>';
+
+  var bodyHtml = '';
+  candidates.forEach(function(cn) {
+    bodyHtml += '<tr><td class="scoring-row-label">' + cn + '</td>';
+    questions.forEach(function(q) {
+      var qNum = qIndexToNumber(q);
+      var sc = '-', co = '#888';
+      if (window.SahkScoring && typeof SahkScoring.getLatestScoreForStation === 'function') {
+        sc = SahkScoring.getLatestScoreForStation(cn, qNum);
+        co = SCORE_COLORS[sc] || '#888';
+      }
+      bodyHtml += '<td><div class="scoring-cell-inner">';
+      bodyHtml += '<div class="scoring-score-row">';
+      bodyHtml += '<button class="score-scroll-btn score-down" data-cn="' + cn + '" data-q="' + qNum + '" data-dir="-1">&#9664;</button>';
+      bodyHtml += '<span class="score-value" data-cn="' + cn + '" data-q="' + qNum + '" data-dirty="0" style="color:' + co + '">' + sc + '</span>';
+      bodyHtml += '<button class="score-scroll-btn score-up" data-cn="' + cn + '" data-q="' + qNum + '" data-dir="1">&#9654;</button>';
+      bodyHtml += '</div>';
+      bodyHtml += '<button class="score-submit-btn" data-cn="' + cn + '" data-q="' + qNum + '" style="display:none">Submit</button>';
+      bodyHtml += '</div></td>';
+    });
+    bodyHtml += '</tr>';
+  });
+
+  head.innerHTML = groupHtml + qHeadHtml;
+  body.innerHTML = bodyHtml;
+
+  document.getElementById('lastRefresh').textContent = 'Last refreshed: ' + new Date().toLocaleTimeString();
+}
+
+function handleScoreClick(e) {
+  var t = e.target;
+  if (t.classList.contains('score-value') && !t.querySelector('input')) {
+    var oldVal = t.textContent;
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.value = oldVal;
+    input.style.width = '36px';
+    input.style.fontSize = '1em';
+    input.style.fontWeight = '900';
+    input.style.textAlign = 'center';
+    input.style.border = '2px solid #1976d2';
+    input.style.borderRadius = '4px';
+    input.style.outline = 'none';
+    t.textContent = '';
+    t.appendChild(input);
+    input.focus();
+    input.select();
+
+    function finishEdit() {
+      var val = input.value.trim();
+      if (val === '' || val === '-') val = '-';
+      else {
+        var n = Number(val);
+        if (isNaN(n) || n < 2 || n > 8 || !Number.isInteger(n)) {
+          alert('Score must be 2\u20138 or "-"');
+          val = oldVal;
+        } else {
+          val = String(n);
+        }
+      }
+      t.textContent = val;
+      t.style.color = SCORE_COLORS[val] || '#888';
+      t.setAttribute('data-dirty', '1');
+      var inner = t.closest('.scoring-cell-inner');
+      if (inner) {
+        var subBtn = inner.querySelector('.score-submit-btn');
+        if (subBtn) subBtn.style.display = '';
+      }
+      updateSubmitAllVisibility();
+    }
+
+    input.addEventListener('keydown', function(ev) {
+      if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+      else if (ev.key === 'Escape') {
+        t.textContent = oldVal;
+        t.style.color = SCORE_COLORS[oldVal] || '#888';
+      }
+    });
+
+    input.addEventListener('blur', finishEdit);
+    return;
+  }
+
+  if (t.classList.contains('score-scroll-btn')) {
+    var dir = parseInt(t.dataset.dir);
+    var cn = t.dataset.cn;
+    var qNum = parseInt(t.dataset.q);
+    var inner = t.closest('.scoring-cell-inner');
+    if (!inner) return;
+    var cell = inner.querySelector('.score-value');
+    if (!cell) return;
+    if (cell.querySelector('input')) return;
+    var cur = cell.textContent;
+    var idx = SCORE_OPTIONS.indexOf(cur === '-' ? '-' : Number(cur));
+    idx = (idx + dir + SCORE_OPTIONS.length) % SCORE_OPTIONS.length;
+    var ns = SCORE_OPTIONS[idx];
+    cell.textContent = ns;
+    cell.style.color = SCORE_COLORS[ns] || '#888';
+    cell.setAttribute('data-dirty', '1');
+    var subBtn = inner.querySelector('.score-submit-btn');
+    if (subBtn) subBtn.style.display = '';
+    updateSubmitAllVisibility();
+    return;
+  }
+
+  if (t.classList.contains('score-submit-btn')) {
+    var cn2 = t.dataset.cn;
+    var qNum2 = parseInt(t.dataset.q);
+    var inner2 = t.closest('.scoring-cell-inner');
+    if (!inner2) return;
+    var cell2 = inner2.querySelector('.score-value');
+    if (!cell2) return;
+    var score = cell2.textContent;
+    t.textContent = '...';
+    t.disabled = true;
+    SahkScoring.submitScoreForStation(cn2, null, score, qNum2).then(function(r) {
+      t.textContent = 'Submit';
+      t.disabled = false;
+      if (r.success) {
+        t.style.display = 'none';
+        cell2.setAttribute('data-dirty', '0');
+        updateSubmitAllVisibility();
+        if (!document.querySelector('.score-value[data-dirty="1"]')) SahkScoring.fetchAllScores().then(function() { renderTable(); });
+      } else {
+        alert('Failed: ' + (r.error || 'Unknown'));
+      }
+    });
+  }
+}
+
+document.getElementById('scoringTable').addEventListener('click', handleScoreClick);
+
+function updateSubmitAllVisibility() {
+  var btn = document.getElementById('submitAllBtn');
+  if (document.querySelector('.score-value[data-dirty="1"]')) {
+    btn.style.display = '';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+document.getElementById('submitAllBtn').addEventListener('click', function() {
+  var dirtyCells = document.querySelectorAll('.score-value[data-dirty="1"]');
+  if (!dirtyCells.length) return;
+  var entries = [];
+  dirtyCells.forEach(function(cell) {
+    entries.push({
+      candidate: cell.dataset.cn,
+      station: Number(cell.dataset.q),
+      score: cell.textContent
+    });
+  });
+  var btn = this;
+  btn.textContent = 'Submitting...';
+  btn.disabled = true;
+  SahkScoring.submitScoreBatch(entries).then(function(r) {
+    btn.textContent = 'Submit All Changes';
+    btn.disabled = false;
+    if (r.success) {
+      dirtyCells.forEach(function(cell) {
+        cell.setAttribute('data-dirty', '0');
+        var inner = cell.closest('.scoring-cell-inner');
+        if (inner) {
+          var subBtn = inner.querySelector('.score-submit-btn');
+          if (subBtn) subBtn.style.display = 'none';
+        }
+      });
+      updateSubmitAllVisibility();
+      SahkScoring.fetchAllScores().then(function() { renderTable(); });
+    } else {
+      alert('Failed: ' + (r.error || 'Unknown'));
+    }
+  });
+});
+
+function setupAdminPanel() {
+  if (currentRole !== 'admin') return;
+  var apc = document.getElementById('adminPanelContainer');
+  apc.innerHTML = SahkScoring.createAdminPanel();
+  SahkScoring.initAdminEvents();
+}
+
+SahkScoring.fetchAllScores().then(function() {
+  renderTable();
+  setupAdminPanel();
+});
+
+if (refreshInterval) clearInterval(refreshInterval);
+refreshInterval = setInterval(function() {
+  var dirty = document.querySelector('.score-value[data-dirty="1"]');
+  if (!dirty) SahkScoring.fetchAllScores().then(function() { renderTable(); });
+}, 30000);
+
+window.addEventListener('beforeunload', function() {
+  if (refreshInterval) clearInterval(refreshInterval);
+});
+</script>
+</body>
+</html>
