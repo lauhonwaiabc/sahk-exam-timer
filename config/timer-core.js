@@ -229,18 +229,32 @@ Sahk.register('TimerCore', function() {
     }
 
     function renderBottomContent() {
-      var phase = sessionPhases[selectedSessionIndex][selectedPhaseIndex];
+      var si = selectedSessionIndex;
+      var pi = selectedPhaseIndex;
+      var phase = sessionPhases[si][pi];
       updateTimerDisplay();
 
-      var sessionLabel = getSessionLabel ? getSessionLabel(selectedSessionIndex) : 'Session ' + (selectedSessionIndex + 1);
-      var sessionTime = SESSION_TIMES[selectedSessionIndex] || '';
-      var schedSec = scheduledTimes[selectedSessionIndex] ? scheduledTimes[selectedSessionIndex][selectedPhaseIndex] : undefined;
-      var schedTimeStr = schedSec ? TU.formatTimeHMSSec(schedSec) : '';
-      var displayStartTime = isRunning && startTime !== null ? TU.formatAbsoluteTime(startTime) : schedTimeStr;
+      var sessionLabel = getSessionLabel ? getSessionLabel(si) : 'Session ' + (si + 1);
+
+      var phaseStartSec = scheduledTimes[si] ? scheduledTimes[si][pi] : undefined;
+      var phaseEndSec;
+      if (pi + 1 < sessionPhases[si].length) {
+        phaseEndSec = scheduledTimes[si][pi + 1];
+      } else if (si + 1 < scheduledTimes.length) {
+        phaseEndSec = scheduledTimes[si + 1][0];
+      } else {
+        phaseEndSec = phaseStartSec + phase.duration;
+      }
+      var phaseTime = phaseStartSec !== undefined
+        ? TU.formatTimeHMM(phaseStartSec) + ' - ' + TU.formatTimeHMM(phaseEndSec)
+        : '';
+
+      var schedStr = phaseStartSec !== undefined ? TU.formatTimeHMSSec(phaseStartSec) : '';
+      var displayStartTime = isRunning && startTime !== null ? TU.formatAbsoluteTime(startTime) : schedStr;
       var displayEndTime = isRunning && endTime !== null ? TU.formatAbsoluteTime(endTime) : '';
       var sessionLine = isRunning
-        ? sessionLabel + ' (' + phase.title + '), ' + sessionTime + ' (' + phase.info + ')<br><span style="color:#1976d2;">Current: ' + displayStartTime + ' - ' + displayEndTime + '</span>'
-        : sessionLabel + ' (' + phase.title + '), ' + sessionTime + ' (' + phase.info + ')<br><span style="color:#1976d2;">Scheduled Start: ' + displayStartTime + '</span>';
+        ? sessionLabel + ' (' + phase.title + '), ' + phaseTime + ' (' + phase.info + ')<br><span style="color:#1976d2;">Current: ' + displayStartTime + ' - ' + displayEndTime + '</span>'
+        : sessionLabel + ' (' + phase.title + '), ' + phaseTime + ' (' + phase.info + ')<br><span style="color:#1976d2;">Scheduled Start: ' + displayStartTime + '</span>';
 
       var info = el('infoDisplay');
       if (info) {

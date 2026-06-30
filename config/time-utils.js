@@ -36,6 +36,10 @@ Sahk.register('TimeUtils', function() {
     return formatTimeHMSSec(secs).slice(0, 5);
   }
 
+  function formatTimeHMM(secs) {
+    return secsToHHMM(secs);
+  }
+
   function fmtHHMMSS(secs) {
     secs %= 86400;
     var h = Math.floor(secs / 3600);
@@ -55,6 +59,7 @@ Sahk.register('TimeUtils', function() {
     formatTime: formatTime,
     formatAbsoluteTime: formatAbsoluteTime,
     secsToHHMM: secsToHHMM,
+    formatTimeHMM: formatTimeHMM,
     fmtHHMMSS: fmtHHMMSS
   };
 });

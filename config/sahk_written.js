@@ -15,6 +15,7 @@ Sahk.register('WrittenTimer', function() {
   var _ttsPitch = 1.0;
   var _ttsVoiceURI = 'auto';
   var _activeUtterance = null;
+  var _phaseDisplayTimes = [];
 
   function isMuted() { return Audio.isMuted; }
 
@@ -342,12 +343,49 @@ Sahk.register('WrittenTimer', function() {
     td.classList.toggle('non-exam', !isExamPhase(_ctrl.selectedSessionIndex, _ctrl.selectedPhaseIndex));
   }
 
+  function computePhaseDisplayTimes(startStr) {
+    _phaseDisplayTimes = [];
+    var t = TU.parseTimeString(startStr);
+    for (var s = 0; s < SESSION_PHASES.length; s++) {
+      _phaseDisplayTimes[s] = [];
+      for (var p = 0; p < SESSION_PHASES[s].length; p++) {
+        var start = t;
+        t += SESSION_PHASES[s][p].duration;
+        _phaseDisplayTimes[s].push({ start: start, end: t });
+      }
+    }
+  }
+
+  function formatPhaseInfoLine(si, pi) {
+    var ph = SESSION_PHASES[si][pi];
+    var pt = _phaseDisplayTimes[si] ? _phaseDisplayTimes[si][pi] : null;
+    var startStr = pt ? TU.secsToHHMM(pt.start) : '';
+    var endStr = pt ? TU.secsToHHMM(pt.end) : '';
+    var label = _sessionTitles[si] || ('Session ' + (si + 1));
+    return label + ' (' + ph.title + '), ' + startStr + '-' + endStr + ' (' + ph.info + ')';
+  }
+
   function renderWrittenContent() {
+    computePhaseDisplayTimes(_ctrl.startTimeStr);
     updateTimerDisplayLocal();
     var p = document.getElementById('timerDisplay');
     if (p) {
       p.classList.remove('non-exam');
       if (!isExamPhase(_ctrl.selectedSessionIndex, _ctrl.selectedPhaseIndex)) p.classList.add('non-exam');
+    }
+    var info = document.getElementById('infoDisplay');
+    if (info && _phaseDisplayTimes.length) {
+      var si = _ctrl.selectedSessionIndex;
+      var pi = _ctrl.selectedPhaseIndex;
+      var line = formatPhaseInfoLine(si, pi);
+      var schedSec = _ctrl.scheduledTimes[si] ? _ctrl.scheduledTimes[si][pi] : undefined;
+      var schedStr = schedSec !== undefined ? TU.formatTimeHMSSec(schedSec) : '';
+      var displayStart = _ctrl.isRunning && _ctrl.startTime !== null ? TU.formatAbsoluteTime(_ctrl.startTime) : schedStr;
+      var displayEnd = _ctrl.isRunning && _ctrl.endTime !== null ? TU.formatAbsoluteTime(_ctrl.endTime) : '';
+      var sub = _ctrl.isRunning
+        ? '<span style="color:#1976d2;">Current: ' + displayStart + ' - ' + displayEnd + '</span>'
+        : '<span style="color:#1976d2;">Scheduled Start: ' + displayStart + '</span>';
+      info.innerHTML = '<div style="font-weight:700;font-size:1em;margin-bottom:6px;text-align:center;">' + _examTitle + '</div><div style="font-weight:600;font-size:1em;margin-bottom:10px;text-align:center;">' + line + '<br>' + sub + '</div>';
     }
     renderTimetable();
     checkScript();
