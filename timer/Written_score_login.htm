@@ -28,7 +28,7 @@
 
   <div class="login-select-group">
     <label for="roleSelect">Role</label>
-    <select id="roleSelect" onchange="onRoleChange()">
+    <select id="roleSelect">
       <option value="">--Select One--</option>
       <option value="examiner">Examiner</option>
       <option value="admin">Admin</option>
@@ -120,7 +120,7 @@ async function doLogin() {
     sessionStorage.setItem('sahk_role_config', JSON.stringify(config));
     window.location.href = 'Written_score.htm';
   } catch (e) {
-    errorEl.textContent = 'Incorrect password';
+    errorEl.textContent = e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential' ? 'Incorrect password' : 'Login failed: ' + (e.message || 'Unknown error');
     errorEl.style.display = 'block';
   }
 }

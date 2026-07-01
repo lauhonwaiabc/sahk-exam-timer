@@ -6,6 +6,7 @@
   <title>SAHK Written Score Reporting</title>
   <link rel="stylesheet" href="../timer_style.css"/>
   <script src="../config/sahk.js"></script>
+  <script src="../config/constants.js"></script>
   <script src="../config/firebase-config.js"></script>
   <script src="../config/written_score_data.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -447,15 +448,18 @@ function handleScoreClick(e) {
       updateSubmitAllVisibility();
     }
 
+    var _escaped = false;
     input.addEventListener('keydown', function(ev) {
       if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
       else if (ev.key === 'Escape') {
+        _escaped = true;
         t.textContent = oldVal;
         t.style.color = SCORE_COLORS[oldVal] || '#888';
+        input.blur();
       }
     });
 
-    input.addEventListener('blur', finishEdit);
+    input.addEventListener('blur', function() { if (!_escaped) finishEdit(); });
     return;
   }
 

@@ -83,24 +83,14 @@ var EXAM_PAGES = {
   viva_pm: 'Viva_timer.htm?mode=pm'
 };
 
-var _examDataCache = {};
 
 function _loadExamData(exam, callback) {
-  if (_examDataCache[exam]) {
-    callback(_examDataCache[exam]);
-    return;
-  }
   var type = exam.startsWith('osce') ? 'osce' : 'viva';
   var suffix = exam.endsWith('am') ? 'am' : 'pm';
-  var scriptId = 'dynamic-exam-data';
-  var old = document.getElementById(scriptId);
-  if (old) old.remove();
   var script = document.createElement('script');
-  script.id = scriptId;
-  script.src = '../config/' + type + '_data_' + suffix + '.js';
+  script.src = '../config/' + type + '_data_' + suffix + '.js?_=' + Date.now();
   script.onload = function() {
     var data = type === 'osce' ? osceData : vivaData;
-    _examDataCache[exam] = data;
     callback(data);
   };
   script.onerror = function() {
@@ -253,7 +243,7 @@ async function doLogin() {
     sessionStorage.setItem('sahk_role_config', JSON.stringify(config));
     window.location.href = EXAM_PAGES[exam];
   } catch (e) {
-    errorEl.textContent = 'Incorrect password';
+    errorEl.textContent = (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') ? 'Incorrect password' : 'Login failed: ' + (e.message || 'Unknown error');
     errorEl.style.display = 'block';
   }
 }

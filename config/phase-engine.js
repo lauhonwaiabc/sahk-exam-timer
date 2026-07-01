@@ -29,42 +29,17 @@ Sahk.register('PhaseEngine', function() {
 
   function adjustStartTime(startTimeStr, offsetSeconds) {
     var parts = startTimeStr.split(':').map(Number);
-    var totalSec = parts[0] * 3600 + parts[1] * 60 + parts[2] + offsetSeconds;
+    var totalSec = parts[0] * 3600 + parts[1] * 60 + (parts[2] || 0) + offsetSeconds;
     totalSec = ((totalSec % 86400) + 86400) % 86400;
     var h = Math.floor(totalSec / 3600);
     var m = Math.floor((totalSec % 3600) / 60);
     var s = totalSec % 60;
-    return pad(h, 2) + ':' + pad(m, 2) + ':' + pad(s, 2);
-  }
-
-  function pad(num, len) {
-    return num.toString().padStart(len, '0');
-  }
-
-  function findCurrentPhase(nowSeconds, scheduledTimes, sessionPhases) {
-    for (var s = 0; s < scheduledTimes.length; s++) {
-      for (var p = 0; p < scheduledTimes[s].length; p++) {
-        var phaseStart = scheduledTimes[s][p];
-        var phaseEnd;
-        if (p + 1 < scheduledTimes[s].length) {
-          phaseEnd = scheduledTimes[s][p + 1];
-        } else if (s + 1 < scheduledTimes.length) {
-          phaseEnd = scheduledTimes[s + 1][0];
-        } else {
-          phaseEnd = phaseStart + sessionPhases[s][p].duration;
-        }
-        if (nowSeconds >= phaseStart && nowSeconds < phaseEnd) {
-          return { session: s, phase: p, remaining: phaseEnd - nowSeconds };
-        }
-      }
-    }
-    return null;
+    return TU.pad(h, 2) + ':' + TU.pad(m, 2) + ':' + TU.pad(s, 2);
   }
 
   return {
     recalculateScheduledTimes: recalculateScheduledTimes,
     generateSessionTimes: generateSessionTimes,
-    adjustStartTime: adjustStartTime,
-    findCurrentPhase: findCurrentPhase
+    adjustStartTime: adjustStartTime
   };
 });

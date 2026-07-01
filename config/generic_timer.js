@@ -76,7 +76,6 @@ Sahk.register('GenericTimer', function() {
       entries.sort(function(a, b) { return a.number.localeCompare(b.number); });
       return entries.map(function(e) {
         var cls = 'candidate-cell' + (e.role === 'Observer' ? ' observer-cell' : '') + (hasRest && restIndices.indexOf(e.idx) >= 0 ? ' rest-station' : '');
-        var nameOrLabel = type === 'station' ? names[e.idx] : 'Table';
         var secondary = type === 'station' ? (itemLabel + ' ' + (e.idx + 1)) : names[e.idx];
         return '<div class="' + cls + '" tabindex="0" aria-label="' + e.role + ' ' + e.number + ', ' + itemLabel + ' ' + (e.idx + 1) + '">' +
           labelHtml +

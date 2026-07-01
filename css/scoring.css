@@ -1,11 +1,4 @@
 /* ===== Scoring Panel ===== */
-#scoringPanelContainer {
-    margin-top: 20px;
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
 .scoring-panel {
     background: #fff;
     border-radius: 12px;
@@ -196,9 +189,6 @@
     left: 0;
     z-index: 3;
 }
-
-.scoring-col-header { min-width: 130px; white-space: nowrap; }
-.scoring-col-sub { font-weight: 600; font-size: 0.85em; color: #c8e6c9; }
 
 .scoring-row-label {
     background: #37474f;

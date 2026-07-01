@@ -80,7 +80,7 @@ Sahk.register('ExamTTS', function() {
 
     Audio.beep(2);
 
-    var delay = Audio.isMuted ? 0 : 1200;
+    var delay = 1200;
     setTimeout(function() {
       try {
         if (_synth.speaking || _synth.pending) _synth.cancel();

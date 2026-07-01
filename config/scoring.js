@@ -25,8 +25,6 @@ Sahk.register('Scoring', function() {
     catch(e) { console.error('fetchAllScores error:', e); }
   }
 
-  function fetchLatestScores() { fetchAllScores(); }
-
   function getLatestScore(cn) {
     for (var i = allScoresCache.length - 1; i >= 0; i--)
       if (allScoresCache[i].candidate === String(cn) && Number(allScoresCache[i].station) === stationNo) return allScoresCache[i].score;
@@ -66,8 +64,6 @@ Sahk.register('Scoring', function() {
   }
 
   function getExamInfo() { var n = { osce_am:'OSCE AM', osce_pm:'OSCE PM', viva_am:'Viva AM', viva_pm:'Viva PM', written:'Written' }; return n[examId] || examId; }
-
-  function scoreColor(score) { var m = { '-':'#000000', 2:'#d32f2f', 3:'#ff9800', 4:'#fdd835', 5:'#4caf50', 6:'#2196f3', 7:'#3f51b5', 8:'#9c27b0' }; return m[score] || '#888'; }
 
   var _adminToken = '';
 
@@ -113,6 +109,6 @@ Sahk.register('Scoring', function() {
   function createAdminPanel() { return '<div class="admin-panel"><h3 class="admin-header">Admin Controls</h3><button class="admin-btn" id="adminExportCSV">Export CSV</button><button class="admin-btn admin-btn-danger" id="adminClearDB">Clear Database</button><span class="admin-exam-label">'+getExamInfo()+'</span><div class="admin-status" id="adminStatus"></div></div>'; }
   function initAdminEvents() { var eb=document.getElementById('adminExportCSV');if(eb)eb.onclick=adminExportCSV;var cb=document.getElementById('adminClearDB');if(cb)cb.onclick=adminClearDatabase; }
 
-  return { init:init, setStation:setStation, fetchLatestScores:fetchLatestScores, fetchAllScores:fetchAllScores, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, submitScore:submitScore, submitScoreForStation:submitScoreForStation, submitScoreBatch:submitScoreBatch, scoreColor:scoreColor, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get allScoresCache(){return allScoresCache;} };
+  return { init:init, setStation:setStation, fetchAllScores:fetchAllScores, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, submitScore:submitScore, submitScoreForStation:submitScoreForStation, submitScoreBatch:submitScoreBatch, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get allScoresCache(){return allScoresCache;} };
 });
 window.SahkScoring = Sahk.get('Scoring');

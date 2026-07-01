@@ -435,7 +435,7 @@ Sahk.register('TimerCore', function() {
       var applyBtn = el('applyStartTimeBtn');
       if (applyBtn) {
         applyBtn.onclick = function() {
-          startTimeStr = (el('startTimeInput') ? el('startTimeInput').value : initialStartTime);
+          startTimeStr = (el('startTimeInput') ? el('startTimeInput').value : startTimeStr);
           _saveOffset();
           recalculateScheduledTimes();
           SESSION_TIMES = generateSessionTimes();

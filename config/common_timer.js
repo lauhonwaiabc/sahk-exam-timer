@@ -90,13 +90,13 @@ Sahk.register('TimerCommon', function() {
     }
   }
 
-  var SCALE_CLASSES = ['scale-isolate-1', 'scale-isolate-2', 'scale-isolate-3plus'];
+  var SCALE_CLASS = 'scale-isolate-1';
   function updateIsolateScale(containerId) {
     var c = document.getElementById(containerId);
     if (!c) return;
-    c.classList.remove.apply(c.classList, SCALE_CLASSES);
+    c.classList.remove(SCALE_CLASS);
     var count = c.querySelectorAll('[data-iso]').length;
-    if (count === 1) c.classList.add('scale-isolate-1');
+    if (count === 1) c.classList.add(SCALE_CLASS);
   }
 
   return {

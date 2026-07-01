@@ -24,7 +24,7 @@ const VIVA_SCRIPT_DATA = (function() {
 
     entries.push({
       session: si, phase: 0, offset: 0,
-      sentences: ["Please transit to your next station."]
+      sentences: ["Please transit to your next table."]
     });
 
     entries.push({

@@ -17,7 +17,6 @@
 <script src="../config/constants.js"></script>
 <script src="../config/time-utils.js"></script>
 <script src="../config/phase-engine.js"></script>
-<script src="../config/error-handler.js"></script>
 <script src="../config/firebase-config.js"></script>
 <script src="../config/audio.js"></script>
 <script src="../config/time-sync.js"></script>
@@ -28,13 +27,13 @@
   var examMode = new URLSearchParams(window.location.search).get('mode')||'am';
   document.title = 'OSCE Exam Timer - ' + examMode.toUpperCase();
   var s = document.createElement('script');
-  s.src = '../config/osce_data_' + examMode + '.js';
-  document.head.appendChild(s);
+  s.src = '../config/osce_data_' + examMode + '.js?_=' + Date.now();
   s.onload = function() {
     var startTime = examMode==='am' ? window.START_TIME_AM : window.START_TIME_PM;
     window._examMode = examMode;
     window._startTime = startTime;
   };
+  document.head.appendChild(s);
 })();
 </script>
 <script src="../config/timer-core.js"></script>
@@ -115,7 +114,7 @@ try {
 window.currentRole = currentRole;
 window.activeStationNo = activeStationNo;
 window.roleConfig = roleConfig;
-if (currentRole !== 'candidate') { SahkAuth.init(); SahkAuth.onAuthStateChanged(function(user) { if (!user) { sessionStorage.removeItem('sahk_role_config'); } }); }
+if (currentRole !== 'candidate') { SahkAuth.init(); var unsub = SahkAuth.onAuthStateChanged(function(user) { if (!user) { sessionStorage.removeItem('sahk_role_config'); } }); window._sahkAuthUnsub = unsub; }
 (function initRole() {
   var h = document.getElementById('roleHeader');
   if (currentRole === 'examiner') { h.textContent = 'Examiner Mode - Station ' + activeStationNo + ': ' + (roleConfig.stationName || ''); h.className = 'examiner-role'; }

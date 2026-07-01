@@ -40,14 +40,6 @@ Sahk.register('TimeUtils', function() {
     return secsToHHMM(secs);
   }
 
-  function fmtHHMMSS(secs) {
-    secs %= 86400;
-    var h = Math.floor(secs / 3600);
-    var m = Math.floor((secs % 3600) / 60);
-    var s = secs % 60;
-    return pad(h, 2) + ':' + pad(m, 2) + ':' + pad(s, 2);
-  }
-
   function pad(num, len) {
     return num.toString().padStart(len, '0');
   }
@@ -56,10 +48,11 @@ Sahk.register('TimeUtils', function() {
     addSeconds: addSeconds,
     parseTimeString: parseTimeString,
     formatTimeHMSSec: formatTimeHMSSec,
+    fmtHHMMSS: formatTimeHMSSec,
     formatTime: formatTime,
     formatAbsoluteTime: formatAbsoluteTime,
     secsToHHMM: secsToHHMM,
     formatTimeHMM: formatTimeHMM,
-    fmtHHMMSS: fmtHHMMSS
+    pad: pad
   };
 });

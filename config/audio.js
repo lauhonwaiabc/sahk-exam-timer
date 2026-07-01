@@ -65,6 +65,7 @@ Sahk.register('Audio', function() {
   }
 
   function cleanup() {
+    beeping = false;
     if (beepAudioCtx) {
       try { beepAudioCtx.close(); } catch(e) {}
       beepAudioCtx = null;

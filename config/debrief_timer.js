@@ -184,6 +184,19 @@ Sahk.register('DebriefTimer', () => {
       }
     });
 
+    var tts = Sahk.get('ExamTTS');
+    tts.init(ctrl, typeof DEBRIEF_SCRIPT_DATA !== 'undefined' ? DEBRIEF_SCRIPT_DATA : []);
+    tts.start();
+
+    var stopBtn = document.getElementById('stopBtn');
+    if (stopBtn) {
+      var existing = stopBtn._sahkStopHandler;
+      if (existing) stopBtn.removeEventListener('click', existing);
+      var handler = function() { tts.reset(); tts.start(); };
+      stopBtn._sahkStopHandler = handler;
+      stopBtn.addEventListener('click', handler);
+    }
+
     const searchInput = document.getElementById('searchInput');
     if (searchInput) searchInput.addEventListener('input', Sahk.get('Constants').debounce(applySearch, 200));
     const isolateBtn = document.getElementById('isolateBtn');

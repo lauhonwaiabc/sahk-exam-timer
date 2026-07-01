@@ -1,5 +1,5 @@
 'use strict';
-const osceData = {
+var osceData = {
   "Session 1": {
     "Candidate": ["01","04","06","07","11","14","16",null,"17","20","23","24","25","29","33"],
     "Observer": ["30",null,null,null,null,null,null,null,null,"32",null,null,null,null,null]

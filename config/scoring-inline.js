@@ -38,14 +38,14 @@ Sahk.register('ScoringInline', function() {
     input.focus();
     input.select();
 
-    async function finish() {
+    function finish() {
       var val = input.value.trim();
       if (val === '' || val === '-') {
         val = '-';
       } else {
         var n = Number(val);
-        if (isNaN(n) || n < 2 || n > 8 || !Number.isInteger(n)) {
-          alert('Score must be 2\u20138 or "-"');
+        if (isNaN(n) || _getScoreOptions().indexOf(n) === -1) {
+          alert('Score must be one of: ' + _getScoreOptions().join(', ') + ' or "-"');
           val = oldVal;
         } else {
           val = String(n);

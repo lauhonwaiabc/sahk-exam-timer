@@ -490,7 +490,8 @@ Sahk.register('WrittenTimer', function() {
         _voicesReady = true;
         populateVoiceSelect();
       } else {
-        _synth.addEventListener('voiceschanged', function() {
+        if (_synth._sahkVoiceListener) _synth.removeEventListener('voiceschanged', _synth._sahkVoiceListener);
+        _synth._sahkVoiceListener = function() {
           var v = _synth.getVoices();
           if (v && v.length) {
             _voicesReady = true;
@@ -499,7 +500,8 @@ Sahk.register('WrittenTimer', function() {
             var s = document.getElementById('speechStatus');
             if (s) s.textContent = 'Speech engine ready (' + v.length + ' voices)';
           }
-        });
+        };
+        _synth.addEventListener('voiceschanged', _synth._sahkVoiceListener);
       }
     }
 

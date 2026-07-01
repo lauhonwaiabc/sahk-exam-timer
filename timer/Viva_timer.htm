@@ -18,7 +18,6 @@
   <script src="../config/constants.js"></script>
   <script src="../config/time-utils.js"></script>
   <script src="../config/phase-engine.js"></script>
-  <script src="../config/error-handler.js"></script>
   <script src="../config/firebase-config.js"></script>
   <script src="../config/audio.js"></script>
   <script src="../config/time-sync.js"></script>
@@ -28,13 +27,13 @@
   (function loadData(){
     var examMode = new URLSearchParams(window.location.search).get('mode')||'am';
     var s = document.createElement('script');
-    s.src = '../config/viva_data_' + examMode + '.js';
-    document.head.appendChild(s);
+    s.src = '../config/viva_data_' + examMode + '.js?_=' + Date.now();
     s.onload = function() {
       window._examMode = examMode;
       window._tableNames = examMode==='am' ? TABLE_NAMES_AM : TABLE_NAMES_PM;
       window._startTime = examMode==='am' ? START_TIME_AM : START_TIME_PM;
     };
+    document.head.appendChild(s);
   })();
   </script>
   <script src="../config/timer-core.js"></script>
@@ -112,7 +111,7 @@ try { var raw = sessionStorage.getItem('sahk_role_config'); if (raw) { roleConfi
 window.currentRole = currentRole;
 window.activeStationNo = activeStationNo;
 window.roleConfig = roleConfig;
-if (currentRole !== 'candidate') { SahkAuth.init(); SahkAuth.onAuthStateChanged(function(user) { if (!user) { sessionStorage.removeItem('sahk_role_config'); } }); }
+if (currentRole !== 'candidate') { SahkAuth.init(); var unsub = SahkAuth.onAuthStateChanged(function(user) { if (!user) { sessionStorage.removeItem('sahk_role_config'); } }); window._sahkAuthUnsub = unsub; }
 (function initRole() {
   var h = document.getElementById('roleHeader');
   if (currentRole === 'examiner') { h.textContent = 'Examiner Mode - Table ' + activeStationNo + ': ' + (roleConfig.stationName || ''); h.className = 'examiner-role'; }

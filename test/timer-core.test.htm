@@ -61,7 +61,7 @@ var ctrl = TimerCore.createController({
 
 // --- addSeconds ---
 assert(ctrl.addSeconds('00:00:00', 60) === '00:01:00', 'addSeconds: 60 seconds from midnight');
-assert(ctrl.addSeconds('23:59:30', 30) === '23:59:60', 'addSeconds: 30 seconds from 23:59:30');
+assert(ctrl.addSeconds('23:59:30', 30) === '00:00:00', 'addSeconds: 30 seconds from 23:59:30 (wraps past midnight)');
 assert(ctrl.addSeconds('23:59:30', 60) === '00:00:30', 'addSeconds: 60 seconds wraps past midnight');
 assert(ctrl.addSeconds('00:00:00', 3600) === '01:00:00', 'addSeconds: 3600 seconds = 1 hour');
 assert(ctrl.addSeconds('00:00:00', 86400) === '00:00:00', 'addSeconds: 86400 seconds = 24 hours (wraps)');

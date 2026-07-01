@@ -21,10 +21,11 @@ Sahk.register('OsceTimer', function() {
 
     var stopBtn = document.getElementById('stopBtn');
     if (stopBtn) {
-      stopBtn.addEventListener('click', function() {
-        tts.reset();
-        tts.start();
-      });
+      var existing = stopBtn._sahkStopHandler;
+      if (existing) stopBtn.removeEventListener('click', existing);
+      var handler = function() { tts.reset(); tts.start(); };
+      stopBtn._sahkStopHandler = handler;
+      stopBtn.addEventListener('click', handler);
     }
 
     return timer;
