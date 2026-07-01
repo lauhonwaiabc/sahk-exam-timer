@@ -25,10 +25,10 @@ const DEBRIEF_SCRIPT_DATA = (function() {
   entries.push({
     session: CONCLUSION_SESSION_INDEX, phase: 0, offset: 0,
     sentences: [
-      "End of the Examination.",
-      "Thank you for participating in the SAHK Final Examination Preparation Course Debriefing."
+      "End of the Debriefing Session. Thank you for participating in the SAHK Final Examination Preparation Course Written Examination Debriefing.",
     ]
   });
 
   return entries;
 })();
+

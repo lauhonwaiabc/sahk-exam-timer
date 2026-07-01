@@ -7,23 +7,55 @@ Sahk.register('ExamTTS', function() {
   var _intervalId = null;
   var _synth = null;
   var _synthSupported = false;
+  var _voicesReady = false;
 
   _synthSupported = typeof window.speechSynthesis !== 'undefined' && window.speechSynthesis !== null;
-  _synth = window.speechSynthesis || null;
+  _synth = _synthSupported ? window.speechSynthesis : null;
 
-  if (_synthSupported && _synth) {
-    if (!_synth.getVoices().length) {
-      _synth.addEventListener('voiceschanged', function() {});
+  function warmupSynth() {
+    if (!_synthSupported || !_synth) return;
+    try {
+      if (_synth.speaking) _synth.cancel();
       var w = new SpeechSynthesisUtterance('');
       w.volume = 0;
-      try { _synth.speak(w); } catch (e) {}
-    }
+      w.rate = 1.0;
+      w.pitch = 1.0;
+      _synth.speak(w);
+    } catch (e) {}
   }
+
+  function ensureVoicesReady() {
+    if (!_synthSupported || !_synth) return;
+    var voices = _synth.getVoices();
+    if (voices && voices.length) {
+      _voicesReady = true;
+      warmupSynth();
+      return;
+    }
+    warmupSynth();
+    var listener = function() {
+      var v = _synth.getVoices();
+      if (v && v.length) {
+        _voicesReady = true;
+        _synth.removeEventListener('voiceschanged', listener);
+      }
+    };
+    _synth.addEventListener('voiceschanged', listener);
+    setTimeout(function() {
+      if (!_voicesReady) {
+        _voicesReady = true;
+        _synth.removeEventListener('voiceschanged', listener);
+      }
+    }, 5000);
+  }
+
+  ensureVoicesReady();
 
   function init(controller, scriptData) {
     _ctrl = controller;
     _scriptData = scriptData || [];
     _processed = {};
+    if (!_voicesReady) ensureVoicesReady();
   }
 
   function checkScript() {
@@ -75,12 +107,23 @@ Sahk.register('ExamTTS', function() {
   }
 
   function speakText(text, onDone) {
-    if (Audio.isMuted) { if (onDone) setTimeout(onDone, 100); return; }
-    if (!_synthSupported || !_synth) { if (onDone) setTimeout(onDone, 100); return; }
+    if (Audio.isMuted) {
+      if (onDone) setTimeout(onDone, 100);
+      return;
+    }
+    if (!_synthSupported || !_synth) {
+      if (onDone) setTimeout(onDone, 100);
+      return;
+    }
+    if (!_voicesReady) {
+      console.warn('ExamTTS: voices not ready, warming up');
+      warmupSynth();
+      if (onDone) setTimeout(onDone, 100);
+      return;
+    }
 
     Audio.beep(2);
 
-    var delay = 1200;
     setTimeout(function() {
       try {
         if (_synth.speaking || _synth.pending) _synth.cancel();
@@ -88,11 +131,18 @@ Sahk.register('ExamTTS', function() {
         u.rate = 1.0;
         u.pitch = 1.0;
         u.volume = Audio.volume;
+        u.onstart = function() {};
         u.onend = function() { if (onDone) onDone(); };
-        u.onerror = function() { if (onDone) setTimeout(onDone, 500); };
+        u.onerror = function(e) {
+          console.error('ExamTTS speech error:', e.error || e.message || e);
+          if (onDone) setTimeout(onDone, 500);
+        };
         _synth.speak(u);
-      } catch (e) { if (onDone) setTimeout(onDone, 500); }
-    }, delay);
+      } catch (e) {
+        console.error('ExamTTS speakText exception:', e);
+        if (onDone) setTimeout(onDone, 500);
+      }
+    }, 600);
   }
 
   function start() {
