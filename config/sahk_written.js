@@ -67,7 +67,7 @@ Sahk.register('WrittenTimer', function() {
       var u = new SpeechSynthesisUtterance(prepareSpeechText(text));
       u.rate = _ttsRate;
       u.pitch = _ttsPitch;
-      u.volume = 1.0;
+      u.volume = Audio.volume;
       var v = getEnglishVoice();
       if (v) u.voice = v;
       u.onstart = function() { };

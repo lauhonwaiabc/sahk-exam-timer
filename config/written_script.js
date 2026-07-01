@@ -184,7 +184,6 @@ const SCRIPT_DATA = [
             "There are {{PAPER_CA_PAGES}} pages.",
             "The words \u2018End of Paper\u2019 should appear after the last question.",
             "If you find any issues, please raise your hand now.",
-            "Before the examination begins, make sure that you have switched off your mobile phone, including the alarm and auto-restart functions, and that you do not have any electronic devices on your body."
         ]
     },
     {

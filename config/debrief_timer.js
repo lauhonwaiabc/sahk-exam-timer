@@ -215,6 +215,6 @@ Sahk.register('DebriefTimer', () => {
     ctrl.init();
   }
 
-  return { start };
+  return { start: start, getController: function() { return ctrl; } };
 });
 window.DebriefTimer = Sahk.get('DebriefTimer');

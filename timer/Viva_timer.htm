@@ -4,8 +4,17 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>SAHK Viva Exam Timer</title>
-  <link rel="stylesheet" href="../timer_style.css"/>
-  <script src="../config/sahk.js"></script>
+<link rel="stylesheet" href="../timer_style.css"/>
+<style>
+  #scriptBanner .script-placeholder { color: #90caf9; font-size: 1.1em; font-weight: 400; padding: 15px 30px; }
+  #scriptBanner .script-text { font-size: 1.3em; font-weight: 600; padding: 12px 25px 16px; line-height: 1.4; }
+  #scriptBanner.speaking { background: #ff6f00; box-shadow: 0 4px 25px rgba(255,111,0,0.4); }
+  #scriptBanner.speaking .script-placeholder { color: #fff3e0; }
+  #scriptBanner.done { background: #2e7d32; }
+  #scriptBanner.done .script-placeholder { color: #c8e6c9; }
+  @media (max-width: 600px) { #scriptBanner { display: none !important; } }
+</style>
+<script src="../config/sahk.js"></script>
   <script src="../config/constants.js"></script>
   <script src="../config/time-utils.js"></script>
   <script src="../config/phase-engine.js"></script>
@@ -38,8 +47,10 @@
   <script src="../config/scoring-inline.js"></script>
   <script src="../config/scoring-matrix.js"></script>
   <script src="../config/scoring_ui.js"></script>
-  <script src="../config/generic_timer.js"></script>
-  <script src="../config/viva_timer.js"></script>
+<script src="../config/generic_timer.js"></script>
+<script src="../config/viva_script.js"></script>
+<script src="../config/exam_tts.js"></script>
+<script src="../config/viva_timer.js"></script>
 </head>
 <body>
 <div id="clock">00:00:00<div id="syncStatusBadge"></div></div>
@@ -80,6 +91,9 @@
   <div class="timer" id="timerDisplay" role="timer" aria-live="polite" aria-label="Countdown timer">00:00</div>
   <div id="progressBarContainer"><div class="progress-fill"></div></div>
   <div class="info" id="infoDisplay">Select a session and phase to see information here.</div>
+  <div id="scriptBanner" aria-live="assertive" style="max-width:1100px;margin:15px auto;background:#1a237e;color:#fff;padding:0;border-radius:12px;min-height:60px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;box-shadow:0 4px 20px rgba(26,35,126,0.3);">
+    <div class="script-placeholder" id="scriptPlaceholder" style="color:#90caf9;font-size:1.1em;font-weight:400;padding:15px 30px;">Script announcements will appear here automatically</div>
+  </div>
   <div id="tableModeContainer" aria-live="polite"></div>
   <div id="candidateModeContainer" aria-live="polite" style="display:none"></div>
   <div id="scoringModeContainer" style="display:none"></div>

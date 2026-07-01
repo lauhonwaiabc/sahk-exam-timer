@@ -380,6 +380,7 @@ Sahk.register('GenericTimer', function() {
 
     return {
       start: start,
+      getController: function() { return ctrl; },
       get isIsolated() { return isIsolated; },
       set isIsolated(v) { isIsolated = v; },
       get transitDisplayMode() { return transitDisplayMode; },

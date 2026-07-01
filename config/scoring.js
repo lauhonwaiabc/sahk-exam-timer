@@ -4,7 +4,7 @@ Sahk.register('Scoring', function() {
     ? 'http://localhost:3000'
     : 'https://us-central1-sahk-timer.cloudfunctions.net/app';
   var examId = '', role = '', stationNo = null, stationName = '', identifier = '';
-  var latestScores = {}, allScoresCache = [], onScoresUpdated = null;
+  var allScoresCache = [], onScoresUpdated = null;
 
   function init(config) {
     examId = config.examId || ''; role = config.role || '';
@@ -12,10 +12,12 @@ Sahk.register('Scoring', function() {
     stationName = config.stationName || '';
     identifier = ((config.stationName || '') + ' ' + config.stationNo).trim();
     onScoresUpdated = config.onScoresUpdated || null;
-    fetchAllScores().then(function() { if (stationNo != null) fetchLatestScores(); });
+    return fetchAllScores().then(function() {
+      if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated();
+    });
   }
 
-  function setStation(no) { stationNo = no; latestScores = {}; fetchLatestScores(); }
+  function setStation(no) { stationNo = no; }
 
   async function fetchAllScores() {
     if (!examId) return;
@@ -23,17 +25,13 @@ Sahk.register('Scoring', function() {
     catch(e) { console.error('fetchAllScores error:', e); }
   }
 
-  async function fetchLatestScores() {
-    if (!examId || stationNo == null) return;
-    try {
-      var r = await fetch(API_BASE + '/scores/' + examId + '/station/' + stationNo);
-      if (r.ok) { var data = await r.json(); latestScores = {}; for (var i = 0; i < data.length; i++) latestScores[data[i].candidate] = data[i]; }
-      else console.error('fetchLatestScores failed:', r.status);
-      if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated();
-    } catch(e) { console.error('fetchLatestScores error:', e); }
-  }
+  function fetchLatestScores() { fetchAllScores(); }
 
-  function getLatestScore(cn) { var rec = latestScores[cn]; return rec ? rec.score : '-'; }
+  function getLatestScore(cn) {
+    for (var i = allScoresCache.length - 1; i >= 0; i--)
+      if (allScoresCache[i].candidate === String(cn) && Number(allScoresCache[i].station) === stationNo) return allScoresCache[i].score;
+    return '-';
+  }
 
   function getLatestScoreForStation(cn, st) {
     for (var i = allScoresCache.length - 1; i >= 0; i--)
@@ -48,7 +46,7 @@ Sahk.register('Scoring', function() {
     try {
       var r = await fetch(API_BASE + '/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ exam:examId, candidate:String(cn).trim(), station:Number(st), score:score, identifier:identifier.trim() }) });
       var result = await r.json();
-      if (r.ok) { await fetchAllScores(); if (Number(st) === stationNo) latestScores[cn] = result.record; if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated(); }
+      if (r.ok) { await fetchAllScores(); if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated(); }
       return result;
     } catch(e) { return { success: false, error: e.message }; }
   }
@@ -106,7 +104,7 @@ Sahk.register('Scoring', function() {
     if (!confirm('Delete ALL scores for ' + getExamInfo() + '?')) return;
     try {
       var r = await fetch(API_BASE + '/scores/' + examId, { method:'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-      if (r.ok) { alert('Cleared'); latestScores = {}; allScoresCache = []; if (onScoresUpdated) onScoresUpdated(); }
+      if (r.ok) { alert('Cleared'); allScoresCache = []; if (onScoresUpdated) onScoresUpdated(); }
       else if (r.status === 401 || r.status === 403) { _adminToken = ''; alert('Access denied. You may not have admin privileges.'); }
       else alert('Failed');
     } catch(e) { alert('Failed: ' + e.message); }
@@ -115,6 +113,6 @@ Sahk.register('Scoring', function() {
   function createAdminPanel() { return '<div class="admin-panel"><h3 class="admin-header">Admin Controls</h3><button class="admin-btn" id="adminExportCSV">Export CSV</button><button class="admin-btn admin-btn-danger" id="adminClearDB">Clear Database</button><span class="admin-exam-label">'+getExamInfo()+'</span><div class="admin-status" id="adminStatus"></div></div>'; }
   function initAdminEvents() { var eb=document.getElementById('adminExportCSV');if(eb)eb.onclick=adminExportCSV;var cb=document.getElementById('adminClearDB');if(cb)cb.onclick=adminClearDatabase; }
 
-  return { init:init, setStation:setStation, fetchLatestScores:fetchLatestScores, fetchAllScores:fetchAllScores, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, submitScore:submitScore, submitScoreForStation:submitScoreForStation, submitScoreBatch:submitScoreBatch, scoreColor:scoreColor, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get latestScores(){return latestScores;}, get allScoresCache(){return allScoresCache;} };
+  return { init:init, setStation:setStation, fetchLatestScores:fetchLatestScores, fetchAllScores:fetchAllScores, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, submitScore:submitScore, submitScoreForStation:submitScoreForStation, submitScoreBatch:submitScoreBatch, scoreColor:scoreColor, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get allScoresCache(){return allScoresCache;} };
 });
 window.SahkScoring = Sahk.get('Scoring');

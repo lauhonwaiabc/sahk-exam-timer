@@ -309,6 +309,9 @@ SahkScoring.init({
   stationName: examinerName || '',
   identifier: currentRole === 'admin' ? 'admin' : (examinerName || 'unknown'),
   onScoresUpdated: function() { if (!document.querySelector('.score-value[data-dirty="1"]')) renderTable(); }
+}).then(function() {
+  renderTable();
+  setupAdminPanel();
 });
 
 function getVisibleQuestions() {
@@ -554,11 +557,6 @@ function setupAdminPanel() {
   apc.innerHTML = SahkScoring.createAdminPanel();
   SahkScoring.initAdminEvents();
 }
-
-SahkScoring.fetchAllScores().then(function() {
-  renderTable();
-  setupAdminPanel();
-});
 
 if (refreshInterval) clearInterval(refreshInterval);
 refreshInterval = setInterval(function() {

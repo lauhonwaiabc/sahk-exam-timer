@@ -5,14 +5,29 @@ Sahk.register('OsceTimer', function() {
     : [];
 
   function start(cfg) {
-    Sahk.get('GenericTimer').create({
+    var timer = Sahk.get('GenericTimer').create({
       type: 'station',
       names: STATION_NAMES,
       numItems: NUM_STATIONS,
       hasRest: true,
       data: osceData,
       restIndices: REST_INDICES
-    }).start(cfg);
+    });
+    timer.start(cfg);
+
+    var tts = Sahk.get('ExamTTS');
+    tts.init(timer.getController(), typeof OSCE_SCRIPT_DATA !== 'undefined' ? OSCE_SCRIPT_DATA : []);
+    tts.start();
+
+    var stopBtn = document.getElementById('stopBtn');
+    if (stopBtn) {
+      stopBtn.addEventListener('click', function() {
+        tts.reset();
+        tts.start();
+      });
+    }
+
+    return timer;
   }
 
   return { start: start };
