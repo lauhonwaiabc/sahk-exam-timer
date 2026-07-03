@@ -37,9 +37,9 @@ const SESSION_PHASES = [
 
 const PAPER_I_PAGES = 4;
 const PAPER_CA_PAGES = 5;
-const PAPER_INV_PAGES = 6;
-const PAPER_RAD_PAGES = 7;
-const PAPER_MCQ_PAGES = 30;
+const PAPER_INV_PAGES = 8;
+const PAPER_RAD_PAGES = 6;
+const PAPER_MCQ_PAGES = 40;
 
 const TIMETABLE = [
     {time: "08:45 - 09:55", session: "Pre-Examination"},
