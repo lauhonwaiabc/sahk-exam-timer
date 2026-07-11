@@ -26,12 +26,15 @@
 (function loadData(){
   var examMode = new URLSearchParams(window.location.search).get('mode')||'am';
   document.title = 'OSCE Exam Timer - ' + examMode.toUpperCase();
+  window._examMode = examMode;
   var s = document.createElement('script');
   s.src = '../config/osce_data_' + examMode + '.js?_=' + Date.now();
   s.onload = function() {
     var startTime = examMode==='am' ? window.START_TIME_AM : window.START_TIME_PM;
-    window._examMode = examMode;
     window._startTime = startTime;
+  };
+  s.onerror = function() {
+    window._startTime = examMode==='am' ? window.START_TIME_AM : window.START_TIME_PM;
   };
   document.head.appendChild(s);
 })();
@@ -121,7 +124,7 @@ if (currentRole !== 'candidate') { SahkAuth.init(); var unsub = SahkAuth.onAuthS
   else if (currentRole === 'admin') { h.textContent = 'Admin Mode'; h.className = 'admin-role'; }
 })();
 setTimeout(function() {
-  OsceTimer.start({ startTimeStr: window._startTime || START_TIME_AM, examTitle: 'SAHK Final Examination Preparation Course - OSCE Examination' });
+    OsceTimer.start({ startTimeStr: window._startTime || (window._examMode === 'pm' ? START_TIME_PM : START_TIME_AM), examTitle: 'SAHK Final Examination Preparation Course - OSCE Examination' });
   scoringUI.init({ data: osceData, names: STATION_NAMES, numItems: NUM_STATIONS, type: 'station', title: 'OSCE ' + (window._examMode || 'AM').toUpperCase(), modeLabel: 'Station Mode', hasRest: true });
   setTimeout(function() { scoringUI.applyRoleConfig(); }, 150);
 }, 100);

@@ -26,12 +26,16 @@
   <script>
   (function loadData(){
     var examMode = new URLSearchParams(window.location.search).get('mode')||'am';
+    window._examMode = examMode;
     var s = document.createElement('script');
     s.src = '../config/viva_data_' + examMode + '.js?_=' + Date.now();
     s.onload = function() {
-      window._examMode = examMode;
       window._tableNames = examMode==='am' ? TABLE_NAMES_AM : TABLE_NAMES_PM;
       window._startTime = examMode==='am' ? START_TIME_AM : START_TIME_PM;
+    };
+    s.onerror = function() {
+      window._startTime = examMode==='am' ? START_TIME_AM : START_TIME_PM;
+      window._tableNames = examMode==='am' ? TABLE_NAMES_AM : TABLE_NAMES_PM;
     };
     document.head.appendChild(s);
   })();
@@ -118,8 +122,8 @@ if (currentRole !== 'candidate') { SahkAuth.init(); var unsub = SahkAuth.onAuthS
   else if (currentRole === 'admin') { h.textContent = 'Admin Mode'; h.className = 'admin-role'; }
 })();
 setTimeout(function() {
-  VivaTimer.start({ startTimeStr: window._startTime || START_TIME_AM, examTitle: 'SAHK Final Examination Preparation Course - Viva Examination', tableNames: window._tableNames || TABLE_NAMES_AM });
-  scoringUI.init({ data: vivaData, names: window._tableNames || TABLE_NAMES_AM, numItems: NUM_TABLES, type: 'table', title: 'Viva ' + (window._examMode || 'AM').toUpperCase(), modeLabel: 'Table Mode', hasRest: false });
+  VivaTimer.start({ startTimeStr: window._startTime || (window._examMode === 'pm' ? START_TIME_PM : START_TIME_AM), examTitle: 'SAHK Final Examination Preparation Course - Viva Examination', tableNames: window._tableNames || (window._examMode === 'pm' ? TABLE_NAMES_PM : TABLE_NAMES_AM) });
+  scoringUI.init({ data: vivaData, names: window._tableNames || (window._examMode === 'pm' ? TABLE_NAMES_PM : TABLE_NAMES_AM), numItems: NUM_TABLES, type: 'table', title: 'Viva ' + (window._examMode || 'AM').toUpperCase(), modeLabel: 'Table Mode', hasRest: false });
   setTimeout(function() { scoringUI.applyRoleConfig(); }, 150);
 }, 100);
 </script>
