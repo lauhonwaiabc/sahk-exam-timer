@@ -21,16 +21,16 @@ const SCENARIOS = {
   },
   "Scenario B + Q.8": {
     schedule: {
-      "Session 1": { "Irving Teng": "Group 3", "Vicki Li": "Group 6", "Jason Fong": "Group 7" },
-      "Session 2": { "Irving Teng": "Group 1", "Vicki Li": "Group 4", "Jason Fong": "Group 8" },
-      "Session 3": { "Irving Teng": "Group 2", "Vicki Li": "Group 5", "Jason Fong": "Group 9" }
+      "Session 1": { "Irving Teng": "Group 3", "Vicki Li": "Group 6", "Jason Fong": "Group 9" },
+      "Session 2": { "Irving Teng": "Group 1", "Vicki Li": "Group 4", "Jason Fong": "Group 7" },
+      "Session 3": { "Irving Teng": "Group 2", "Vicki Li": "Group 5", "Jason Fong": "Group 8" }
     }
   },
   "SAQ Q.9-Q.12": {
     schedule: {
-      "Session 1": { "Amy Mang": "Group 2", "Zoey Tam": "Group 5", "Adrie Chan": "Group 7" },
-      "Session 2": { "Amy Mang": "Group 3", "Zoey Tam": "Group 6", "Adrie Chan": "Group 8" },
-      "Session 3": { "Amy Mang": "Group 1", "Zoey Tam": "Group 4", "Adrie Chan": "Group 9" }
+      "Session 1": { "Amy Mang": "Group 2", "Zoey Tam": "Group 5", "Adrie Chan": "Group 8" },
+      "Session 2": { "Amy Mang": "Group 3", "Zoey Tam": "Group 6", "Adrie Chan": "Group 9" },
+      "Session 3": { "Amy Mang": "Group 1", "Zoey Tam": "Group 4", "Adrie Chan": "Group 7" }
     }
   }
 };
