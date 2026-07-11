@@ -29,7 +29,7 @@ const OSCE_SCRIPT_DATA = (function() {
 
     entries.push({
       session: si, phase: 1, offset: 0,
-      sentences: ["OSCE Station " + stationNum + " now begins."]
+      sentences: ["OSCE Session " + stationNum + " now begins."]
     });
   }
 
