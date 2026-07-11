@@ -391,14 +391,14 @@ Sahk.register('TimerCore', function() {
 
     function _saveOffset() {
       try {
-        var key = 'sahk_offset_' + window.location.pathname.replace(/[^a-zA-Z0-9]/g, '_');
+        var key = 'sahk_offset_' + (window.location.pathname + window.location.search).replace(/[^a-zA-Z0-9]/g, '_');
         localStorage.setItem(key, startTimeStr);
       } catch(e) {}
     }
 
     function _restoreOffset() {
       try {
-        var key = 'sahk_offset_' + window.location.pathname.replace(/[^a-zA-Z0-9]/g, '_');
+        var key = 'sahk_offset_' + (window.location.pathname + window.location.search).replace(/[^a-zA-Z0-9]/g, '_');
         var saved = localStorage.getItem(key);
         if (saved) startTimeStr = saved;
       } catch(e) {}
@@ -429,6 +429,8 @@ Sahk.register('TimerCore', function() {
 
     function init() {
       _restoreOffset();
+      recalculateScheduledTimes();
+      SESSION_TIMES = generateSessionTimes();
       var sti = el('startTimeInput');
       if (sti) sti.value = startTimeStr;
 
