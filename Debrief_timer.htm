@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Debriefing Timer</title>
+    <link rel="stylesheet" href="timer_style.css"/>
+    <script src="config/sahk.js"></script>
+    <script src="config/constants.js"></script>
+    <script src="config/time-utils.js"></script>
+    <script src="config/phase-engine.js"></script>
+    <script src="config/audio.js"></script>
+    <script src="config/time-sync.js"></script>
+    <script src="config/debrief_config.js"></script>
+    <script>
+        // ?groups=9 loads the 9-group variant; default is 6 groups
+        var USE_9_GROUPS = window.location.search.includes('groups=9');
+    </script>
+    <script src="config/debrief_data.js"></script>
+    <script>
+        if (USE_9_GROUPS) {
+            document.write('<script src="config/debrief_data_9gp.js"><\/script>');
+        }
+    </script>
+    <script src="config/timer-core.js"></script>
+    <style>
+        #examinerModeContainer { display: flex; justify-content: center; gap: 24px; max-width: 1800px; margin: 0 auto; align-items: flex-start; }
+        .scenario-column { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 280px; max-width: 500px; }
+        .scenario-column .viva-box { width: auto; }
+        .scenario-header { text-align: center; font-weight: 900; font-size: 1.4em; color: #2e7d32; padding: 8px 0; letter-spacing: 1.2px; border-bottom: 3px solid #4caf50; margin-bottom: 4px; }
+        .examiner-group-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
+        .examiner-group-list span { background: #e8f5e9; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 1.1em; color: #1b5e20; }
+        .examiner-group-label { text-align: center; font-size: 1.2em; font-weight: 700; color: #555; margin-bottom: 6px; }
+        .candidate-group { font-size: 0.85em; color: #555; font-weight: 600; margin-top: 4px; }
+        .candidate-examiner { font-size: 0.8em; color: #777; margin-top: 2px; }
+        .candidate-scenario { font-size: 0.75em; color: #999; margin-top: 1px; }
+        #sectionsList li.preparation { background: #9e9e9e; color: white; }
+        #sectionsList li.preparation.selected { background: #757575; color: white; box-shadow: 0 4px 10px rgb(117 117 117 / 0.6); }
+    </style>
+</head>
+<body>
+<div id="clock">00:00:00</div>
+<div id="syncWarning" style="display:none;background:#fff3e0;color:#e65100;text-align:center;padding:6px;font-weight:700;font-size:0.9em;"></div>
+<div id="controls">
+    <button id="scheduleStartBtn">Schedule Start</button>
+    <button id="startBtn">Start</button>
+    <button id="pauseBtn" disabled>Pause</button>
+    <button id="stopBtn" disabled>Stop &amp; Reset</button>
+    <button id="muteBtn" aria-pressed="false">Mute</button>
+    <button id="toggleModeBtn" aria-pressed="false">Switch to Candidate Mode</button>
+</div>
+<div id="startTimeContainer">
+    <label for="startTimeInput" style="font-weight:700;margin-right:8px;">Start Time (hh:mm:ss):</label>
+    <input id="startTimeInput" type="time" step="1" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:140px;"/>
+    <button id="applyStartTimeBtn" style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer;">Apply</button>
+    <div style="margin-top:6px;">
+        <button class="offset-btn" data-offset="-3600" title="60 minutes earlier">-60m</button>
+        <button class="offset-btn" data-offset="-900" title="15 minutes earlier">-15m</button>
+        <button class="offset-btn" data-offset="-300" title="5 minutes earlier">-5m</button>
+        <button class="offset-btn" data-offset="-60" title="1 minute earlier">-1m</button>
+        <button class="offset-btn" data-offset="60" title="1 minute later">+1m</button>
+        <button class="offset-btn" data-offset="300" title="5 minutes later">+5m</button>
+        <button class="offset-btn" data-offset="900" title="15 minutes later">+15m</button>
+        <button class="offset-btn" data-offset="3600" title="60 minutes later">+60m</button>
+    </div>
+</div>
+<div id="searchContainer">
+    <input id="searchInput" type="text" placeholder="Enter Candidate ID or Examiner Name" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:260px;margin-right:8px;"/>
+    <button id="searchBtn" style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer;">Search</button>
+</div>
+<div id="topMenu">
+    <ul id="sectionsList"></ul>
+    <br/>
+    <ul id="subsectionsList"></ul>
+</div>
+<div id="bottomContent">
+    <div class="timer" id="timerDisplay">00:00</div>
+    <div class="info" id="infoDisplay">Select a session and phase to see information here.</div>
+    <div id="examinerModeContainer" aria-live="polite"></div>
+    <div id="candidateModeContainer" aria-live="polite" style="display:none;"></div>
+</div>
+<script>
+(() => {
+    let isCandidateMode = false;
+    let lastSearchValue = '';
+
+    function getSessionLabel(i) {
+        if (ENABLE_PREPARATION && i === PREPARATION_SESSION_INDEX) return 'Preparation';
+        const baseIdx = i - (ENABLE_PREPARATION ? 1 : 0);
+        return `Session ${baseIdx + 1}`;
+    }
+
+    function getDataSessionKey() {
+        if (ENABLE_PREPARATION && ctrl.selectedSessionIndex === PREPARATION_SESSION_INDEX) return null;
+        const baseIdx = ctrl.selectedSessionIndex - (ENABLE_PREPARATION ? 1 : 0);
+        return `Session ${baseIdx + 1}`;
+    }
+
+    function getSessionExaminers() {
+        const sessionKey = getDataSessionKey();
+        if (!sessionKey) return [];
+        const result = [];
+        for (const [scenario, data] of Object.entries(SCENARIOS)) {
+            for (const [examiner, group] of Object.entries(data.schedule[sessionKey] || {})) {
+                result.push({ scenario, examiner, group });
+            }
+        }
+        return result;
+    }
+
+    const ctrl = TimerCore.createController({
+        startTimeStr: START_TIME,
+        sessionPhases: SESSION_PHASES,
+        examTitle: 'SAHK Final Examination Preparation Course - Debriefing',
+        getSessionLabel,
+        mutedByDefault: true,
+        renderContent: () => {
+            if (isCandidateMode) renderCandidateMode();
+            else renderExaminerMode();
+        }
+    });
+
+    function highlightBoxes(searchValue) {
+        document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+        if (!searchValue) return;
+        const search = searchValue.trim().toLowerCase();
+        if (isCandidateMode) {
+            document.getElementById('candidateModeContainer').querySelectorAll('.candidate-cell').forEach(cell => {
+                const num = cell.querySelector('.candidate-number')?.textContent.trim().toLowerCase();
+                const grp = cell.querySelector('.candidate-group')?.textContent.trim().toLowerCase();
+                const examiner = cell.querySelector('.candidate-examiner')?.textContent.trim().toLowerCase();
+                const scenario = cell.querySelector('.candidate-scenario')?.textContent.trim().toLowerCase();
+                if (num === search || (num && num.includes(search))) cell.classList.add('highlight');
+                if (grp && grp.includes(search)) cell.classList.add('highlight');
+                if (examiner && examiner.includes(search)) cell.classList.add('highlight');
+                if (scenario && scenario.includes(search)) cell.classList.add('highlight');
+            });
+        } else {
+            document.getElementById('examinerModeContainer').querySelectorAll('.viva-box').forEach(box => {
+                const title = box.querySelector('.viva-title')?.textContent.trim().toLowerCase();
+                const group = box.querySelector('.examiner-group-label')?.textContent.trim().toLowerCase();
+                const candidates = [...box.querySelectorAll('.examiner-group-list span')].map(s => s.textContent.trim());
+                if (title && title.includes(search)) box.classList.add('highlight');
+                if (group && group.includes(search)) box.classList.add('highlight');
+                if (candidates.some(c => c.toLowerCase() === search || c.toLowerCase().includes(search))) box.classList.add('highlight');
+            });
+        }
+    }
+
+    function doSearch() {
+        lastSearchValue = document.getElementById('searchInput').value.trim();
+        highlightBoxes(lastSearchValue);
+    }
+
+    function renderExaminerMode() {
+        const cmc = document.getElementById('candidateModeContainer');
+        const emc = document.getElementById('examinerModeContainer');
+        cmc.style.display = 'none';
+        emc.style.display = 'flex';
+        const entries = getSessionExaminers();
+        if (!entries || entries.length === 0) {
+            emc.innerHTML = '<p style="text-align:center;color:#666;">No data available.</p>';
+            return;
+        }
+        const grouped = {};
+        for (const e of entries) { if (!grouped[e.scenario]) grouped[e.scenario] = []; grouped[e.scenario].push(e); }
+        emc.innerHTML = Object.entries(grouped).map(([scenario, examiners]) =>
+            `<div class="scenario-column">
+              <div class="scenario-header">${scenario}</div>
+              ${examiners.map(({examiner, group}) => {
+                  const candidates = GROUPS[group] || [];
+                  return `<div class="viva-box" tabindex="0" aria-label="${examiner} - ${group}">
+                    <div class="viva-title">${examiner}</div>
+                    <div class="examiner-group-label">${group}</div>
+                    <div class="examiner-group-list">${candidates.map(c => `<span>${c}</span>`).join('')}</div>
+                  </div>`;
+              }).join('')}
+            </div>`
+        ).join('');
+        highlightBoxes(lastSearchValue);
+    }
+
+    function renderCandidateMode() {
+        const emc = document.getElementById('examinerModeContainer');
+        const cmc = document.getElementById('candidateModeContainer');
+        emc.style.display = 'none';
+        cmc.style.display = 'flex';
+        const schedule = getSessionExaminers();
+        if (!schedule || schedule.length === 0) {
+            cmc.innerHTML = '<p style="text-align:center;color:#666;">No data available.</p>';
+            return;
+        }
+        const entries = [];
+        for (const {scenario, examiner, group} of schedule) {
+            const candidates = GROUPS[group] || [];
+            candidates.forEach(c => entries.push({ id: c, group, examiner, scenario }));
+        }
+        entries.sort((a, b) => a.id.localeCompare(b.id));
+        cmc.innerHTML = entries.map(({id, group, examiner, scenario}) =>
+            `<div class="candidate-cell" tabindex="0" aria-label="Candidate ${id}">
+              <div class="candidate-number">${id}</div>
+              <div class="candidate-group">${group}</div>
+              <div class="candidate-examiner">${examiner}</div>
+              <div class="candidate-scenario">${scenario}</div>
+            </div>`
+        ).join('');
+        highlightBoxes(lastSearchValue);
+    }
+
+    document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === "Enter") doSearch(); });
+    document.getElementById('searchBtn').addEventListener('click', doSearch);
+    document.getElementById('searchInput').addEventListener('input', () => {
+        if (!document.getElementById('searchInput').value.trim()) {
+            lastSearchValue = ''; highlightBoxes('');
+        }
+    });
+
+    document.getElementById('toggleModeBtn').onclick = () => {
+        isCandidateMode = !isCandidateMode;
+        document.getElementById('toggleModeBtn').textContent = isCandidateMode ? 'Switch to Examiner Mode' : 'Switch to Candidate Mode';
+        document.getElementById('toggleModeBtn').setAttribute('aria-pressed', isCandidateMode.toString());
+        isCandidateMode ? renderCandidateMode() : renderExaminerMode();
+    };
+
+    document.body.addEventListener('click', () => {
+        const ctx = (() => { try { return new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return null; } })();
+        if (ctx) ctx.close();
+    }, { once: true });
+
+    ctrl.init();
+})();
+</script>
+</body>
+</html>
