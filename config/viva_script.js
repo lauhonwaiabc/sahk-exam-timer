@@ -34,12 +34,12 @@ const VIVA_SCRIPT_DATA = (function() {
 
     entries.push({
       session: si, phase: 1, offset: 600,
-      sentences: ["5 minutes left for Viva Table " + tableNum + "."]
+      sentences: ["5 minutes left for Viva Session " + tableNum + "."]
     });
 
     entries.push({
       session: si, phase: 2, offset: 0,
-      sentences: ["Debriefing for Viva Table " + tableNum + " now begins."]
+      sentences: ["Debriefing for Viva Session " + tableNum + " now begins."]
     });
 
     entries.push({
