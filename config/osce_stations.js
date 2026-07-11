@@ -1,7 +1,7 @@
 'use strict';
 const STATION_NAMES = [
-    "Procedure",
-    "Anatomy 1",
+    "Procedure 1",
+    "Anatomy",
     "Rest",
     "Regional",
     "Equipment",
@@ -12,7 +12,7 @@ const STATION_NAMES = [
     "Crisis",
     "Communication",
     "Rest",
-    "Anatomy 2",
-    "ACLS/ATLS",
+    "Procedure 2",
+    "ATLS/ACLS",
     "Rest"
 ];
