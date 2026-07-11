@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SAHK OSCE Exam Timer</title>
+<link rel="stylesheet" href="../timer_style.css"/>
+<style>
+  #scriptBanner .script-placeholder { color: #90caf9; font-size: 1.1em; font-weight: 400; padding: 15px 30px; }
+  #scriptBanner .script-text { font-size: 1.3em; font-weight: 600; padding: 12px 25px 16px; line-height: 1.4; }
+  #scriptBanner.speaking { background: #ff6f00; box-shadow: 0 4px 25px rgba(255,111,0,0.4); }
+  #scriptBanner.speaking .script-placeholder { color: #fff3e0; }
+  #scriptBanner.done { background: #2e7d32; }
+  #scriptBanner.done .script-placeholder { color: #c8e6c9; }
+  @media (max-width: 600px) { #scriptBanner { display: none !important; } }
+</style>
+<script src="../config/sahk.js"></script>
+<script src="../config/constants.js"></script>
+<script src="../config/time-utils.js"></script>
+<script src="../config/phase-engine.js"></script>
+<script src="../config/firebase-config.js"></script>
+<script src="../config/audio.js"></script>
+<script src="../config/time-sync.js"></script>
+<script src="../config/osce_config.js"></script>
+<script src="../config/osce_stations.js"></script>
+<script>
+(function loadData(){
+  var examMode = new URLSearchParams(window.location.search).get('mode')||'am';
+  document.title = 'OSCE Exam Timer - ' + examMode.toUpperCase();
+  window._examMode = examMode;
+  var s = document.createElement('script');
+  s.src = '../config/osce_data_' + examMode + '.js?_=' + Date.now();
+  s.onload = function() {
+    var startTime = examMode==='am' ? window.START_TIME_AM : window.START_TIME_PM;
+    window._startTime = startTime;
+  };
+  s.onerror = function() {
+    window._startTime = examMode==='am' ? window.START_TIME_AM : window.START_TIME_PM;
+  };
+  document.head.appendChild(s);
+})();
+</script>
+<script src="../config/timer-core.js"></script>
+<script src="../config/common_timer.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="../config/firebase-auth.js"></script>
+<script src="../config/scoring.js"></script>
+<script src="../config/scoring-inline.js"></script>
+<script src="../config/scoring-matrix.js"></script>
+<script src="../config/scoring_ui.js"></script>
+<script src="../config/generic_timer.js"></script>
+<script src="../config/osce_script.js"></script>
+<script src="../config/exam_tts.js"></script>
+<script src="../config/osce_timer.js"></script>
+</head>
+<body>
+<div id="clock">00:00:00<div id="syncStatusBadge"></div></div>
+<div id="roleHeader"></div>
+<div id="syncWarning" style="display:none;background:#fff3e0;color:#e65100;text-align:center;padding:6px;font-weight:700;font-size:.9em"></div>
+<div id="controls">
+  <button id="scheduleStartBtn">Schedule Start</button>
+  <button id="startBtn">Start</button>
+  <button id="pauseBtn" disabled>Pause</button>
+  <button id="stopBtn" disabled>Stop & Reset</button>
+  <button id="muteBtn" aria-pressed="false">Mute</button>
+  <div id="volumeControl" class="desktop-only"><span id="volumeLabel">Vol: 50%</span><input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.5"></div>
+  <button id="keyboardHelpBtn" title="Keyboard shortcuts">?</button>
+  <button id="toggleModeBtn" aria-pressed="false">Scoring Mode</button>
+  <button id="transitModeBtn" class="transit-btn" aria-pressed="false">Transit: Prev</button>
+</div>
+<div id="startTimeContainer">
+  <label for="startTimeInput" style="font-weight:700;margin-right:8px">Start Time (hh:mm:ss):</label>
+  <input id="startTimeInput" type="time" step="1" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:140px"/>
+  <button id="applyStartTimeBtn" style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer">Apply</button>
+  <div style="margin-top:6px">
+    <button class="offset-btn" data-offset="-3600">-60m</button>
+    <button class="offset-btn" data-offset="-900">-15m</button>
+    <button class="offset-btn" data-offset="-300">-5m</button>
+    <button class="offset-btn" data-offset="-60">-1m</button>
+    <button class="offset-btn" data-offset="60">+1m</button>
+    <button class="offset-btn" data-offset="300">+5m</button>
+    <button class="offset-btn" data-offset="900">+15m</button>
+    <button class="offset-btn" data-offset="3600">+60m</button>
+  </div>
+</div>
+<div id="searchContainer">
+  <input id="searchInput" type="text" placeholder="Enter Candidate ID, Station Name or Station Number" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:320px;margin-right:8px"/>
+  <button id="isolateBtn" style="font-size:1.1em;padding:7px 18px;border-radius:6px;border:none;background:#1976d2;color:white;font-weight:700;cursor:pointer">Isolate</button>
+</div>
+<div id="topMenu"><ul id="sectionsList"></ul><br/><ul id="subsectionsList"></ul></div>
+<div id="bottomContent">
+  <div class="timer" id="timerDisplay" role="timer" aria-live="polite" aria-label="Countdown timer">00:00</div>
+  <div id="progressBarContainer"><div class="progress-fill"></div></div>
+  <div class="info" id="infoDisplay">Select a session and phase to see information here.</div>
+  <div id="scriptBanner" aria-live="assertive" style="max-width:1100px;margin:15px auto;background:#1a237e;color:#fff;padding:0;border-radius:12px;min-height:60px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;box-shadow:0 4px 20px rgba(26,35,126,0.3);">
+    <div class="script-placeholder" id="scriptPlaceholder" style="color:#90caf9;font-size:1.1em;font-weight:400;padding:15px 30px;">Script announcements will appear here automatically</div>
+  </div>
+  <div id="stationModeContainer" aria-live="polite"></div>
+  <div id="candidateModeContainer" aria-live="polite" style="display:none"></div>
+  <div id="scoringModeContainer" style="display:none"></div>
+  <div id="adminPanelContainer" style="display:none"></div>
+</div>
+<script>
+var roleConfig = null, currentRole = 'candidate', activeStationNo = 1;
+var SCORE_OPTIONS = ['-', 2, 3, 4, 5, 6, 7, 8];
+var SCORE_COLORS = { '-': '#000000', 2: '#d32f2f', 3: '#ff9800', 4: '#fdd835', 5: '#4caf50', 6: '#2196f3', 7: '#3f51b5', 8: '#9c27b0' };
+var isInScoringMode = false, scoringIsolateStation = null, scoringRefreshId = null;
+window.showInlineScoring = false;
+window.currentRole = currentRole;
+window.activeStationNo = activeStationNo;
+window.isInScoringMode = isInScoringMode;
+try {
+  var raw = sessionStorage.getItem('sahk_role_config');
+  if (raw) { roleConfig = JSON.parse(raw); currentRole = roleConfig.role || 'candidate'; activeStationNo = roleConfig.stationNo != null ? roleConfig.stationNo : 1; }
+} catch(e) { activeStationNo = 1; }
+window.currentRole = currentRole;
+window.activeStationNo = activeStationNo;
+window.roleConfig = roleConfig;
+if (currentRole !== 'candidate') { SahkAuth.init(); var unsub = SahkAuth.onAuthStateChanged(function(user) { if (!user) { sessionStorage.removeItem('sahk_role_config'); } }); window._sahkAuthUnsub = unsub; }
+(function initRole() {
+  var h = document.getElementById('roleHeader');
+  if (currentRole === 'examiner') { h.textContent = 'Examiner Mode - Station ' + activeStationNo + ': ' + (roleConfig.stationName || ''); h.className = 'examiner-role'; }
+  else if (currentRole === 'admin') { h.textContent = 'Admin Mode'; h.className = 'admin-role'; }
+})();
+(function initTimer() {
+  var retries = 0;
+  var maxRetries = 200;
+  function tryStart() {
+    retries++;
+    var dataReady = window._dataReady || (typeof osceData !== 'undefined' && osceData);
+    if (dataReady || retries > maxRetries) {
+      OsceTimer.start({ startTimeStr: window._startTime || (window._examMode === 'pm' ? START_TIME_PM : START_TIME_AM), examTitle: 'SAHK Final Examination Preparation Course - OSCE Examination' });
+      scoringUI.init({ data: osceData, names: STATION_NAMES, numItems: NUM_STATIONS, type: 'station', title: 'OSCE ' + (window._examMode || 'AM').toUpperCase(), modeLabel: 'Station Mode', hasRest: true });
+      setTimeout(function() { scoringUI.applyRoleConfig(); }, 150);
+    } else {
+      setTimeout(tryStart, 50);
+    }
+  }
+  tryStart();
+})();
+</script>
+</body>
+</html>
