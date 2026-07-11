@@ -29,7 +29,7 @@ const VIVA_SCRIPT_DATA = (function() {
 
     entries.push({
       session: si, phase: 1, offset: 0,
-      sentences: ["Viva Table " + tableNum + " now begins."]
+      sentences: ["Viva Session " + tableNum + " now begins."]
     });
 
     entries.push({
