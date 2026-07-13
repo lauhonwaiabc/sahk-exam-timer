@@ -350,9 +350,6 @@ Sahk.register('ReportGenerator', function() {
     return buildCandidateReportXmlRaw(cfg, scores);
   }
 
-  // ═════════════════════════════════════════════════════════════
-  //  CANDIDATE REPORT CORE
-  // ═════════════════════════════════════════════════════════════
   function buildCandidateReportXmlRaw(cfg, scores) {
     var candidateResults = buildCandidateResults(scores);
     var candidates = Object.keys(candidateResults);
@@ -435,62 +432,6 @@ Sahk.register('ReportGenerator', function() {
       images.push(img);
       xml += img.xml;
     }
-    return { xml: xml, images: images };
-  }
-
-  // ═════════════════════════════════════════════════════════════
-  //  QUESTION REPORT
-  // ═════════════════════════════════════════════════════════════
-  function buildQuestionReportXml(examId, scores) {
-    var cfg = getExamConfig(examId);
-    var candidateResults = buildCandidateResults(scores);
-    var candidates = Object.keys(candidateResults);
-    if (!candidates.length) return { xml: '<w:p><w:r><w:t>No scores available.</w:t></w:r></w:p>', images: [] };
-
-    var qStats = buildQStats(candidateResults, cfg.passPer);
-    var allStations = getAllStations(candidateResults);
-
-    var images = [], imgId = 0;
-    var xml = boldP('SAHK Final Examination Preparation Course ' + REPORT_YEAR + ' - ' + cfg.title, 14, 'center');
-    xml += boldP('Question Performance Report' + (cfg.batch ? ' (' + cfg.batch + ')' : ''), 12, 'center');
-    xml += emptyP();
-
-    // Summary table
-    var sumHeaders = [cfg.itemName, 'N', 'Mean', 'SD', 'Pass%', 'Pearson r'];
-    var sumRows = [];
-    for (var si2 = 0; si2 < allStations.length; si2++) {
-      var st2 = allStations[si2], qs2 = qStats[st2] || {};
-      var prColor = (qs2.passRate || 0) > 90 ? 'c62828' : (qs2.passRate || 0) < 30 ? 'c62828' : '2e7d32';
-      var rStr = isNaN(qs2.itemTotalR) ? 'N/A' : qs2.itemTotalR.toFixed(3);
-      sumRows.push([
-        {text:String(st2)},{text:String(qs2.n||0)},{text:(qs2.mean||0).toFixed(2)},
-        {text:(qs2.std||0).toFixed(2)},{text:(qs2.passRate||0).toFixed(1)+'%',color:prColor,bold:true},
-        {text:rStr}
-      ]);
-    }
-    xml += makeTable(sumHeaders, sumRows);
-
-    // Per-station histogram pages
-    for (var idx = 0; idx < allStations.length; idx++) {
-      xml += pageBreak();
-      var st3 = allStations[idx];
-      xml += boldP(cfg.itemName + ' ' + st3, 14, 'center');
-      xml += emptyP();
-
-      var stationScores = [];
-      for (var ci = 0; ci < candidates.length; ci++) {
-        var sc2 = candidateResults[candidates[ci]].scores[st3];
-        if (sc2 !== null && sc2 !== undefined) stationScores.push(sc2);
-      }
-      if (stationScores.length > 0) {
-        imgId++;
-        var c2 = drawHistogramCanvas(stationScores, null, cfg.passPer, 500, 180);
-        var img2 = canvasToImageEl(c2, imgId, 5040000, 1814400);
-        images.push(img2);
-        xml += img2.xml;
-      }
-    }
-
     return { xml: xml, images: images };
   }
 
