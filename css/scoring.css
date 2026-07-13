@@ -86,6 +86,8 @@
 .admin-btn:hover { background: #1565c0; }
 .admin-btn-danger { background: #d32f2f; }
 .admin-btn-danger:hover { background: #b71c1c; }
+.admin-btn-report { background: #00897b; }
+.admin-btn-report:hover { background: #00695c; }
 
 .admin-exam-label {
     display: block;
