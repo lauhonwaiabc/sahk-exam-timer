@@ -106,9 +106,55 @@ Sahk.register('Scoring', function() {
     } catch(e) { alert('Failed: ' + e.message); }
   }
 
-  function createAdminPanel() { return '<div class="admin-panel"><h3 class="admin-header">Admin Controls</h3><button class="admin-btn" id="adminExportCSV">Export CSV</button><button class="admin-btn admin-btn-danger" id="adminClearDB">Clear Database</button><span class="admin-exam-label">'+getExamInfo()+'</span><div class="admin-status" id="adminStatus"></div></div>'; }
-  function initAdminEvents() { var eb=document.getElementById('adminExportCSV');if(eb)eb.onclick=adminExportCSV;var cb=document.getElementById('adminClearDB');if(cb)cb.onclick=adminClearDatabase; }
+  function getStatusEl() { return document.getElementById('adminStatus'); }
 
-  return { init:init, setStation:setStation, fetchAllScores:fetchAllScores, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, submitScore:submitScore, submitScoreForStation:submitScoreForStation, submitScoreBatch:submitScoreBatch, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get allScoresCache(){return allScoresCache;} };
+  function setStatus(msg, good) { var s=getStatusEl(); if(s){ s.textContent=msg; s.style.color=good?'#2e7d32':'#c62828'; } }
+
+  function isSplitExam() { return examId.indexOf('osce_')===0 || examId.indexOf('viva_')===0; }
+
+  function getPairedExam() { if (!isSplitExam()) return null; return examId.replace('_am','_pm').replace('_pm','_am'); }
+
+  function createAdminPanel() {
+    var html = '<div class="admin-panel"><h3 class="admin-header">Admin Controls</h3><button class="admin-btn" id="adminExportCSV">Export CSV</button>';
+    if (isSplitExam()) {
+      html += '<button class="admin-btn admin-btn-report" id="adminCandidateReport">Candidate Report (Current Session)</button>';
+      html += '<button class="admin-btn admin-btn-report" id="adminCandidateCombined">Candidate Report (All Sessions)</button>';
+    } else {
+      html += '<button class="admin-btn admin-btn-report" id="adminCandidateReport">Candidate Report</button>';
+    }
+    html += '<button class="admin-btn admin-btn-danger" id="adminClearDB">Clear Database</button><span class="admin-exam-label">'+getExamInfo()+'</span><div class="admin-status" id="adminStatus"></div></div>';
+    return html;
+  }
+
+  function initAdminEvents() {
+    var eb=document.getElementById('adminExportCSV'); if(eb) eb.onclick=adminExportCSV;
+    var cb=document.getElementById('adminClearDB'); if(cb) cb.onclick=adminClearDatabase;
+    var cr=document.getElementById('adminCandidateReport'); if(cr) cr.onclick=adminGenerateCandidateReport;
+    var cc=document.getElementById('adminCandidateCombined'); if(cc) cc.onclick=adminGenerateCombinedReport;
+  }
+
+  async function adminGenerateCandidateReport() {
+    setStatus('Generating Candidate Report...', true);
+    try {
+      if (window.SahkReportGenerator && window.SahkReportGenerator.generateReport) {
+        await window.SahkReportGenerator.generateReport(examId);
+      } else {
+        setStatus('Report generator module not loaded.', false);
+      }
+    } catch(e) { setStatus('Failed: ' + e.message, false); }
+  }
+
+  async function adminGenerateCombinedReport() {
+    setStatus('Generating Combined Candidate Report...', true);
+    try {
+      if (window.SahkReportGenerator && window.SahkReportGenerator.generateCombinedReport) {
+        await window.SahkReportGenerator.generateCombinedReport(examId, getPairedExam());
+      } else {
+        setStatus('Report generator module not loaded.', false);
+      }
+    } catch(e) { setStatus('Failed: ' + e.message, false); }
+  }
+
+  return { init:init, setStation:setStation, fetchAllScores:fetchAllScores, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, submitScore:submitScore, submitScoreForStation:submitScoreForStation, submitScoreBatch:submitScoreBatch, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, adminGenerateCandidateReport:adminGenerateCandidateReport, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get allScoresCache(){return allScoresCache;} };
 });
 window.SahkScoring = Sahk.get('Scoring');
