@@ -112,7 +112,7 @@ Sahk.register('Scoring', function() {
 
   function isSplitExam() { return examId.indexOf('osce_')===0 || examId.indexOf('viva_')===0; }
 
-  function getPairedExam() { if (!isSplitExam()) return null; return examId.replace('_am','_pm').replace('_pm','_am'); }
+  function getPairedExam() { if (!isSplitExam()) return null; return examId.indexOf('_am') !== -1 ? examId.replace('_am','_pm') : examId.replace('_pm','_am'); }
 
   function createAdminPanel() {
     var html = '<div class="admin-panel"><h3 class="admin-header">Admin Controls</h3><button class="admin-btn" id="adminExportCSV">Export CSV</button>';

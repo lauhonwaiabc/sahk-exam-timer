@@ -622,8 +622,17 @@ Sahk.register('ReportGenerator', function() {
     var API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:3000'
       : 'https://us-central1-sahk-timer.cloudfunctions.net/app';
-    var r = await fetch(API_BASE + '/scores/' + exam);
-    if (r.ok) return await r.json();
+    try {
+      var r = await fetch(API_BASE + '/scores/' + exam);
+      if (r.ok) {
+        var data = await r.json();
+        console.log('Fetched ' + data.length + ' scores for ' + exam);
+        return data;
+      }
+      console.warn('Fetch failed for ' + exam + ': HTTP ' + r.status);
+    } catch (err) {
+      console.error('Fetch error for ' + exam + ': ' + err.message);
+    }
     return [];
   }
 
@@ -631,9 +640,11 @@ Sahk.register('ReportGenerator', function() {
     try {
       var scores1 = await fetchScoresForExam(exam1);
       var scores2 = await fetchScoresForExam(exam2);
+      console.log('Combined report: ' + exam1 + ' = ' + scores1.length + ' scores, ' + exam2 + ' = ' + scores2.length + ' scores');
       if (!scores1.length && !scores2.length) { alert('No scores available for either session.'); return; }
+      if (!scores2.length) console.warn('No scores found for ' + exam2 + '. Only ' + exam1 + ' data used.');
+      if (!scores1.length) console.warn('No scores found for ' + exam1 + '. Only ' + exam2 + ' data used.');
 
-      // Merge & dedup: keep latest score per candidate per station across both sessions
       var all = scores1.concat(scores2);
       all.sort(function(a, b) { return (a.timestamp||'').localeCompare(b.timestamp||''); });
       var deduped = [], seen = {};
@@ -641,6 +652,7 @@ Sahk.register('ReportGenerator', function() {
         var s = all[i], key = String(s.candidate).trim() + '|' + Number(s.station);
         if (!seen[key]) { seen[key] = true; deduped.unshift(s); }
       }
+      console.log('Combined deduped: ' + deduped.length + ' scores, unique candidates: ' + Object.keys(buildCandidateResults(deduped)).length);
 
       var cfg = getExamConfig(exam1);
       cfg.batch = 'All Sessions';
@@ -650,7 +662,9 @@ Sahk.register('ReportGenerator', function() {
       triggerDownload(zip, prefix + '_all_sessions_report.docx');
 
       var s = document.getElementById('adminStatus');
-      if (s) { s.textContent = 'Combined report downloaded.'; s.style.color = '#2e7d32'; }
+      var s1n = exam1.replace('osce_','OSCE ').replace('viva_','Viva ');
+      var s2n = exam2.replace('osce_','OSCE ').replace('viva_','Viva ');
+      if (s) { s.textContent = 'All Sessions: ' + scores1.length + ' (' + s1n + ') + ' + scores2.length + ' (' + s2n + ') scores'; s.style.color = '#2e7d32'; }
     } catch (e) {
       console.error(e);
       var s2 = document.getElementById('adminStatus');
