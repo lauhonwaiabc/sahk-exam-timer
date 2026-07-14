@@ -1,0 +1,1280 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAHK Exam Data Generator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; }
+h1 { text-align: center; padding: 18px; color: #00d4ff; font-size: 1.3em; }
+
+.tabs { display: flex; justify-content: center; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { padding: 8px 20px; background: #16213e; border: 1px solid #0f3460; color: #8892b0; cursor: pointer; border-radius: 6px 6px 0 0; font-size: 0.9em; transition: all 0.2s; }
+.tab:hover { color: #00d4ff; border-color: #00d4ff; }
+.tab.active { background: #0f3460; color: #00d4ff; border-color: #00d4ff; font-weight: 600; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 14px 40px; }
+.section { display: none; }
+.section.active { display: block; }
+
+.card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 18px; margin-bottom: 14px; }
+.card h2 { color: #00d4ff; font-size: 1.05em; margin-bottom: 12px; }
+.card h3 { color: #a0b4d0; font-size: 0.9em; margin: 10px 0 6px; }
+.card h4 { color: #00d4ff; font-size: 0.85em; margin-bottom: 5px; }
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field label { font-size: 0.75em; color: #8892b0; text-transform: uppercase; letter-spacing: 0.4px; }
+.field input, .field select, .field textarea { padding: 7px 9px; border: 1px solid #0f3460; border-radius: 4px; background: #1a1a2e; color: #e0e0e0; font-size: 0.85em; }
+.field input:focus, .field select:focus { outline: none; border-color: #00d4ff; }
+.field textarea { resize: vertical; min-height: 60px; font-family: monospace; font-size: 0.8em; }
+
+.radio-group { display: flex; gap: 14px; }
+.radio-group label { display: flex; align-items: center; gap: 5px; color: #e0e0e0; font-size: 0.85em; cursor: pointer; }
+.radio-group input[type="radio"] { accent-color: #00d4ff; }
+input[type="checkbox"] { accent-color: #00d4ff; margin-right: 4px; }
+
+button { padding: 7px 18px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em; font-weight: 600; transition: background 0.15s; }
+.btn-primary { background: #00d4ff; color: #1a1a2e; } .btn-primary:hover { background: #00b8e6; }
+.btn-success { background: #4caf50; color: #fff; } .btn-success:hover { background: #43a047; }
+.btn-danger { background: #e53935; color: #fff; } .btn-danger:hover { background: #c62828; }
+.btn-warn { background: #ff9800; color: #1a1a2e; } .btn-warn:hover { background: #f57c00; }
+.btn-sm { padding: 4px 10px; font-size: 0.75em; }
+.btn-group { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+
+.grid-inputs { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 7px; margin: 6px 0; }
+.grid-inputs .field input { text-align: center; }
+
+.preview-table { overflow-x: auto; margin-top: 10px; }
+.preview-table table { width: 100%; border-collapse: collapse; font-size: 0.78em; }
+.preview-table th, .preview-table td { border: 1px solid #0f3460; padding: 5px 7px; text-align: center; min-width: 55px; }
+.preview-table th { background: #0f3460; color: #00d4ff; white-space: nowrap; }
+.preview-table td { background: #1a1a2e; }
+.preview-table .hotseat { background: #1b3a4b; color: #00d4ff; font-weight: 600; }
+.preview-table .observer { color: #ffd54f; }
+.preview-table .empty { color: #555; }
+
+pre.output { background: #0d1117; color: #c9d1d9; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.76em; max-height: 350px; border: 1px solid #0f3460; margin-top: 8px; white-space: pre-wrap; }
+
+.candidate-prio { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin: 6px 0; }
+.candidate-prio .item { display: flex; align-items: center; gap: 3px; background: #1a1a2e; padding: 3px 7px; border-radius: 4px; border: 1px solid #0f3460; }
+.candidate-prio .item span { color: #8892b0; font-size: 0.7em; min-width: 16px; }
+.candidate-prio .item input { width: 48px; padding: 4px 5px; border: 1px solid #0f3460; border-radius: 3px; background: #0d1117; color: #e0e0e0; font-size: 0.8em; text-align: center; }
+
+.station-row { display: flex; align-items: center; gap: 7px; margin: 5px 0; flex-wrap: wrap; }
+.station-row .st-name { min-width: 95px; font-size: 0.8em; color: #00d4ff; }
+.station-row input { width: 55px; padding: 4px 7px; border: 1px solid #0f3460; border-radius: 3px; background: #0d1117; color: #e0e0e0; font-size: 0.8em; text-align: center; }
+
+.debrief-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin: 8px 0; }
+.debrief-grid .group-box { background: #1a1a2e; border: 1px solid #0f3460; border-radius: 5px; padding: 8px; }
+.debrief-grid .group-box h4 { color: #00d4ff; font-size: 0.8em; margin-bottom: 5px; }
+.debrief-grid .group-box input { width: 100%; padding: 3px 5px; border: 1px solid #0f3460; border-radius: 3px; background: #0d1117; color: #e0e0e0; font-size: 0.78em; margin-bottom: 3px; }
+
+.sc-block { background: #1a1a2e; border: 1px solid #0f3460; border-radius: 5px; padding: 10px; margin: 8px 0; }
+.sc-block .ex-row { display: flex; gap: 6px; margin: 5px 0; align-items: center; flex-wrap: wrap; }
+.sc-block .ex-row input, .sc-block .ex-row select { padding: 4px 7px; border: 1px solid #0f3460; border-radius: 3px; background: #0d1117; color: #e0e0e0; font-size: 0.8em; }
+
+.mapping-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 0.8em; }
+.mapping-table th { background: #0f3460; color: #00d4ff; padding: 6px 8px; text-align: left; }
+.mapping-table td { padding: 4px 8px; border-bottom: 1px solid #0f3460; }
+.mapping-table input { width: 100%; padding: 4px 6px; border: 1px solid #0f3460; border-radius: 3px; background: #0d1117; color: #e0e0e0; font-size: 0.8em; }
+
+.status { padding: 7px 12px; border-radius: 4px; margin: 8px 0; font-size: 0.8em; }
+.status.ok { background: #1b3a1b; color: #4caf50; border:1px solid #4caf50; }
+.status.warn { background: #3a3a1b; color: #ffd54f; border:1px solid #ffd54f; }
+
+hr { border: none; border-top: 1px solid #0f3460; margin: 14px 0; }
+
+@media (max-width: 600px) {
+  .row { flex-direction: column; }
+  .grid-inputs { grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); }
+}
+</style>
+</head>
+<body>
+
+<h1>SAHK Exam Data Generator</h1>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('viva')">Viva</button>
+  <button class="tab" onclick="switchTab('osce')">OSCE</button>
+  <button class="tab" onclick="switchTab('debrief')">Debriefing</button>
+  <button class="tab" onclick="switchTab('written')">Written</button>
+  <button class="tab" onclick="switchTab('mapping')">Candidate Mapping</button>
+</div>
+
+<div class="container">
+
+<!-- ================================================================ -->
+<!-- VIVA -->
+<!-- ================================================================ -->
+<div id="viva-section" class="section active">
+
+  <div class="card">
+    <h2>1. Viva Configuration</h2>
+    <div class="row">
+      <div class="field"><label>Tables (AM)</label><input type="number" id="viva-tables-am" value="10" min="2" max="30"></div>
+      <div class="field"><label>Tables (PM)</label><input type="number" id="viva-tables-pm" value="10" min="2" max="30"></div>
+      <div class="field"><label>Sessions (AM)</label><input type="number" id="viva-sessions-am" value="10" min="2" max="30"></div>
+      <div class="field"><label>Sessions (PM)</label><input type="number" id="viva-sessions-pm" value="10" min="2" max="30"></div>
+      <div class="field"><label>Candidates (AM)</label><input type="number" id="viva-candidates-am" value="15" min="3" max="50"></div>
+      <div class="field"><label>Candidates (PM)</label><input type="number" id="viva-candidates-pm" value="15" min="3" max="50"></div>
+    </div>
+
+    <h3>Timing Configuration</h3>
+    <div class="row">
+      <div class="field"><label>AM Start</label><input type="text" id="viva-start-am" value="08:30:00"></div>
+      <div class="field"><label>PM Start</label><input type="text" id="viva-start-pm" value="13:25:00"></div>
+      <div class="field"><label>Transit (sec)</label><input type="number" id="viva-transit" value="60" min="10"></div>
+      <div class="field"><label>Exam (sec)</label><input type="number" id="viva-exam-dur" value="900" min="60"></div>
+      <div class="field"><label>Debrief (sec)</label><input type="number" id="viva-debrief-dur" value="420" min="60"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label><input type="checkbox" id="viva-prep" checked> Prep</label></div>
+      <div class="field"><label>Prep dur (sec)</label><input type="number" id="viva-prep-dur" value="1740" min="60"></div>
+      <div class="field"><label><input type="checkbox" id="viva-break" checked> Break</label></div>
+      <div class="field"><label>Break after session #</label><input type="number" id="viva-break-idx" value="6" min="1"></div>
+      <div class="field"><label>Break dur (sec)</label><input type="number" id="viva-break-dur" value="840" min="60"></div>
+      <div class="field"><label><input type="checkbox" id="viva-concl" checked> Conclusion</label></div>
+      <div class="field"><label>Concl dur (sec)</label><input type="number" id="viva-concl-dur" value="1740" min="60"></div>
+    </div>
+    <button class="btn-primary" onclick="vivaProceed()">Proceed</button>
+  </div>
+
+  <div class="card" id="viva-detail-card" style="display:none;">
+    <h2>2a. AM Schedule — Candidate Priority &amp; Examiner Names</h2>
+    <h3>AM Candidate Priority (high → low)</h3>
+    <div class="candidate-prio" id="viva-prio-list-am"></div>
+    <h3>AM Examiner Names (one per table)</h3>
+    <div class="grid-inputs" id="viva-examiner-list-am"></div>
+    <h3>2b. PM Schedule — Candidate Priority &amp; Examiner Names</h3>
+    <p style="font-size:0.75em;color:#8892b0;margin:4px 0;">Defaults copied from AM. Edit below if candidate order or examiners differ for PM (e.g. examiner changes after lunch).</p>
+    <h3>PM Candidate Priority (high → low)</h3>
+    <div class="candidate-prio" id="viva-prio-list-pm"></div>
+    <h3>PM Examiner Names (one per table)</h3>
+    <div class="grid-inputs" id="viva-examiner-list-pm"></div>
+    <button class="btn-success" onclick="vivaGenerate()">Generate Viva Data</button>
+  </div>
+
+  <div class="card" id="viva-result-card" style="display:none;">
+    <h2>3. Generated Output</h2>
+    <div class="btn-group" id="viva-downloads-shared" style="margin-bottom:12px;"></div>
+    <hr>
+    <h3>AM — Session View</h3><div class="preview-table" id="viva-preview-session-am"></div>
+    <h3>AM — Table View</h3><div class="preview-table" id="viva-preview-table-am"></div>
+    <div class="btn-group" id="viva-downloads-am" style="margin-bottom:12px;"></div>
+    <hr>
+    <h3>PM — Session View</h3><div class="preview-table" id="viva-preview-session-pm"></div>
+    <h3>PM — Table View</h3><div class="preview-table" id="viva-preview-table-pm"></div>
+    <div class="btn-group" id="viva-downloads-pm"></div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- OSCE -->
+<!-- ================================================================ -->
+<div id="osce-section" class="section">
+
+  <div class="card">
+    <h2>1. OSCE Configuration</h2>
+    <div class="row">
+      <div class="field"><label>Stations</label><input type="number" id="osce-stations" value="15" min="2" max="30"></div>
+      <div class="field"><label>Sessions (AM)</label><input type="number" id="osce-sessions-am" value="15" min="2" max="50"></div>
+      <div class="field"><label>Sessions (PM)</label><input type="number" id="osce-sessions-pm" value="15" min="2" max="50"></div>
+    </div>
+    <h3>Timing</h3>
+    <div class="row">
+      <div class="field"><label>AM Start</label><input type="text" id="osce-start-am" value="09:30:00"></div>
+      <div class="field"><label>PM Start</label><input type="text" id="osce-start-pm" value="13:45:00"></div>
+      <div class="field"><label>Transit (sec)</label><input type="number" id="osce-transit" value="120" min="10"></div>
+      <div class="field"><label>Exam (sec)</label><input type="number" id="osce-exam-dur" value="600" min="60"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label><input type="checkbox" id="osce-prep" checked> Prep</label></div>
+      <div class="field"><label>Prep dur (sec)</label><input type="number" id="osce-prep-dur" value="1680" min="60"></div>
+      <div class="field"><label><input type="checkbox" id="osce-break"> Break</label></div>
+      <div class="field"><label>Break idx</label><input type="number" id="osce-break-idx" value="0" min="0"></div>
+      <div class="field"><label>Break dur (sec)</label><input type="number" id="osce-break-dur" value="780" min="60"></div>
+      <div class="field"><label><input type="checkbox" id="osce-concl" checked> Conclusion</label></div>
+      <div class="field"><label>Concl dur (sec)</label><input type="number" id="osce-concl-dur" value="1680" min="60"></div>
+    </div>
+    <button class="btn-primary" onclick="osceProceed()">Proceed</button>
+  </div>
+
+  <div class="card" id="osce-detail-card" style="display:none;">
+    <h2>2. Station Names &amp; AM/PM Session 1</h2>
+    <h3>Station Names</h3><div class="grid-inputs" id="osce-station-names"></div>
+    <h3>AM — Session 1 Arrangement</h3>
+    <div id="osce-first-arr-am"></div>
+    <p style="font-size:0.75em;color:#8892b0;margin:4px 0;">PM defaults copied from AM. Edit below if Session&nbsp;1 assignments differ for PM.</p>
+    <h3>PM — Session 1 Arrangement</h3>
+    <div id="osce-first-arr-pm"></div>
+    <button class="btn-success" onclick="osceGenerate()">Generate OSCE Data</button>
+  </div>
+
+  <div class="card" id="osce-result-card" style="display:none;">
+    <h2>3. Generated Output</h2>
+    <div class="btn-group" id="osce-downloads-shared"></div>
+    <hr>
+    <h3>AM — Session View</h3><div class="preview-table" id="osce-preview-session-am"></div>
+    <h3>AM — Station View</h3><div class="preview-table" id="osce-preview-station-am"></div>
+    <div class="btn-group" id="osce-downloads-am"></div>
+    <hr>
+    <h3>PM — Session View</h3><div class="preview-table" id="osce-preview-session-pm"></div>
+    <h3>PM — Station View</h3><div class="preview-table" id="osce-preview-station-pm"></div>
+    <div class="btn-group" id="osce-downloads-pm"></div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- DEBRIEFING -->
+<!-- ================================================================ -->
+<div id="debrief-section" class="section">
+
+  <div class="card">
+    <h2>1. Debriefing Configuration</h2>
+    <div class="row">
+      <div class="field"><label>Start Time</label><input type="text" id="deb-start" value="12:15:00"></div>
+      <div class="field"><label>Debrief Sessions</label><input type="number" id="deb-sessions" value="3" min="1" max="10"></div>
+      <div class="field"><label>Session dur (min)</label><input type="number" id="deb-duration" value="60" min="10"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label><input type="checkbox" id="deb-prep" checked> Prep</label></div>
+      <div class="field"><label>Prep dur (min)</label><input type="number" id="deb-prep-dur" value="30" min="5"></div>
+      <div class="field"><label><input type="checkbox" id="deb-concl" checked> Conclusion</label></div>
+      <div class="field"><label>Concl dur (min)</label><input type="number" id="deb-concl-dur" value="30" min="5"></div>
+    </div>
+    <h3>Scenarios &amp; Examiners</h3>
+    <div class="row">
+      <div class="field"><label># Scenarios</label><input type="number" id="deb-sc-count" value="3" min="1" max="10"></div>
+      <div class="field"><label>Examiners per Scenario</label><input type="number" id="deb-ex-count" value="3" min="1" max="10"></div>
+    </div>
+    <button class="btn-primary" onclick="debriefProceed()">Proceed</button>
+  </div>
+
+  <div class="card" id="debrief-detail-card" style="display:none;">
+    <h2>2. Scenario Names &amp; Examiners</h2>
+    <h3>Scenario Names</h3><div class="grid-inputs" id="deb-sc-names"></div>
+    <h3>Examiners per Scenario</h3><div id="deb-sc-examiners"></div>
+    <button class="btn-primary" onclick="debriefProceedGroups()">Proceed</button>
+  </div>
+
+  <div class="card" id="debrief-groups-card" style="display:none;">
+    <h2>3. Questions, Candidate Groups &amp; Group Assignments</h2>
+    <h3>Question Distribution</h3>
+    <div class="row">
+      <div class="field"><label># Questions</label><input type="number" id="deb-q-count" value="3" min="1" max="50" onchange="debriefBuildQuestionAssignments()"></div>
+    </div>
+    <div class="grid-inputs" id="deb-q-assign"></div>
+    <h3>Candidate Groups</h3>
+    <div class="row">
+      <div class="field"><label># Groups</label><input type="number" id="deb-groups" value="9" min="3" max="30" onchange="debriefBuildGroups()"></div>
+      <div class="field"><label>Cands/Group</label><input type="number" id="deb-group-size" value="3" min="1" max="20" onchange="debriefBuildGroups()"></div>
+    </div>
+    <div class="debrief-grid" id="deb-group-grid"></div>
+    <h3>Group Assignments</h3><div id="deb-assign-grid"></div>
+    <button class="btn-success" onclick="debriefGenerate()">Generate Debriefing Data</button>
+  </div>
+
+  <div class="card" id="debrief-result-card" style="display:none;">
+    <h2>4. Generated Output</h2>
+    <div class="btn-group" id="deb-downloads"></div>
+    <details><summary>debrief_config.js</summary><pre class="output" id="deb-config-out"></pre></details>
+    <details><summary>debrief_data.js</summary><pre class="output" id="deb-data-out"></pre></details>
+    <details><summary>written_score_data.js</summary><pre class="output" id="deb-score-out"></pre></details>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- WRITTEN -->
+<!-- ================================================================ -->
+<div id="written-section" class="section">
+
+  <div class="card">
+    <h2>1. Written Exam Configuration</h2>
+    <div class="row">
+      <div class="field"><label>Start Time</label><input type="text" id="wr-start" value="08:45:00"></div>
+      <div class="field"><label>Exam Title</label><input type="text" id="wr-title" value="SAHK Final Examination Preparation Course - Written Examination" style="width:350px;"></div>
+    </div>
+    <h3>Page Counts</h3>
+    <div class="row">
+      <div class="field"><label>Paper I pages</label><input type="number" id="wr-p1" value="4" min="1"></div>
+      <div class="field"><label>CA pages</label><input type="number" id="wr-ca" value="5" min="1"></div>
+      <div class="field"><label>Investigation pages</label><input type="number" id="wr-inv" value="8" min="1"></div>
+      <div class="field"><label>Radiology pages</label><input type="number" id="wr-rad" value="6" min="1"></div>
+      <div class="field"><label>MCQ pages</label><input type="number" id="wr-mcq" value="40" min="1"></div>
+    </div>
+    <h3>Phase Durations (sec)</h3>
+    <div class="row">
+      <div class="field"><label>Prep (all)</label><input type="number" id="wr-p1-prep" value="300" min="10"></div>
+      <div class="field"><label>Paper I Exam</label><input type="number" id="wr-p1-exam" value="7200" min="60"></div>
+      <div class="field"><label>Collect (all)</label><input type="number" id="wr-p1-coll" value="300" min="10"></div>
+      <div class="field"><label>Pre-Exam</label><input type="number" id="wr-pre" value="600" min="60"></div>
+      <div class="field"><label>Break dur</label><input type="number" id="wr-break" value="1200" min="60"></div>
+      <div class="field"><label>Lunch dur</label><input type="number" id="wr-lunch-dur" value="3600" min="60"></div>
+      <div class="field"><label>CA Read</label><input type="number" id="wr-ca-read" value="1800" min="10"></div>
+      <div class="field"><label>CA Exam</label><input type="number" id="wr-ca-exam" value="600" min="10"></div>
+      <div class="field"><label>Transition</label><input type="number" id="wr-trans" value="600" min="10"></div>
+      <div class="field"><label>Inv Exam</label><input type="number" id="wr-inv-exam" value="600" min="10"></div>
+      <div class="field"><label>Rad Exam</label><input type="number" id="wr-rad-exam" value="600" min="10"></div>
+      <div class="field"><label>MCQ Exam</label><input type="number" id="wr-mcq-exam" value="9000" min="60"></div>
+    </div>
+    <button class="btn-success" onclick="writtenGenerate()">Generate Written Config</button>
+  </div>
+
+  <div class="card" id="written-result-card" style="display:none;">
+    <h2>2. Generated Output</h2>
+    <div class="btn-group" id="wr-downloads"></div>
+    <details><summary>written_config.js</summary><pre class="output" id="wr-config-out"></pre></details>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- CANDIDATE MAPPING -->
+<!-- ================================================================ -->
+<div id="mapping-section" class="section">
+
+  <div class="card">
+    <h2>Candidate Mapping</h2>
+    <p style="font-size:0.8em;color:#8892b0;margin-bottom:8px;">
+      Map full candidate IDs to display names. Used by report generator.<br>
+      <b>Import CSV</b> with columns <code>Full ID, Short Name, Full Name, Abbr ID</code> (<a href="sample_candidate_mapping.csv" download style="color:#00d4ff;">download sample</a>).
+    </p>
+    <div class="btn-group">
+      <button class="btn-primary" onclick="mappingAddRow()">+ Add Row</button>
+      <button class="btn-warn" onclick="$('mapping-csv-input').click()">Import CSV</button>
+      <button class="btn-success" onclick="mappingGenerate()">Generate Files</button>
+    </div>
+    <input type="file" id="mapping-csv-input" accept=".csv" style="display:none;" onchange="mappingImportCsv(this)">
+    <table class="mapping-table" id="mapping-table">
+      <thead><tr><th>Full ID</th><th>Short Name</th><th>Full Name</th><th>Abbr ID</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div id="mapping-status"></div>
+    <details><summary>JS preview</summary><pre class="output" id="mapping-js-out"></pre></details>
+    <div class="btn-group" id="mapping-downloads"></div>
+  </div>
+</div>
+
+</div>
+
+<!-- ================================================================ -->
+<!-- SCRIPTS -->
+<!-- ================================================================ -->
+<script>
+// ==================== HELPERS ====================
+function $(id) { return document.getElementById(id); }
+function qs(sel, parent) { return (parent||document).querySelector(sel); }
+function esc(s) { return s == null || s === '' ? '' : String(s); }
+function pad2(v) { return String(v).trim(); }
+
+const tabNames = ['viva','osce','debrief','written','mapping'];
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabNames[i]===name));
+  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id===name+'-section'));
+}
+
+function download(filename, content) {
+  const blob = new Blob([content], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function toJsObj(obj, indent) {
+  indent = indent || 2;
+  let s = JSON.stringify(obj, null, indent);
+  let result = '';
+  let i = 0;
+  while (i < s.length) {
+    if (s[i] === '[') {
+      let j = i + 1, depth = 1, hasNL = false;
+      while (j < s.length && depth > 0) {
+        if (s[j] === '[') depth++; else if (s[j] === ']') depth--;
+        else if (s[j] === '\n') hasNL = true;
+        j++;
+      }
+      const inner = s.substring(i, j);
+      if (hasNL && depth === 0) {
+        let col = '', inQ = false;
+        for (let k = 0; k < inner.length; k++) {
+          const ch = inner[k];
+          if (ch === '"') inQ = !inQ;
+          if (inQ || (ch !== '\n' && ch !== ' ')) col += ch;
+        }
+        col = col.replace(/"([^"]*)""/g, '"$1","').replace(/,\]/g, ']');
+        result += col; i = j;
+      } else { result += s[i]; i++; }
+    } else { result += s[i]; i++; }
+  }
+  return result;
+}
+
+function genConfig({startAM, startPM, numItems, baseSessions, transitDur, examDur, prep, prepDur, brk, brkIdx, brkDur, concl, conclDur, extraPhases, examLabel, quote}) {
+  const q = quote || "'";
+  const lines = ["'use strict';"];
+
+  if (startAM && startPM) {
+    lines.push(`const START_TIME_AM = "${startAM}";`);
+    lines.push(`const START_TIME_PM = "${startPM}";`);
+  } else {
+    lines.push(`const START_TIME = "${startAM || startPM}";`);
+  }
+  if (numItems) lines.push(`const NUM_${examLabel === 'TABLES' ? 'TABLES' : 'STATIONS'} = ${numItems};`);
+  lines.push(`const BASE_NUM_SESSIONS = ${baseSessions};`);
+  lines.push('');
+  lines.push(`const ENABLE_PREPARATION = ${prep};`);
+  lines.push(`const PREPARATION_SESSION_INDEX = ${prep ? 0 : -1};`);
+  lines.push('');
+  lines.push(`const ENABLE_BREAK = ${brk};`);
+  lines.push(`const BREAK_SESSION_INDEX_RAW = ${brkIdx};`);
+  lines.push('');
+  lines.push(`const ENABLE_CONCLUSION = ${concl};`);
+  lines.push(`const CONCLUSION_SESSION_INDEX = (ENABLE_PREPARATION ? 1 : 0) + BASE_NUM_SESSIONS + (ENABLE_BREAK ? 1 : 0);`);
+  lines.push('');
+
+  function ps(title, dur, info) {
+    return `  { title: ${q}${title}${q}, duration: ${dur}, info: ${q}${info}${q} },`;
+  }
+  function psLast(title, dur, info) {
+    return `  { title: ${q}${title}${q}, duration: ${dur}, info: ${q}${info}${q} }`;
+  }
+
+  var transitInfo = (transitDur/60) + ' ' + (transitDur>=120 ? 'minutes' : 'minute');
+
+  var items = [];
+  items.push(ps('Transit', transitDur, transitInfo));
+  items.push(ps(examLabel || 'Exam', examDur, (examDur/60)+' minutes'));
+  if (extraPhases) for (var ei = 0; ei < extraPhases.length; ei++) items.push(ps(extraPhases[ei].title, extraPhases[ei].duration, extraPhases[ei].info));
+  items[items.length-1] = items[items.length-1].replace(/,$/, '');
+
+  lines.push('const standardPhases = [');
+  lines.push.apply(lines, items);
+  lines.push('];');
+  lines.push('');
+
+  if (prep) {
+    lines.push('const preparationPhases = [');
+    lines.push(ps('Transit', transitDur, transitInfo));
+    lines.push(psLast('Preparation', prepDur, Math.round(prepDur/60)+' minutes'));
+    lines.push('];');
+    lines.push('');
+  }
+  if (brk) {
+    lines.push('const breakPhase = [');
+    lines.push(ps('Transit', transitDur, transitInfo));
+    lines.push(psLast('Break', brkDur, Math.round(brkDur/60)+' minutes'));
+    lines.push('];');
+    lines.push('');
+  }
+  if (concl) {
+    lines.push('const conclusionPhases = [');
+    lines.push(ps('Transit', transitDur, transitInfo));
+    lines.push(psLast('Conclusion', conclDur, Math.round(conclDur/60)+' minutes'));
+    lines.push('];');
+    lines.push('');
+  }
+
+  lines.push('const BREAK_SESSION_INDEX = ENABLE_PREPARATION ? BREAK_SESSION_INDEX_RAW+1 : BREAK_SESSION_INDEX_RAW;');
+  lines.push('const SESSION_PHASES = [];');
+  lines.push('');
+  lines.push('if (ENABLE_PREPARATION) SESSION_PHASES.push([...preparationPhases]);');
+  lines.push('for (let i = 0; i < BASE_NUM_SESSIONS; i++) {');
+  lines.push('  if (ENABLE_BREAK && i === BREAK_SESSION_INDEX_RAW) {');
+  lines.push('    SESSION_PHASES.push([...breakPhase]);');
+  lines.push('  }');
+  lines.push('  SESSION_PHASES.push([...standardPhases]);');
+  lines.push('}');
+  lines.push('if (ENABLE_CONCLUSION) SESSION_PHASES.push([...conclusionPhases]);');
+  return lines.join('\n') + '\n';
+}
+
+function genScript({label, prep, brk, brkIdx, baseSessions, concl, concIdx, extraLines, examSuffix}) {
+  const lines = ["'use strict';", `const ${label}_SCRIPT_DATA = (function() {`, '  var entries = [];', '  var firstExam = ENABLE_PREPARATION ? 1 : 0;', '  var num = 0;', ''];
+  const examType = label.toLowerCase();
+  const venue = examType === 'osce' ? 'station' : 'table';
+  lines.push(`  for (var si = firstExam; si < CONCLUSION_SESSION_INDEX; si++) {`);
+  lines.push('    if (ENABLE_BREAK && si === BREAK_SESSION_INDEX) {');
+  lines.push(`      entries.push({session:si,phase:0,offset:0,sentences:["Please proceed to the break area."]});`);
+  lines.push(`      var bm = Math.round(SESSION_PHASES[si][1].duration / 60);`);
+  lines.push(`      entries.push({session:si,phase:1,offset:0,sentences:["Break for " + bm + " minutes."]});`);
+  lines.push('      continue;');
+  lines.push('    }');
+  lines.push('    num++;');
+  if (examType === 'osce') {
+    lines.push('    entries.push({session:si,phase:0,offset:0,sentences:["Please transit to your next station."]});');
+    lines.push('    entries.push({session:si,phase:1,offset:0,sentences:[`OSCE Session ${num} now begins.`]});');
+  } else if (examType === 'viva') {
+    lines.push('    entries.push({session:si,phase:0,offset:0,sentences:["Please transit to your next table."]});');
+    lines.push('    entries.push({session:si,phase:1,offset:0,sentences:[`Viva Session ${num} now begins.`]});');
+    lines.push('    entries.push({session:si,phase:1,offset:600,sentences:[`5 minutes left for Viva Session ${num}.`]});');
+    lines.push('    entries.push({session:si,phase:2,offset:0,sentences:[`Debriefing for Viva Session ${num} now begins.`]});');
+    lines.push('    entries.push({session:si,phase:2,offset:300,sentences:["2 minutes left for debriefing."]});');
+  }
+  if (extraLines) lines.push(extraLines);
+  lines.push('  }');
+  if (examType === 'debrief') {
+    lines.push(`  entries.push({session:CONCLUSION_SESSION_INDEX,phase:0,offset:0,sentences:["End of the Debriefing Session. Thank you for participating in the SAHK Final Examination Preparation Course Written Examination Debriefing."]});`);
+  } else {
+    const lastLabel = examType === 'osce' ? 'OSCE' : 'Viva';
+    lines.push(`  entries.push({session:CONCLUSION_SESSION_INDEX,phase:1,offset:0,sentences:["End of the Examination.","Thank you for participating in the SAHK Final Examination Preparation Course ${lastLabel} Examination."]});`);
+  }
+  if (examSuffix) lines.push(examSuffix);
+  lines.push('  return entries;');
+  lines.push('})();');
+  return lines.join('\n') + '\n';
+}
+
+function genDebScript({prep, concl, baseSessions, concIdx, durationMin}) {
+  const lines = ["'use strict';", 'const DEBRIEF_SCRIPT_DATA = (function() {', '  var entries = [];', '  var firstExam = ENABLE_PREPARATION ? 1 : 0;', '  var sessionNum = 0;', ''];
+  lines.push('  for (var si = firstExam; si < CONCLUSION_SESSION_INDEX; si++) {');
+  lines.push('    sessionNum++;');
+  lines.push(`    entries.push({session:si,phase:0,offset:0,sentences:["Debriefing Session " + sessionNum + " now begins."]});`);
+  lines.push(`    entries.push({session:si,phase:0,offset:3000,sentences:["10 minutes left for Debriefing Session " + sessionNum + "."]});`);
+  lines.push('  }');
+  lines.push(`  entries.push({session:CONCLUSION_SESSION_INDEX,phase:0,offset:0,sentences:["End of the Debriefing Session. Thank you for participating in the SAHK Final Examination Preparation Course Written Examination Debriefing."]});`);
+  lines.push('  return entries;');
+  lines.push('})();');
+  return lines.join('\n') + '\n';
+}
+
+// ==================== VIVA ====================
+let vivaStore = {};
+
+function vivaProceed() {
+  var TAm = +($('viva-tables-am').value)||10, SPm = +($('viva-sessions-am').value)||10, CAm = +($('viva-candidates-am').value)||15;
+  var TPm = +($('viva-tables-pm').value)||10, SPm2 = +($('viva-sessions-pm').value)||10, CPm = +($('viva-candidates-pm').value)||15;
+  $('viva-detail-card').style.display = 'block'; $('viva-result-card').style.display = 'none';
+
+  // Show constraint info (AM stats)
+  var total = SPm * TAm, base = Math.floor(total / CAm), extra = total % CAm;
+  var msg = 'AM Hotseats: '+base+' or '+(base+1)+' ('+extra+' get '+(base+1)+' each). ';
+  if (CAm < TAm) msg += '<b style=\"color:#e53935;\">Warning: C < T</b> — some tables may be underutilized. ';
+  if (CAm > 2*TAm) msg += '<b style=\"color:#e53935;\">Warning: C > 2T</b> — impossible to assign every candidate per session. ';
+  if (TAm < SPm) msg += '<b style=\"color:#e53935;\">Warning: Tables < Sessions</b>. ';
+  if (!(CAm >= TAm && CAm <= 2*TAm)) msg += 'Recommended: T \u2264 C \u2264 2T.';
+  var existingMsg = $('viva-constraint-msg');
+  if (existingMsg) existingMsg.remove();
+  $('viva-detail-card').insertAdjacentHTML('beforeend', '<div class=\"status warn\" style=\"margin-top:8px;\" id=\"viva-constraint-msg\">'+msg+'</div>');
+
+  var plAm = $('viva-prio-list-am'); plAm.innerHTML = '';
+  for (var i=0;i<CAm;i++) {
+    var d=document.createElement('div'); d.className='item';
+    d.innerHTML = '<span>#'+(i+1)+'</span><input type=\"text\" id=\"viva-prio-am-'+i+'\" value=\"'+String(i+1).padStart(2,'0')+'\" maxlength=\"4\">';
+    plAm.appendChild(d);
+  }
+  var plPm = $('viva-prio-list-pm'); plPm.innerHTML = '';
+  for (var i=0;i<CPm;i++) {
+    var d=document.createElement('div'); d.className='item';
+    d.innerHTML = '<span>#'+(i+1)+'</span><input type=\"text\" id=\"viva-prio-pm-'+i+'\" value=\"'+String(i+1).padStart(2,'0')+'\" maxlength=\"4\">';
+    plPm.appendChild(d);
+  }
+
+  var elAm = $('viva-examiner-list-am'); elAm.innerHTML = '';
+  for (var i=0;i<TAm;i++) {
+    var d=document.createElement('div'); d.className='field';
+    d.innerHTML = '<label>Table '+(i+1)+'</label><input type=\"text\" id=\"viva-exam-am-'+i+'\" value=\"Examiner '+(i+1)+'\">';
+    elAm.appendChild(d);
+  }
+  var elPm = $('viva-examiner-list-pm'); elPm.innerHTML = '';
+  for (var i=0;i<TPm;i++) {
+    var d=document.createElement('div'); d.className='field';
+    var pmVal = 'Examiner '+(i+1);
+    d.innerHTML = '<label>Table '+(i+1)+'</label><input type=\"text\" id=\"viva-exam-pm-'+i+'\" value=\"'+pmVal+'\">';
+    elPm.appendChild(d);
+  }
+  $('viva-detail-card').scrollIntoView({behavior:'smooth'});
+}
+
+// --- CP-SAT style constraint solver for Viva ---
+// Port of viva_optimization.py constraints:
+//   1. Each session×table: exactly 1 hotseat, at most 1 observer, no overlap
+//   2. Each candidate assigned exactly once per session (hotseat or observer)
+//   3. No candidate visits same table twice in any role
+//   4. Hotseats evenly distributed: floor(S*T/C) ≤ count ≤ ceil(S*T/C)
+//   5. Hotseat counts non-increasing by priority (index 0 = highest priority)
+
+function vivaSolver(T, S, C) {
+  var total = S * T;
+  var base = Math.floor(total / C);
+  var extra = total % C;
+  var targets = new Array(C);
+  for (var i = 0; i < C; i++) targets[i] = i < extra ? base + 1 : base;
+
+  // Build hotseat grid from Latin square (table x session)
+  // Core candidates (0..T-1) each appear T times. Extra candidates (T..C-1)
+  // replace core cells, with priority sorting to balance removals.
+  for (var attempt = 0; attempt < 3000; attempt++) {
+    var rng = vivaRng(attempt * 7919 + 1);
+
+    var hsGrid = new Array(T);
+    for (var t = 0; t < T; t++) {
+      hsGrid[t] = new Array(S);
+      for (var sess = 0; sess < S; sess++) {
+        hsGrid[t][sess] = (t + sess) % T;
+      }
+    }
+
+    var remove = new Array(T);
+    for (var c = 0; c < T; c++) remove[c] = S - targets[c];
+
+    // Build cell list once, sort by removal priority (highest first)
+    var allCells = [];
+    for (var t = 0; t < T; t++)
+      for (var sess = 0; sess < S; sess++)
+        allCells.push({t:t, sess:sess, orig:hsGrid[t][sess], used:false});
+
+    allCells.sort(function(a,b){
+      var d = remove[b.orig] - remove[a.orig];
+      if (d !== 0) return d;
+      return rng() < 0.5 ? -1 : 1;
+    });
+
+    var ok = true;
+    for (var d = T; d < C && ok; d++) {
+      var needed = targets[d];
+      var rowsU = new Set();
+      var colsU = new Set();
+
+      for (var ci = 0; ci < allCells.length && needed > 0; ci++) {
+        var cell = allCells[ci];
+        if (cell.used) continue;
+        if (remove[cell.orig] <= 0) continue;
+        if (rowsU.has(cell.t) || colsU.has(cell.sess)) continue;
+
+        cell.used = true;
+        hsGrid[cell.t][cell.sess] = d;
+        remove[cell.orig]--;
+        rowsU.add(cell.t);
+        colsU.add(cell.sess);
+        needed--;
+      }
+      if (needed > 0) ok = false;
+    }
+
+    for (var c = 0; c < T; c++) { if (remove[c] !== 0) { ok = false; break; } }
+    if (!ok) continue;
+
+    // Build hotseat arrays and count
+    var hotseat = new Array(S);
+    var obs = new Array(S);
+    var hsCount = new Array(C);
+    for (var c = 0; c < C; c++) hsCount[c] = 0;
+    for (var sess = 0; sess < S; sess++) {
+      hotseat[sess] = new Array(T);
+      obs[sess] = new Array(T);
+      for (var t = 0; t < T; t++) {
+        var c = hsGrid[t][sess];
+        hotseat[sess][t] = c;
+        hsCount[c]++;
+        obs[sess][t] = -1;
+      }
+    }
+
+    var hsOk = true;
+    for (var c = 0; c < C; c++) { if (hsCount[c] !== targets[c]) { hsOk = false; break; } }
+    if (!hsOk) continue;
+
+    // Compute visited from hotseats
+    var visited = new Array(C);
+    for (var c = 0; c < C; c++) visited[c] = new Set();
+    for (var sess = 0; sess < S; sess++)
+      for (var t = 0; t < T; t++)
+        visited[hotseat[sess][t]].add(t);
+
+    // Assign observers per session via matching
+    var busted = false;
+    var tableObsCount = new Array(T);
+    for (var t = 0; t < T; t++) tableObsCount[t] = 0;
+
+    for (var sess = 0; sess < S && !busted; sess++) {
+      var used = new Set();
+      for (var t = 0; t < T; t++) used.add(hotseat[sess][t]);
+
+      var obsPool = [];
+      for (var c = 0; c < C; c++) { if (!used.has(c)) obsPool.push(c); }
+
+      if (obsPool.length > 0) {
+        var obsOk = false;
+        for (var obsRetry = 0; obsRetry < 40 && !obsOk; obsRetry++) {
+          var subRng = vivaRng((attempt * 200 + sess * 20 + obsRetry) * 7919 + 1);
+          if (vivaMatchSession(obsPool, T, visited, obs[sess], subRng, obsPool.length, tableObsCount) >= obsPool.length) {
+            obsOk = true;
+            for (var t = 0; t < T; t++) { if (obs[sess][t] >= 0) tableObsCount[t]++; }
+          }
+        }
+        if (!obsOk) busted = true;
+      }
+    }
+
+    if (!busted) {
+      var obsFilled = 0;
+      for (var s = 0; s < S; s++) for (var t = 0; t < T; t++) { if (obs[s][t] >= 0) obsFilled++; }
+      return {hotseat:hotseat, obs:obs, hsCount:hsCount, obsFilled:obsFilled};
+    }
+  }
+
+  return null;
+}
+
+// Maximum bipartite matching (Kuhn) with MRV ordering — used for both hotseats and observers
+function vivaMatchSession(pool, T, visited, assnRow, rng, needed, tableWeight) {
+  var P = pool.length;
+  if (P === 0) return 0;
+
+  var adj = new Array(P);
+  for (var pi = 0; pi < P; pi++) {
+    var c = pool[pi]; adj[pi] = [];
+    for (var t = 0; t < T; t++) { if (!visited[c].has(t)) adj[pi].push(t); }
+  }
+
+  // MRV ordering: sort by adjacency size (fewest options first), randomized tie-break
+  var orderP = new Array(P); for (var pi=0;pi<P;pi++) orderP[pi]=pi;
+  var scores = new Array(P);
+  for (var pi=0;pi<P;pi++) scores[pi] = adj[pi].length + rng() * 0.999;
+  orderP.sort(function(a,b){ return scores[a] - scores[b]; });
+
+  // Phase 1: Kuhn on temp arrays — prefer tables with lower weight
+  var matchP = new Array(P); for (var pi=0;pi<P;pi++) matchP[pi]=-1;
+  var matchT = new Array(T); for (var t=0;t<T;t++) matchT[t]=-1;
+
+  function dfs(pi, seen) {
+    // If tableWeight provided, sort adj by table weight (ascending) for this DFS call
+    var edges = adj[pi];
+    if (tableWeight) {
+      edges = adj[pi].slice().sort(function(ta, tb) {
+        var d = (tableWeight[ta] || 0) - (tableWeight[tb] || 0);
+        return d !== 0 ? d : (rng() < 0.5 ? -1 : 1);
+      });
+    }
+    for (var ai = 0; ai < edges.length; ai++) {
+      var t = edges[ai];
+      if (seen.has(t)) continue;
+      seen.add(t);
+      if (matchT[t] === -1 || dfs(matchT[t], seen)) {
+        matchP[pi] = t; matchT[t] = pi; return true;
+      }
+    }
+    return false;
+  }
+
+  for (var oi = 0; oi < orderP.length; oi++) {
+    var pi = orderP[oi];
+    var seen = new Set();
+    dfs(pi, seen);
+  }
+
+  // Phase 2: Write final matching to assnRow and visited
+  var matched = 0;
+  for (var oi = 0; oi < orderP.length && matched < needed; oi++) {
+    var pi = orderP[oi];
+    if (matchP[pi] >= 0) {
+      var t = matchP[pi];
+      var c = pool[pi];
+      assnRow[t] = c;
+      visited[c].add(t);
+      matched++;
+    }
+  }
+
+  // Phase 3: Greedy fallback
+  if (matched < needed) {
+    var usedT = new Set();
+    for (var t=0;t<T;t++){ if(assnRow[t]>=0) usedT.add(t); }
+    for (var pi=0;pi<P && matched<needed;pi++){
+      if (matchP[pi]>=0) continue;
+      var c = pool[pi];
+      for (var t=0;t<T;t++){
+        if (!visited[c].has(t) && !usedT.has(t)){
+          assnRow[t]=c; visited[c].add(t); usedT.add(t); matched++; break;
+        }
+      }
+    }
+  }
+  return matched;
+}
+
+function vivaRng(seed) {
+  return function() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+}
+function vivaShuffle(arr, rng) {
+  for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(rng() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
+}
+
+function vivaGenerate() {
+  var TAm=+($('viva-tables-am').value)||10, SAm=+($('viva-sessions-am').value)||10, CAm=+($('viva-candidates-am').value)||15;
+  var TPm=+($('viva-tables-pm').value)||10, SPm=+($('viva-sessions-pm').value)||10, CPm=+($('viva-candidates-pm').value)||15;
+  var startAM = $('viva-start-am').value, startPM = $('viva-start-pm').value;
+  var transit = +($('viva-transit').value)||60, examDur = +($('viva-exam-dur').value)||900;
+  var debriefDur = +($('viva-debrief-dur').value)||420;
+  var prep = $('viva-prep').checked, prepDur = +($('viva-prep-dur').value)||1740;
+  var brk = $('viva-break').checked, brkIdxAm = +($('viva-break-idx').value)||6, brkDur = +($('viva-break-dur').value)||840;
+  var concl = $('viva-concl').checked, conclDurAm = +($('viva-concl-dur').value)||1740;
+
+  var examAM=[]; for(var i=0;i<TAm;i++){ var inp=$('viva-exam-am-'+i); examAM.push(inp?inp.value.trim():"Examiner "+(i+1)); }
+  var examPM=[]; for(var i=0;i<TPm;i++){ var inp=$('viva-exam-pm-'+i); examPM.push(inp?inp.value.trim():"Examiner "+(i+1)); }
+  var priosAM=[]; for(var i=0;i<CAm;i++){ var inp=$('viva-prio-am-'+i); priosAM.push(inp?inp.value.trim():String(i+1)); }
+  var priosPM=[]; for(var i=0;i<CPm;i++){ var inp=$('viva-prio-pm-'+i); priosPM.push(inp?inp.value.trim():String(i+1)); }
+
+  function validate(T,S,C,label) {
+    if(C<T){alert(label+' Candidates < Tables');return false;}
+    if(C>2*T){alert(label+' Candidates > 2\u00d7Tables');return false;}
+    if(S>T){alert(label+' Sessions > Tables');return false;}
+    return true;
+  }
+  if(!validate(TAm,SAm,CAm,'AM') || !validate(TPm,SPm,CPm,'PM')) return;
+
+  $('viva-result-card').style.display='block';
+  $('viva-preview-session-am').innerHTML = '<div class="status warn">Solving AM...</div>';
+  $('viva-preview-table-am').innerHTML = '';
+  $('viva-preview-session-pm').innerHTML = '<div class="status warn">Solving PM...</div>';
+  $('viva-preview-table-pm').innerHTML = '';
+
+  var resultAM = vivaSolver(TAm, SAm, CAm);
+  var resultPM = vivaSolver(TPm, SPm, CPm);
+
+  if (!resultAM || !resultPM) {
+    var msg = '';
+    if(!resultAM) msg += 'AM: No valid solution for '+TAm+' tables, '+SAm+' sessions, '+CAm+' candidates. ';
+    if(!resultPM) msg += 'PM: No valid solution for '+TPm+' tables, '+SPm+' sessions, '+CPm+' candidates.';
+    $('viva-preview-session-am').innerHTML = '<div class="status warn" style="color:#e53935;border-color:#e53935;">'+msg+'</div>';
+    return;
+  }
+
+  function buildData(result, prios, T, S) {
+    var data={}; for(var s=0;s<S;s++){var cands=[],obs=[]; for(var t=0;t<T;t++){cands.push(result.hotseat[s][t]>=0?prios[result.hotseat[s][t]]:null);obs.push(result.obs[s][t]>=0?prios[result.obs[s][t]]:null);}data["Session "+(s+1)]={Candidate:cands,Observer:obs};}return data;
+  }
+  var dataAM=buildData(resultAM,priosAM,TAm,SAm);
+  var dataPM=buildData(resultPM,priosPM,TPm,SPm);
+
+  function renderSessionView(data, exam, T, S) {
+    var h='<table><thead><tr><th></th>';
+    for(var t=0;t<T;t++) h+='<th>Table '+(t+1)+'<br><span style="font-size:0.65em;font-weight:normal;color:#8892b0;">'+exam[t]+'</span></th>';
+    h+='</tr></thead><tbody>';
+    for(var s=0;s<S;s++){var sk="Session "+(s+1),d=data[sk];h+='<tr><td><b>'+sk+'</b></td>';for(var t=0;t<T;t++){var c=d.Candidate[t]||'-',o=d.Observer[t]||'';h+='<td class="hotseat">'+c+(o?' <span style="color:#ffd54f;">(obs:'+o+')</span>':'')+'</td>';}h+='</tr>';}
+    h+='</tbody></table>';return h;
+  }
+  function renderTableView(data, exam, T, S) {
+    var h='<table><thead><tr><th></th>';for(var s=0;s<S;s++) h+='<th>Session '+(s+1)+'</th>';h+='</tr></thead><tbody>';
+    for(var t=0;t<T;t++){h+='<tr><td><b>Table '+(t+1)+'</b><br><span style="font-size:0.7em;color:#8892b0;">'+exam[t]+'</span></td>';for(var s=0;s<S;s++){var d=data["Session "+(s+1)],c=d.Candidate[t]||'-',o=d.Observer[t]||'';h+='<td class="hotseat">'+c+(o?' <span style="color:#ffd54f;">(obs:'+o+')</span>':'')+'</td>';}h+='</tr>';}
+    h+='</tbody></table>';return h;
+  }
+
+  $('viva-preview-session-am').innerHTML = renderSessionView(dataAM, examAM, TAm, SAm);
+  $('viva-preview-table-am').innerHTML = renderTableView(dataAM, examAM, TAm, SAm);
+  $('viva-preview-session-pm').innerHTML = renderSessionView(dataPM, examPM, TPm, SPm);
+  $('viva-preview-table-pm').innerHTML = renderTableView(dataPM, examPM, TPm, SPm);
+
+  var combinedConfig = genConfig({startAM:startAM,startPM:startPM,numItems:Math.max(TAm,TPm),baseSessions:Math.max(SAm,SPm),transitDur:transit,examDur:examDur,prep:prep,prepDur:prepDur,brk:brk,brkIdx:brkIdxAm,brkDur:brkDur,concl:concl,conclDur:conclDurAm,examLabel:'Viva Exam',extraPhases:[{title:'Debriefing',duration:debriefDur,info:Math.round(debriefDur/60)+' minutes'}],quote:"'"});
+  var combinedTables = "'use strict';\nconst TABLE_NAMES_AM = "+JSON.stringify(examAM,null,2).replace(/\n\]/g,',\n]')+";\n\nconst TABLE_NAMES_PM = "+JSON.stringify(examPM,null,2).replace(/\n\]/g,',\n]')+";\n";
+  var dataJsAM = "'use strict';\nwindow._dataReady = true;\nvar vivaData = "+toJsObj(dataAM,4)+";\n";
+  var dataJsPM = "'use strict';\nwindow._dataReady = true;\nvar vivaData = "+toJsObj(dataPM,4)+";\n";
+
+  $('viva-downloads-shared').innerHTML =
+    '<button class="btn-primary" onclick="download(\'viva_config.js\',dlCfg())">viva_config.js</button>'+
+    '<button class="btn-primary" onclick="download(\'viva_tables.js\',dlTbl())">viva_tables.js</button>';
+  $('viva-downloads-am').innerHTML =
+    '<button class="btn-primary" onclick="download(\'viva_data_am.js\',dlDataAM())">viva_data_am.js</button>'+
+    '<button class="btn-primary" onclick="downloadVivaCSV(\'candidate_1\',\'am\')">viva_am_candidate_1.csv</button>'+
+    '<button class="btn-primary" onclick="downloadVivaCSV(\'candidate_2\',\'am\')">viva_am_candidate_2.csv</button>';
+  $('viva-downloads-pm').innerHTML =
+    '<button class="btn-primary" onclick="download(\'viva_data_pm.js\',dlDataPM())">viva_data_pm.js</button>'+
+    '<button class="btn-primary" onclick="downloadVivaCSV(\'candidate_1\',\'pm\')">viva_pm_candidate_1.csv</button>'+
+    '<button class="btn-primary" onclick="downloadVivaCSV(\'candidate_2\',\'pm\')">viva_pm_candidate_2.csv</button>';
+
+  window.dlDataAM=function(){return dataJsAM;}; window.dlDataPM=function(){return dataJsPM;};
+  window.dlCfg=function(){return combinedConfig;};
+  window.dlTbl=function(){return combinedTables;};
+
+  var hsDistAM=resultAM.hsCount.map(function(n,i){return priosAM[i]+':'+n;}).join(', ');
+  var hsDistPM=resultPM.hsCount.map(function(n,i){return priosPM[i]+':'+n;}).join(', ');
+  $('viva-preview-session-am').insertAdjacentHTML('beforebegin','<div class="status ok">AM solved: '+hsDistAM+' (obs:'+resultAM.obsFilled+'/'+((CAm-TAm)*SAm)+')</div>');
+  $('viva-preview-session-pm').insertAdjacentHTML('beforebegin','<div class="status ok">PM solved: '+hsDistPM+' (obs:'+resultPM.obsFilled+'/'+((CPm-TPm)*SPm)+')</div>');
+
+  $('viva-result-card').scrollIntoView({behavior:'smooth'});
+  vivaStore={dataAM:dataAM,dataPM:dataPM,TAm:TAm,SAm:SAm,TPm:TPm,SPm:SPm};
+}
+
+function downloadVivaCSV(fmt, sess) {
+  var isPm = sess==='pm';
+  var data = isPm ? vivaStore.dataPM : vivaStore.dataAM;
+  var TT = isPm ? vivaStore.TPm : vivaStore.TAm;
+  var SS = isPm ? vivaStore.SPm : vivaStore.SAm;
+  if(!data) return; var fn='viva_'+(sess||'am');
+  var csv = fmt==='candidate_1' ?
+    (',,'+Array.from({length:SS},function(_,i){return 'session_'+(i+1)}).join(',')+'\n'+Array.from({length:TT},function(_,t){
+      var cr=['table_'+(t+1),'candidate'], or=['table_'+(t+1),'observer'];
+      for(var s=0;s<SS;s++){ var ds=data['Session '+(s+1)]; cr.push(esc(ds.Candidate[t])); or.push(esc(ds.Observer[t])); }
+      return cr.join(',')+'\n'+or.join(',');
+    }).join('\n')) :
+    (',,'+Array.from({length:TT},function(_,i){return 'table_'+(i+1)}).join(',')+'\n'+Array.from({length:SS},function(_,s){
+      var ds=data['Session '+(s+1)];
+      return ['session_'+(s+1),'candidate'].concat(ds.Candidate.map(esc)).join(',')+'\n'+['session_'+(s+1),'observer'].concat(ds.Observer.map(esc)).join(',');
+    }).join('\n'));
+  download(fn+'_'+fmt+'.csv',csv);
+}
+
+// ==================== OSCE ====================
+let osceStore = {};
+function osceProceed() {
+  const N=+($('osce-stations').value)||15;
+  $('osce-detail-card').style.display='block'; $('osce-result-card').style.display='none';
+  const nc=$('osce-station-names'); nc.innerHTML='';
+  const defs=['Procedure 1','Anatomy','Rest','Regional','Equipment','Rest','Long Case 1','Long Case 2','Rest','Crisis','Communication','Rest','Procedure 2','ATLS/ACLS','Rest'];
+  for(let i=0;i<N;i++){ const d=document.createElement('div'); d.className='field'; d.innerHTML=`<label>Station ${i+1}</label><input type="text" id="osce-name-${i}" value="${defs[i]||'Station '+(i+1)}">`; nc.appendChild(d); }
+  // AM first arrangement
+  const faAm=$('osce-first-arr-am'); faAm.innerHTML='<div style="display:flex;gap:8px;font-size:0.75em;color:#8892b0;margin-bottom:4px;"><span style="min-width:95px;">Station</span><span style="width:55px;text-align:center;">Cand</span><span style="width:55px;text-align:center;">Obs</span></div>';
+  for(let i=0;i<N;i++){ const d=document.createElement('div'); d.className='station-row'; d.innerHTML=`<span class="st-name" id="osce-label-am-${i}">Station ${i+1}</span><input type="text" id="osce-cand-am-${i}" placeholder="#" maxlength="4"><input type="text" id="osce-obs-am-${i}" placeholder="#" maxlength="4">`; faAm.appendChild(d); }
+  // PM first arrangement (defaults copied from AM style)
+  const faPm=$('osce-first-arr-pm'); faPm.innerHTML='<div style="display:flex;gap:8px;font-size:0.75em;color:#8892b0;margin-bottom:4px;"><span style="min-width:95px;">Station</span><span style="width:55px;text-align:center;">Cand</span><span style="width:55px;text-align:center;">Obs</span></div>';
+  for(let i=0;i<N;i++){ const d=document.createElement('div'); d.className='station-row'; d.innerHTML=`<span class="st-name" id="osce-label-pm-${i}">Station ${i+1}</span><input type="text" id="osce-cand-pm-${i}" placeholder="#" maxlength="4"><input type="text" id="osce-obs-pm-${i}" placeholder="#" maxlength="4">`; faPm.appendChild(d); }
+  $('osce-detail-card').scrollIntoView({behavior:'smooth'});
+}
+document.addEventListener('input',function(e){ if(e.target.id&&e.target.id.startsWith('osce-name-')){ const i=e.target.id.split('-')[2]; const lAm=$('osce-label-am-'+i); if(lAm) lAm.textContent=e.target.value||'Station '+(+i+1); const lPm=$('osce-label-pm-'+i); if(lPm) lPm.textContent=e.target.value||'Station '+(+i+1); } });
+
+function osceGenerate() {
+  const N=+($('osce-stations').value)||15, CAm=+($('osce-sessions-am').value)||15, CPm=+($('osce-sessions-pm').value)||15;
+  const startAM=$('osce-start-am').value, startPM=$('osce-start-pm').value;
+  const transit=+($('osce-transit').value)||120, examDur=+($('osce-exam-dur').value)||600;
+  const prep=$('osce-prep').checked, prepDur=+($('osce-prep-dur').value)||1680;
+  const brk=$('osce-break').checked, brkIdx=+($('osce-break-idx').value)||0, brkDur=+($('osce-break-dur').value)||780;
+  const concl=$('osce-concl').checked, conclDur=+($('osce-concl-dur').value)||1680;
+
+  const names=[]; for(let i=0;i<N;i++){ const inp=$('osce-name-'+i); names.push(inp?inp.value.trim():`Station ${i+1}`); }
+  const firstCandsAm=[], firstObsAm=[]; for(let i=0;i<N;i++){ const ci=$('osce-cand-am-'+i),oi=$('osce-obs-am-'+i); firstCandsAm.push(ci&&ci.value.trim()?pad2(ci.value.trim()):null); firstObsAm.push(oi&&oi.value.trim()?pad2(oi.value.trim()):null); }
+  const firstCandsPm=[], firstObsPm=[]; for(let i=0;i<N;i++){ const ci=$('osce-cand-pm-'+i),oi=$('osce-obs-pm-'+i); firstCandsPm.push(ci&&ci.value.trim()?pad2(ci.value.trim()):null); firstObsPm.push(oi&&oi.value.trim()?pad2(oi.value.trim()):null); }
+
+  function buildData(firstCands, firstObs, S) {
+    const data={};
+    for(let s=0;s<S;s++){ const cands=[],obs=[];
+      for(let st=0;st<N;st++){ const src=(st-s+N)%N; cands.push(firstCands[src]); obs.push(firstObs[src]); }
+      data[`Session ${s+1}`]={Candidate:cands,Observer:obs};
+    }
+    return data;
+  }
+  const dataAm=buildData(firstCandsAm, firstObsAm, CAm);
+  const dataPm=buildData(firstCandsPm, firstObsPm, CPm);
+
+  function renderSessionView(data, S) {
+    let ss='<table><thead><tr><th></th>'; for(let st=0;st<N;st++) ss+=`<th>${names[st]}</th>`; ss+='</tr></thead><tbody>';
+    for(let s=0;s<S;s++){ const sk=`Session ${s+1}`,d=data[sk]; ss+=`<tr><td><b>${sk}</b></td>`;
+      for(let st=0;st<N;st++){ const c=d.Candidate[st]||'-',o=d.Observer[st]||''; ss+=`<td class="${names[st].toLowerCase()==='rest'?'empty':'hotseat'}">${c}${o?` <span style="color:#ffd54f;">(obs:${o})</span>`:''}</td>`; }
+      ss+='</tr>'; }
+    ss+='</tbody></table>'; return ss;
+  }
+  function renderStationView(data, S) {
+    let sh='<table><thead><tr><th></th>'; for(let s=0;s<S;s++) sh+=`<th>Session ${s+1}</th>`; sh+='</tr></thead><tbody>';
+    for(let st=0;st<N;st++){ const isR=names[st].toLowerCase()==='rest'; sh+=`<tr><td><b>${names[st]}</b></td>`;
+      for(let s=0;s<S;s++){ const d=data[`Session ${s+1}`],c=d.Candidate[st]||'-',o=d.Observer[st]||''; sh+=`<td class="${isR?'empty':'hotseat'}">${c}${o&&!isR?` <span style="color:#ffd54f;">(obs:${o})</span>`:''}</td>`; }
+      sh+='</tr>'; }
+    sh+='</tbody></table>'; return sh;
+  }
+
+  $('osce-preview-session-am').innerHTML = renderSessionView(dataAm, CAm);
+  $('osce-preview-station-am').innerHTML = renderStationView(dataAm, CAm);
+  $('osce-preview-session-pm').innerHTML = renderSessionView(dataPm, CPm);
+  $('osce-preview-station-pm').innerHTML = renderStationView(dataPm, CPm);
+
+  var combinedConfig = genConfig({startAM,startPM,numItems:N,baseSessions:Math.max(CAm,CPm),transitDur:transit,examDur,prep,prepDur,brk,brkIdx,brkDur,concl,conclDur,examLabel:'OSCE Exam',quote:'"'});
+  var stationsJs = `'use strict';\nconst STATION_NAMES = ${JSON.stringify(names,null,4)};\n`;
+  var dataJsAm = `'use strict';\nwindow._dataReady = true;\nvar osceData = ${toJsObj(dataAm,2)};\n`;
+  var dataJsPm = `'use strict';\nwindow._dataReady = true;\nvar osceData = ${toJsObj(dataPm,2)};\n`;
+
+  $('osce-result-card').style.display='block';
+  $('osce-downloads-shared').innerHTML = `
+    <button class="btn-primary" onclick="download('osce_config.js',dlOsceCfg())">osce_config.js</button>
+    <button class="btn-primary" onclick="download('osce_stations.js',dlOsceStations())">osce_stations.js</button>`;
+  $('osce-downloads-am').innerHTML = `
+    <button class="btn-primary" onclick="download('osce_data_am.js',dlOsceDataAm())">osce_data_am.js</button>
+    <button class="btn-primary" onclick="downloadOsceCSV('candidate_1','am')">osce_am_candidate_1.csv</button>
+    <button class="btn-primary" onclick="downloadOsceCSV('candidate_2','am')">osce_am_candidate_2.csv</button>`;
+  $('osce-downloads-pm').innerHTML = `
+    <button class="btn-primary" onclick="download('osce_data_pm.js',dlOsceDataPm())">osce_data_pm.js</button>
+    <button class="btn-primary" onclick="downloadOsceCSV('candidate_1','pm')">osce_pm_candidate_1.csv</button>
+    <button class="btn-primary" onclick="downloadOsceCSV('candidate_2','pm')">osce_pm_candidate_2.csv</button>`;
+
+  window.dlOsceCfg = function(){return combinedConfig;};
+  window.dlOsceStations = function(){return stationsJs;};
+  window.dlOsceDataAm = function(){return dataJsAm;};
+  window.dlOsceDataPm = function(){return dataJsPm;};
+
+  $('osce-result-card').scrollIntoView({behavior:'smooth'});
+  osceStore={dataAm,dataPm,N,SAm:CAm,SPm:CPm,names};
+}
+function downloadOsceCSV(fmt, sess){
+  if(!osceStore.dataAm) return;
+  var isPm = sess==='pm';
+  var data = isPm ? osceStore.dataPm : osceStore.dataAm;
+  var N = osceStore.N;
+  var S = isPm ? osceStore.SPm : osceStore.SAm;
+  const fn='osce_'+(sess||'am');
+  let csv = fmt==='candidate_1' ?
+    (',,'+Array.from({length:S},(_,i)=>`session_${i+1}`).join(',')+'\n'+Array.from({length:N},(_,st)=>{
+      const cr=[`station_${st+1}`,'candidate'],or=[`station_${st+1}`,'observer'];
+      for(let s=0;s<S;s++){ const d=data[`Session ${s+1}`]; cr.push(esc(d.Candidate[st])); or.push(esc(d.Observer[st])); }
+      return cr.join(',')+'\n'+or.join(',');
+    }).join('\n')) :
+    (',,'+Array.from({length:N},(_,i)=>`station_${i+1}`).join(',')+'\n'+Array.from({length:S},(_,s)=>{
+      const d=data[`Session ${s+1}`]; return [`session_${s+1}`,'candidate',...d.Candidate.map(esc)].join(',')+'\n'+[`session_${s+1}`,'observer',...d.Observer.map(esc)].join(',');
+    }).join('\n'));
+  download(`${fn}_${fmt}.csv`,csv);
+}
+
+// ==================== DEBRIEFING ====================
+function debriefProceed(){
+  var scCount = +($('deb-sc-count').value)||3;
+  var exCount = +($('deb-ex-count').value)||3;
+  $('debrief-detail-card').style.display='block'; $('debrief-groups-card').style.display='none'; $('debrief-result-card').style.display='none';
+  // Auto-generate scenario names
+  const sn=$('deb-sc-names'); sn.innerHTML='';
+  const defS=['Scenario A + Q.4','Scenario B + Q.8','SAQ Q.9-Q.12'];
+  for(var i=0;i<scCount;i++){ var d=document.createElement('div'); d.className='field'; d.innerHTML='<label>Sc '+(i+1)+'</label><input type="text" id="deb-sc-name-'+i+'" value="'+(defS[i]||'Scenario '+(i+1))+'">'; sn.appendChild(d); }
+  // Auto-generate examiner fields
+  const se=$('deb-sc-examiners'); se.innerHTML='';
+  const defE=[['Zion Yeung','Swan Lau','Matthew Wong'],['Irving Teng','Vicki Li','Jason Fong'],['Amy Mang','Zoey Tam','Adrie Chan']];
+  for(var i=0;i<scCount;i++){ var bl=document.createElement('div'); bl.className='sc-block'; bl.innerHTML='<h4>Scenario '+(i+1)+' Examiners</h4>'; var r=document.createElement('div'); r.className='ex-row';
+    for(var j=0;j<exCount;j++) r.innerHTML+='<input type="text" id="deb-ex-'+i+'-'+j+'" value="'+(defE[i]&&defE[i][j]||'')+'" placeholder="Name">'; bl.appendChild(r); se.appendChild(bl); }
+  $('debrief-detail-card').scrollIntoView({behavior:'smooth'});
+}
+function debriefBuildQuestionAssignments(){
+  var nq=+($('deb-q-count').value)||3;
+  var el=$('deb-q-assign'); if(!el) return;
+  var scCount=+($('deb-sc-count').value)||3;
+  var scNames=[]; for(var i=0;i<scCount;i++){ var inp=$('deb-sc-name-'+i); scNames.push(inp&&inp.value.trim()?inp.value.trim():'Scenario '+(i+1)); }
+  var html='';
+  for(var q=0;q<nq;q++){
+    html+='<div class="field"><label>Q.'+(q+1)+'</label><select id="deb-q-cat-'+q+'">';
+    html+='<option value="">--</option>';
+    for(var s=0;s<scCount;s++){
+      var sel= (s===q%scCount) ? ' selected' : '';
+      html+='<option value="'+esc(scNames[s])+'"'+sel+'>'+esc(scNames[s])+'</option>';
+    }
+    html+='</select></div>';
+  }
+  el.innerHTML=html;
+}
+function debriefProceedGroups(){
+  var scCount = +($('deb-sc-count').value)||3;
+  var exCount = +($('deb-ex-count').value)||3;
+  $('debrief-groups-card').style.display='block'; $('debrief-result-card').style.display='none';
+  // Auto-set groups = scenarios × examiners
+  $('deb-groups').value = scCount * exCount;
+  debriefBuildQuestionAssignments();
+  debriefBuildGroups();
+  $('debrief-groups-card').scrollIntoView({behavior:'smooth'});
+}
+function debriefBuildGroups(){
+  const ng=+($('deb-groups').value)||9, gs=+($('deb-group-size').value)||3;
+  const defs=[['26005','26104','26213'],['26006','26110','26216'],['26031','26111','26221'],['26022','26208','26234'],['26017','26119','26224'],['26012','26129','26227'],['26014','26232','26226'],['26101','26230','26223'],['26103','26207','26228']];
+  const g=$('deb-group-grid'); g.innerHTML='';
+  for(let i=0;i<ng;i++){ const b=document.createElement('div'); b.className='group-box'; b.innerHTML=`<h4>Group ${i+1}</h4>`;
+    for(let c=0;c<gs;c++){ var v=(defs[i]&&defs[i][c])||''; b.innerHTML+=`<input type="text" id="deb-g-${i}-${c}" value="${v}" placeholder="ID" maxlength="6">`; } g.appendChild(b); }
+  debriefBuildAssignments();
+}
+function debriefBuildAssignments(){
+  var ns=+($('deb-sessions').value)||3, ng=+($('deb-groups').value)||9;
+  var scCount=+($('deb-sc-count').value)||3, exCount=+($('deb-ex-count').value)||3;
+  var d=$('deb-assign-grid'); d.innerHTML='';
+  var gpe=Math.floor(ng/scCount);
+  var autom={};
+  for(var sc=0;sc<scCount;sc++){ var off=sc*Math.ceil(gpe/Math.max(ns,1));
+    for(var ex=0;ex<exCount;ex++){ var base=ex*gpe+1; for(var s=0;s<ns;s++) autom[sc+'-'+s+'-'+ex]=base+(s+off)%gpe; } }
+  for(var sc=0;sc<scCount;sc++){ var scn=$('deb-sc-name-'+sc); var bl=document.createElement('div'); bl.className='sc-block';
+    bl.innerHTML='<h4>'+(scn?scn.value:'Scenario '+(sc+1))+' — Group Assignments</h4>';
+    for(var s=0;s<ns;s++){ var r=document.createElement('div'); r.className='ex-row'; r.innerHTML='<span style=\"font-size:0.75em;color:#8892b0;min-width:75px;\">Session '+(s+1)+':</span>';
+      for(var ex=0;ex<exCount;ex++){ var exn=$('deb-ex-'+sc+'-'+ex); var nm=exn?exn.value:'Ex'+ex; var ag=autom[sc+'-'+s+'-'+ex]||'';
+        r.innerHTML+='<span style=\"font-size:0.7em;color:#a0b4d0;\">'+nm+':</span><select id=\"deb-as-'+sc+'-'+s+'-'+ex+'\"><option value=\"\">--</option>'+Array.from({length:ng},function(_,g){return '<option value=\"'+(g+1)+'\" '+(g+1===ag?'selected':'')+'>Group '+(g+1)+'</option>'}).join('')+'</select>'; }
+      bl.appendChild(r); }
+    d.appendChild(bl); }
+}
+function debriefGenerate(){
+  var scCount=+($('deb-sc-count').value)||3, exCount=+($('deb-ex-count').value)||3;
+  var start=$('deb-start').value||'12:15:00';
+  var ns=+($('deb-sessions').value)||3, dur=+($('deb-duration').value)||60;
+  const prep=$('deb-prep').checked, prepDur=+($('deb-prep-dur').value)||30;
+  const concl=$('deb-concl').checked, conclDur=+($('deb-concl-dur').value)||30;
+  const ng=+($('deb-groups').value)||9, gs=+($('deb-group-size').value)||3;
+
+  const groups={}; for(let g=0;g<ng;g++){ const cs=[]; for(let c=0;c<gs;c++){ const inp=$('deb-g-'+g+'-'+c); if(inp&&inp.value.trim()) cs.push(inp.value.trim()); } if(cs.length) groups[`Group ${g+1}`]=cs; }
+
+  const scenarios={}; const questionGroups={}; const allQuestions=[];
+  const scoreExaminers={};
+  // Initialize questionGroups with empty arrays per scenario
+  for(let sc=0;sc<scCount;sc++){ const scn=$('deb-sc-name-'+sc); if(scn&&scn.value.trim()) questionGroups[scn.value.trim()]=[]; }
+  for(let sc=0;sc<scCount;sc++){ const scn=$('deb-sc-name-'+sc); if(!scn||!scn.value.trim()) continue;
+    const scName=scn.value.trim();
+    const sch={};
+    for(let s=0;s<ns;s++){ const sa={};
+      for(let ex=0;ex<exCount;ex++){ const exn=$('deb-ex-'+sc+'-'+ex); const sel=$('deb-as-'+sc+'-'+s+'-'+ex); if(exn&&exn.value.trim()&&sel&&sel.value){ const exName=exn.value.trim(); const grpName='Group '+sel.value; sa[exName]=grpName;
+        // Collect candidates for written_score_data
+        if(groups[grpName]){ if(!scoreExaminers[exName]) scoreExaminers[exName]={group:scName,candidates:[]}; for(let ci=0;ci<groups[grpName].length;ci++){ const cid=groups[grpName][ci]; if(scoreExaminers[exName].candidates.indexOf(cid)<0) scoreExaminers[exName].candidates.push(cid); } }
+      } }
+      if(Object.keys(sa).length) sch[`Session ${s+1}`]=sa; }
+    if(Object.keys(sch).length) scenarios[scName]={schedule:sch};
+  }
+  // Populate questionGroups from question-assignment dropdowns
+  var nq=+($('deb-q-count').value)||3;
+  for(var q=0;q<nq;q++){
+    var sel=$('deb-q-cat-'+q);
+    if(sel&&sel.value&&questionGroups.hasOwnProperty(sel.value)){
+      var qid='Q.'+(q+1);
+      questionGroups[sel.value].push(qid);
+      if(allQuestions.indexOf(qid)<0) allQuestions.push(qid);
+    }
+  }
+
+  $('deb-data-out').textContent = `'use strict';\nconst GROUPS = ${toJsObj(groups)};\n\nconst SCENARIOS = ${toJsObj(scenarios)};\n`;
+
+  const phaseLines=[];
+  if(prep) phaseLines.push(`  [{ title: 'Preparation', duration: ${prepDur*60}, info: '${prepDur} minutes' }]`);
+  for(let i=0;i<ns;i++) phaseLines.push(`  [{ title: 'Debriefing', duration: ${dur*60}, info: '${dur} minutes' }]`);
+  var phasesStr = phaseLines.length ? '[\n' + phaseLines.join(',\n') + '\n]' : '[]';
+  const tot=(prep?1:0)+ns+(concl?1:0);
+  $('deb-config-out').textContent = `'use strict';\nconst START_TIME = "${start}";\nconst ENABLE_PREPARATION = ${prep};\nconst PREPARATION_SESSION_INDEX = ${prep?0:-1};\nconst ENABLE_CONCLUSION = ${concl};\nconst CONCLUSION_SESSION_INDEX = ${tot-1};\n\nconst SESSION_PHASES = ${phasesStr};\n\nif (ENABLE_CONCLUSION) {\n  SESSION_PHASES.push([{ title: 'Conclusion', duration: ${conclDur*60}, info: '${conclDur} minutes' }]);\n}\n`;
+
+  // Generate written_score_data.js
+  var scoreLines = `'use strict';\n\nconst WRITTEN_QUESTION_GROUPS = ${toJsObj(questionGroups)};\n\nconst ALL_QUESTIONS = ${JSON.stringify(allQuestions)};\n\nconst WRITTEN_EXAMINERS = ${toJsObj(scoreExaminers)};\n\nfunction getWrittenExaminerNames() {\n  return Object.keys(WRITTEN_EXAMINERS).sort();\n}\n\nfunction getWrittenExaminerInfo(name) {\n  return WRITTEN_EXAMINERS[name] || null;\n}\n\nfunction getWrittenGroupQuestions(groupName) {\n  return WRITTEN_QUESTION_GROUPS[groupName] || [];\n}\n\nfunction getAllWrittenCandidates() {\n  var seen = {}, arr = [];\n  Object.keys(WRITTEN_EXAMINERS).forEach(function(e) {\n    WRITTEN_EXAMINERS[e].candidates.forEach(function(c) {\n      if (!seen[c]) { seen[c] = true; arr.push(c); }\n    });\n  });\n  return arr.sort();\n}\n`;
+  $('deb-score-out').textContent = scoreLines;
+
+  $('debrief-result-card').style.display='block';
+  $('deb-downloads').innerHTML=`
+    <button class="btn-primary" onclick="download('debrief_config.js',$('deb-config-out').textContent)">debrief_config.js</button>
+    <button class="btn-primary" onclick="download('debrief_data.js',$('deb-data-out').textContent)">debrief_data.js</button>
+    <button class="btn-primary" onclick="download('written_score_data.js',$('deb-score-out').textContent)">written_score_data.js</button>`;
+  $('debrief-result-card').scrollIntoView({behavior:'smooth'});
+}
+
+// ==================== WRITTEN ====================
+function fmtDur(sec){
+  var m=Math.round(sec/60), h=Math.floor(m/60), rm=m%60;
+  if(m<60) return m+' min';
+  if(m===60||h===1) return m+' min';
+  if(rm===0) return h+' hours';
+  return h+' hours '+rm+' min';
+}
+function writtenGenerate(){
+  const start=$('wr-start').value||'08:45:00', title=$('wr-title').value;
+  const p1pg=+($('wr-p1').value)||4, capg=+($('wr-ca').value)||5, invpg=+($('wr-inv').value)||8, radpg=+($('wr-rad').value)||6, mcqpg=+($('wr-mcq').value)||40;
+  const preDur=+($('wr-pre').value)||600, p1prep=+($('wr-p1-prep').value)||300, p1exam=+($('wr-p1-exam').value)||7200, p1coll=+($('wr-p1-coll').value)||300;
+  const brkDur=+($('wr-break').value)||1200, lunchDur=+($('wr-lunch-dur').value)||3600;
+  const caread=+($('wr-ca-read').value)||1800, caexam=+($('wr-ca-exam').value)||600, trans=+($('wr-trans').value)||600;
+  const invexam=+($('wr-inv-exam').value)||600, radexam=+($('wr-rad-exam').value)||600, mcqexam=+($('wr-mcq-exam').value)||9000;
+
+  const configJs = `'use strict';\nconst START_TIME = "${start}";\nconst EXAM_TITLE = "${title}";\nconst SESSION_TITLES = ["Pre-Examination", "Paper I", "Break", "Paper II", "Lunch", "Paper III"];\n\nconst SESSION_PHASES = [\n    [\n        {title: "Pre-Examination", duration: ${preDur}, info: "${fmtDur(preDur)}"}\n    ],\n    [\n        {title: "Preparation", duration: ${p1prep}, info: "${fmtDur(p1prep)}"},\n        {title: "Clinical Scenarios & SAQs", duration: ${p1exam}, info: "${fmtDur(p1exam)}"},\n        {title: "Paper Collection", duration: ${p1coll}, info: "${fmtDur(p1coll)}"}\n    ],\n    [\n        {title: "Break", duration: ${brkDur}, info: "${fmtDur(brkDur)}"}\n    ],\n    [\n        {title: "Preparation", duration: ${p1prep}, info: "${fmtDur(p1prep)}"},\n        {title: "CA Article", duration: ${caread}, info: "${fmtDur(caread)}"},\n        {title: "CA Exam", duration: ${caexam}, info: "${fmtDur(caexam)}"},\n        {title: "Transition", duration: ${trans}, info: "${fmtDur(trans)}"},\n        {title: "Investigation", duration: ${invexam}, info: "${fmtDur(invexam)}"},\n        {title: "Transition", duration: ${trans}, info: "${fmtDur(trans)}"},\n        {title: "Radiology", duration: ${radexam}, info: "${fmtDur(radexam)}"},\n        {title: "Paper Collection", duration: ${p1coll}, info: "${fmtDur(p1coll)}"}\n    ],\n    [\n        {title: "Lunch", duration: ${lunchDur}, info: "${fmtDur(lunchDur)}"}\n    ],\n    [\n        {title: "Preparation", duration: ${p1prep}, info: "${fmtDur(p1prep)}"},\n        {title: "MCQ Examination", duration: ${mcqexam}, info: "${fmtDur(mcqexam)}"},\n        {title: "Paper Collection", duration: ${p1coll}, info: "${fmtDur(p1coll)}"}\n    ]\n];\n\nconst PAPER_I_PAGES = ${p1pg};\nconst PAPER_CA_PAGES = ${capg};\nconst PAPER_INV_PAGES = ${invpg};\nconst PAPER_RAD_PAGES = ${radpg};\nconst PAPER_MCQ_PAGES = ${mcqpg};\n\nconst TIMETABLE = [\n    {time: "${start} - 08:55", session: "Pre-Examination"},\n    {time: "08:55 - 09:00", session: "Preparation"},\n    {time: "09:00 - 11:00", session: "Paper I: Clinical Scenarios & SAQs"},\n    {time: "11:00 - 11:05", session: "Paper I: Paper Collection"},\n    {time: "11:05 - 11:25", session: "Break"},\n    {time: "11:25 - 11:30", session: "Preparation"},\n    {time: "11:30 - 12:00", session: "Paper II: Critical Appraisal (Article Reading)"},\n    {time: "12:00 - 12:10", session: "Paper II: Critical Appraisal (Examination)"},\n    {time: "12:10 - 12:20", session: "Transition"},\n    {time: "12:20 - 12:30", session: "Paper II: Investigation"},\n    {time: "12:30 - 12:40", session: "Transition"},\n    {time: "12:40 - 12:50", session: "Paper II: Radiology"},\n    {time: "12:50 - 12:55", session: "Paper Collection"},\n    {time: "12:55 - 13:55", session: "Lunch"},\n    {time: "13:55 - 14:00", session: "Preparation"},\n    {time: "14:00 - 16:30", session: "Paper III: Multiple Choice Questions"},\n    {time: "16:30 - 16:35", session: "Paper Collection & Dismissal"}\n];\n`;
+
+  $('wr-config-out').textContent = configJs;
+  $('written-result-card').style.display='block';
+  $('wr-downloads').innerHTML=`
+    <button class="btn-primary" onclick="download('written_config.js',$('wr-config-out').textContent)">written_config.js</button>`;
+  $('written-result-card').scrollIntoView({behavior:'smooth'});
+}
+
+// ==================== CANDIDATE MAPPING ====================
+let mappingStarted = false;
+function initMapping() {
+  // Start empty — use Import CSV or Import JSON to load data
+}
+function mappingAddRow(id='', name='', full='', abbr='') {
+  const tbody = document.querySelector('#mapping-table tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" class="m-id" value="${esc(id)}" placeholder="26101"></td>
+    <td><input type="text" class="m-name" value="${esc(name)}" placeholder="Pansy"></td>
+    <td><input type="text" class="m-full" value="${esc(full)}" placeholder="Pansy Yue"></td>
+    <td><input type="text" class="m-abbr" value="${esc(abbr)}" placeholder="01"></td>
+    <td><button class="btn-danger btn-sm" onclick="this.closest('tr').remove()">X</button></td>`;
+  tbody.appendChild(tr);
+}
+function mappingImportCsv(fileInput) {
+  const file = fileInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result;
+      const rows = parseCSV(text);
+      if (rows.length < 2) { alert('CSV must have at least a header and one data row.'); return; }
+      const header = rows[0].map(h => h.toLowerCase().replace(/\s/g, ''));
+      const idIdx = header.findIndex(h => h.includes('fullid') || h === 'id' || h.includes('candidate'));
+      const nameIdx = header.findIndex(h => h === 'shortname' || h === 'name');
+      const fullIdx = header.findIndex(h => h === 'fullname');
+      const abbrIdx = header.findIndex(h => h === 'abbrid' || h === 'abbr');
+      if (idIdx < 0 || nameIdx < 0 || fullIdx < 0) {
+        alert('CSV must have columns: Full ID, Short Name, Full Name (and optionally Abbr ID)');
+        return;
+      }
+      const tbody = document.querySelector('#mapping-table tbody');
+      tbody.innerHTML = '';
+      let count = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[idIdx] || r[idIdx].trim() === '') continue;
+        mappingAddRow(
+          r[idIdx].trim(),
+          (r[nameIdx] || '').trim(),
+          (r[fullIdx] || '').trim(),
+          abbrIdx >= 0 ? (r[abbrIdx] || '').trim() : ''
+        );
+        count++;
+      }
+      $('mapping-status').innerHTML = `<div class="status ok">Imported ${count} entries from CSV.</div>`;
+    } catch(err) { alert('Failed to parse CSV: ' + err.message); }
+  };
+  reader.readAsText(file);
+  fileInput.value = '';
+}
+
+function parseCSV(text) {
+  var rows = [];
+  var row = [];
+  var field = '';
+  var inQuotes = false;
+  for (var i = 0; i < text.length; i++) {
+    var ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < text.length && text[i + 1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else { field += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && i + 1 < text.length && text[i + 1] === '\n') i++;
+        row.push(field); field = '';
+        if (row.length > 0) { rows.push(row); row = []; }
+      } else { field += ch; }
+    }
+  }
+  row.push(field);
+  if (row.length > 0) rows.push(row);
+  return rows;
+}
+function mappingGenerate() {
+  const rows = document.querySelectorAll('#mapping-table tbody tr');
+  const jsEntries=[], csvLines=['"Full ID","Short Name","Full Name","Abbr ID"'];
+  for (const row of rows) {
+    const id=row.querySelector('.m-id').value.trim(), name=row.querySelector('.m-name').value.trim();
+    const full=row.querySelector('.m-full').value.trim(), abbr=row.querySelector('.m-abbr').value.trim();
+    if (!id) continue;
+    jsEntries.push(`"${id}":{"name":"${name}","fullName":"${full}","abbrId":"${abbr}"}`);
+    csvLines.push(`"${id}","${name}","${full}","${abbr}"`);
+  }
+  const jsStr = `var CANDIDATE_MAPPING = {\n  ${jsEntries.join(',\n  ')}\n};`;
+  const csvStr = csvLines.join('\n');
+  $('mapping-js-out').textContent = jsStr;
+  $('mapping-status').innerHTML = `<div class="status ok">${jsEntries.length} candidates mapped.</div>`;
+  window._mappingCsv = csvStr;
+  $('mapping-downloads').innerHTML = `
+    <button class="btn-primary" onclick="download('candidate_mapping_data.js',$('mapping-js-out').textContent)">candidate_mapping_data.js</button>
+    <button class="btn-primary" onclick="download('candidate_mapping.csv',window._mappingCsv)">candidate_mapping.csv</button>`;
+}
+
+// Init
+initMapping();
+</script>
+
+</body>
+</html>
+
+
