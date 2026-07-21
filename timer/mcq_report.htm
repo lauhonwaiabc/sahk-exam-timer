@@ -556,7 +556,6 @@ function renderCandReport() {
   }
   h += '</table>';
 
-  h += '<div style="text-align:center;font-weight:700;font-size:0.85em;margin-bottom:4px;">Score Distribution</div>';
   h += '<div id="histPreview"></div>';
   h += '</div>';
 
@@ -567,14 +566,14 @@ function renderCandReport() {
 function drawHistogram(scores, mn, mx, meanVal, candSc, elId) {
   var el = document.getElementById(elId); if (!el) return;
   var c = document.createElement('canvas');
-  c.width = 520; c.height = 180;
+  c.width = 500; c.height = 200;
   c.style.maxWidth = '100%';
   c.style.display = 'block';
   c.style.margin = '0 auto';
   var ctx = c.getContext('2d');
-  var m = { top: 22, right: 15, bottom: 28, left: 42 };
-  var pw = 520 - m.left - m.right;
-  var ph = 180 - m.top - m.bottom;
+  var m = { top: 30, right: 15, bottom: 28, left: 42 };
+  var pw = 500 - m.left - m.right;
+  var ph = 200 - m.top - m.bottom;
 
   var uniq = [], freq = {};
   for (var v = mn; v <= mx; v++) { uniq.push(v); freq[v] = 0; }
@@ -584,7 +583,7 @@ function drawHistogram(scores, mn, mx, meanVal, candSc, elId) {
   var maxCount = Math.max.apply(null, Object.keys(freq).map(function(k){return freq[k];})) || 1;
   var barW = Math.min(Math.floor(pw / nBars) - 2, 40);
 
-  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 520, 180);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 500, 200);
   ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.beginPath();
   ctx.moveTo(m.left, m.top); ctx.lineTo(m.left, m.top + ph); ctx.lineTo(m.left + pw, m.top + ph); ctx.stroke();
 
@@ -614,7 +613,6 @@ function drawHistogram(scores, mn, mx, meanVal, candSc, elId) {
     }
   }
 
-  ctx.fillStyle = '#333'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.fillText('Score Distribution', 520 / 2, m.top - 6);
   ctx.save(); ctx.translate(12, m.top + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = '#333'; ctx.font = '9px Arial'; ctx.textAlign = 'center'; ctx.fillText('Count', 0, 0); ctx.restore();
 
   el.innerHTML = ''; el.appendChild(c);
@@ -624,7 +622,7 @@ function drawHistogramCanvas(scores, candidateScore, meanVal, mn, mx, width, hei
   var c = document.createElement('canvas'); c.width = width * 2; c.height = height * 2;
   c.style.width = width + 'px'; c.style.height = height + 'px';
   var ctx = c.getContext('2d'); ctx.scale(2, 2);
-  var m = { top: 25, right: 15, bottom: 30, left: 45 };
+  var m = { top: 35, right: 15, bottom: 30, left: 45 };
   var pw = width - m.left - m.right;
   var ph = height - m.top - m.bottom;
 
@@ -664,7 +662,6 @@ function drawHistogramCanvas(scores, candidateScore, meanVal, mn, mx, width, hei
       ctx.fillStyle = '#2e7d32'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'right'; ctx.fillText('You=' + candidateScore, cxLnD - 4, m.top - 4);
     }
   }
-  ctx.fillStyle = '#333'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.fillText('Score Distribution', width / 2, m.top - 6);
   ctx.save(); ctx.translate(12, m.top + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = '#333'; ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillText('Count', 0, 0); ctx.restore();
   return c;
 }
@@ -862,8 +859,8 @@ function buildDocx(r, sorted, images) {
 
     // Per-candidate histogram
     imgId++;
-    var candCanvas = drawHistogramCanvas(r.allSc, score, r.mean, r.min, r.max, 480, 170);
-    var candImg = canvasToImageEl(candCanvas, imgId, 4800000, 1700000);
+    var candCanvas = drawHistogramCanvas(r.allSc, score, r.mean, r.min, r.max, 500, 200);
+    var candImg = canvasToImageEl(candCanvas, imgId, 5000000, 2000000);
     images.push(candImg);
     body += candImg.xml;
   }

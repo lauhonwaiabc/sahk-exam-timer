@@ -150,9 +150,9 @@ Sahk.register('ReportGenerator', function() {
     return Object.keys(all).map(Number).sort(function(a, b) { return a - b; });
   }
   function getExamConfig(examId) {
-    if (examId === 'written') return { title:'Paper I /n Clinical Scenario & SAQs', itemName:'Question', expected:12, passPer:5, totalPass:60, maxScore:96, minScore:24, type:'written' };
-    if (examId === 'viva_am' || examId === 'viva_pm') return { title:'Viva Examination', itemName:'Table', expected:6, passPer:5, totalPass:30, maxScore:48, minScore:12, type:'viva', batch:examId.replace('viva_','').toUpperCase() };
-    if (examId === 'osce_am' || examId === 'osce_pm') return { title:'OSCE Examination', itemName:'Station', expected:10, passPer:5, totalPass:50, maxScore:80, minScore:20, type:'osce', batch:examId.replace('osce_','').toUpperCase() };
+    if (examId === 'written') return { title:'Paper I', itemName:'Question', expected:12, passPer:5, totalPass:60, maxScore:96, minScore:24, type:'written', subtitle:'Clinical Scenarios & SAQs - Candidate Report' };
+    if (examId === 'viva_am' || examId === 'viva_pm') return { title:'Viva Examination', itemName:'Table', expected:6, passPer:5, totalPass:30, maxScore:48, minScore:12, type:'viva', batch:examId.replace('viva_','').toUpperCase(), subtitle:'Viva Examination - Candidate Report' };
+    if (examId === 'osce_am' || examId === 'osce_pm') return { title:'OSCE Examination', itemName:'Station', expected:10, passPer:5, totalPass:50, maxScore:80, minScore:20, type:'osce', batch:examId.replace('osce_','').toUpperCase(), subtitle:'OSCE Examination - Candidate Report' };
     return { title:examId, itemName:'Station', expected:10, passPer:5, totalPass:50, maxScore:80, minScore:20, type:examId };
   }
 
@@ -161,7 +161,8 @@ Sahk.register('ReportGenerator', function() {
     var c = document.createElement('canvas'); c.width = width * 2; c.height = height * 2;
     c.style.width = width + 'px'; c.style.height = height + 'px';
     var ctx = c.getContext('2d'); ctx.scale(2, 2);
-    var m = { top: 25, right: 15, bottom: 30, left: 45 }, pw = width - m.left - m.right, ph = height - m.top - m.bottom;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height);
+    var m = { top: 40, right: 15, bottom: 30, left: 45 }, pw = width - m.left - m.right, ph = height - m.top - m.bottom;
 
     var uniq = [], freq = {};
     var minS = Math.min.apply(null, scores), maxS = Math.max.apply(null, scores);
@@ -193,7 +194,7 @@ Sahk.register('ReportGenerator', function() {
         var px = m.left + passIdx * (pw / nBars) + (pw / nBars) / 2;
         ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
         ctx.beginPath(); ctx.moveTo(px, m.top); ctx.lineTo(px, m.top + ph); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = '#2e7d32'; ctx.font = '9px Arial'; ctx.textAlign = 'center'; ctx.fillText('Pass(' + passVal + ')', px, m.top - 4);
+        ctx.fillStyle = '#2e7d32'; ctx.font = '9px Arial'; ctx.textAlign = 'center'; ctx.fillText('Pass(' + passVal + ')', px, m.top + 12);
       }
     }
     if (candidateScore !== null) {
@@ -203,10 +204,9 @@ Sahk.register('ReportGenerator', function() {
         var cx = m.left + candIdx * (pw / nBars) + (pw / nBars) / 2;
         ctx.strokeStyle = '#c62828'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(cx, m.top); ctx.lineTo(cx, m.top + ph); ctx.stroke();
-        ctx.fillStyle = '#c62828'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillText(candidateScore, cx, m.top - 4);
+        ctx.fillStyle = '#c62828'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillText(candidateScore, cx, m.top - 10);
       }
     }
-    ctx.fillStyle = '#333'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.fillText('Score Distribution', width / 2, m.top - 6);
     ctx.save(); ctx.translate(12, m.top + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = '#333'; ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillText('Count', 0, 0); ctx.restore();
     return c;
   }
@@ -256,7 +256,7 @@ Sahk.register('ReportGenerator', function() {
         var cell = rows[ri][ci];
         var cellVal = cell.text || '', cellBold = cell.bold || false;
         var cellColor = cell.color || '000000', cellBg = cell.bg || 'auto', cellSize = cell.size || 18;
-        var cellAlign = cell.align || 'left';
+            var cellAlign = cell.align || 'center';
         xml += '<w:tc><w:tcPr>' + (cellBg !== 'auto' ? '<w:shd w:val="clear" w:color="auto" w:fill="' + cellBg + '"/>' : '') + '<w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="' + cellAlign + '"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr>' + (cellBold ? '<w:b/>' : '') + '<w:color w:val="' + cellColor + '"/><w:sz w:val="' + cellSize + '"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr><w:t xml:space="preserve">' + escXml(String(cellVal)) + '</w:t></w:r></w:p></w:tc>';
       }
       xml += '</w:tr>';
@@ -449,10 +449,7 @@ Sahk.register('ReportGenerator', function() {
     for (var idx = 0; idx < sorted.length; idx++) {
       if (idx > 0) xml += pageBreak();
       xml += boldP('SAHK Final Examination Preparation Course ' + REPORT_YEAR + ' - ' + cfg.title, 14, 'center');
-      var subtitle = 'Candidate Report';
-      if (cfg.type === 'written') subtitle = 'Clinical Scenarios & SAQs - Candidate Report';
-      else if (cfg.type === 'viva') subtitle = 'Viva Examination - Candidate Report';
-      else if (cfg.type === 'osce') subtitle = 'OSCE Examination - Candidate Report';
+      var subtitle = cfg.subtitle || 'Candidate Report';
       xml += boldP(subtitle + (cfg.batch ? ' (' + cfg.batch + ')' : ''), 12, 'center');
       xml += emptyP();
       var cid3 = sorted[idx], v = summary[cid3];
@@ -499,8 +496,8 @@ Sahk.register('ReportGenerator', function() {
 
       // Histogram
       imgId++;
-      var canvas = drawHistogramCanvas(allAdj, v.adjusted, cfg.totalPass, 500, 180);
-      var img = canvasToImageEl(canvas, imgId, 5040000, 1814400);
+      var canvas = drawHistogramCanvas(allAdj, v.adjusted, cfg.totalPass, 500, 200);
+      var img = canvasToImageEl(canvas, imgId, 5040000, 2016000);
       images.push(img);
       xml += img.xml;
 
@@ -517,7 +514,7 @@ Sahk.register('ReportGenerator', function() {
       var cmtTableXml = '<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="5000" w:type="pct"/><w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="999999"/><w:left w:val="single" w:sz="4" w:space="0" w:color="999999"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="999999"/><w:right w:val="single" w:sz="4" w:space="0" w:color="999999"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="999999"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="999999"/></w:tblBorders></w:tblPr><w:tblGrid><w:gridCol w:w="3000"/><w:gridCol w:w="6000"/></w:tblGrid>';
       cmtTableXml += '<w:tr><w:tc><w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="F0F0F0"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="18"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr><w:t>' + escXml(cfg.itemName) + '</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="F0F0F0"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="18"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr><w:t>Comment</w:t></w:r></w:p></w:tc></w:tr>';
       for (var ei = 0; ei < cmtEntries.length; ei++) {
-        cmtTableXml += '<w:tr><w:tc><w:tcPr><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="18"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr><w:t>' + escXml(cfg.itemName + ' ' + cmtEntries[ei].station) + '</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:vAlign w:val="top"/></w:tcPr>' + makeMultilineP(cmtEntries[ei].text, '') + '</w:tc></w:tr>';
+        cmtTableXml += '<w:tr><w:tc><w:tcPr><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="18"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr><w:t>' + escXml(cfg.itemName + ' ' + cmtEntries[ei].station) + '</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:vAlign w:val="top"/></w:tcPr>' + makeMultilineP(cmtEntries[ei].text, '') + '</w:tc></w:tr>';
       }
       cmtTableXml += '</w:tbl>';
       xml += cmtTableXml;
@@ -618,7 +615,7 @@ Sahk.register('ReportGenerator', function() {
     if (cfg.type === 'viva' || cfg.type === 'osce') { sorted.sort(function(a, b) { return (parseInt(a) || 0) - (parseInt(b) || 0); }); }
     else { sorted.sort(); }
 
-    var h = '<style>.rpt-tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;border-bottom:2px solid #e0e0e0}.rpt-tab{padding:7px 16px;background:#f5f5f5;border:1px solid #ddd;border-bottom:none;color:#666;cursor:pointer;border-radius:6px 6px 0 0;font-size:0.82em;font-weight:600}.rpt-tab.active{background:#fff;color:#1b5e20;border-color:#4caf50 #4caf50 #fff}.rpt-panel{display:none}.rpt-panel.active{display:block}.card-table{width:100%;border-collapse:collapse;font-size:0.78em;margin:8px 0}.card-table td{border:1px solid #ddd;padding:5px 8px}.card-table .lbl{background:#f5f5f5;font-weight:700;text-align:right;width:200px}.card-table .val{font-family:Courier New,monospace}.card-table .pass{color:#2e7d32;font-weight:900}.card-table .fail{color:#c62828;font-weight:900}.cand-nav{display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:12px;flex-wrap:wrap}.cand-nav select{padding:6px 12px;border:1px solid #bbb;border-radius:4px;font-size:0.9em}</style>';
+    var h = '<style>.rpt-tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;border-bottom:2px solid #e0e0e0}.rpt-tab{padding:7px 16px;background:#f5f5f5;border:1px solid #ddd;border-bottom:none;color:#666;cursor:pointer;border-radius:6px 6px 0 0;font-size:0.82em;font-weight:600}.rpt-tab.active{background:#fff;color:#1b5e20;border-color:#4caf50 #4caf50 #fff}.rpt-panel{display:none}.rpt-panel.active{display:block}.card-table{width:100%;border-collapse:collapse;font-size:0.78em;margin:8px 0}.card-table td{border:1px solid #ddd;padding:5px 8px;text-align:center}.card-table .lbl{background:#f5f5f5;font-weight:700;text-align:center;width:180px}.card-table .val{font-family:Courier New,monospace}.card-table .pass{color:#2e7d32;font-weight:900}.card-table .fail{color:#c62828;font-weight:900}.cand-nav{display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:12px;flex-wrap:wrap}.cand-nav select{padding:6px 12px;border:1px solid #bbb;border-radius:4px;font-size:0.9em}</style>';
 
     var batchLabel = cfg.batch ? ' (' + cfg.batch + ')' : '';
     h += '<div class="rpt-tabs"><span class="rpt-tab active" onclick="switchPreviewTab(this,\'cand\')">Candidate Report</span><span class="rpt-tab" onclick="switchPreviewTab(this,\'qa\')">Question Analysis</span><span class="rpt-tab" onclick="switchPreviewTab(this,\'overview\')">Overview &amp; Screening</span></div>';
@@ -676,7 +673,8 @@ Sahk.register('ReportGenerator', function() {
 
     var h = '<div style="max-width:900px;margin:0 auto;">';
     h += '<h3 style="text-align:center;color:#d33;margin:4px 0 0;">SAHK Final Examination Preparation Course ' + REPORT_YEAR + ' - ' + pd.cfg.title + '</h3>';
-    h += '<h4 style="text-align:center;color:#555;margin:0 0 8px;">Candidate Report' + (pd.cfg.batch ? ' (' + pd.cfg.batch + ')' : '') + '</h4>';
+    var sub = pd.cfg.subtitle || 'Candidate Report';
+    h += '<h4 style="text-align:center;color:#555;margin:0 0 8px;">' + sub + (pd.cfg.batch ? ' (' + pd.cfg.batch + ')' : '') + '</h4>';
 
     h += '<table class="card-table"><tr><td class="lbl">Candidate ID</td><td class="val">' + np.fullId + '</td></tr>';
     h += '<tr><td class="lbl">Name</td><td class="val">' + np.name + '</td></tr>';
@@ -704,7 +702,7 @@ Sahk.register('ReportGenerator', function() {
     }
     h += '</tbody></table>';
 
-    h += '<h4 style="text-align:left;color:#333;margin:12px 0 4px;">Examiner Comments</h4>';
+    h += '<h4 style="text-align:center;color:#333;margin:12px 0 4px;">Examiner Comments</h4>';
     h += '<table class="card-table"><thead><tr style="background:#fff3e0;font-weight:700;"><td>' + pd.cfg.itemName + '</td><td>Comment</td></tr></thead><tbody>';
     for (var ci = 0; ci < pd.allStations.length; ci++) {
       var cst = pd.allStations[ci];
@@ -714,6 +712,10 @@ Sahk.register('ReportGenerator', function() {
       }
     }
     h += '</tbody></table>';
+
+    // Histogram
+    var histCanvas = drawHistogramCanvas(pd.allAdj, score, pd.cfg.totalPass, 500, 200);
+    h += '<div style="text-align:center;margin:14px 0;"><img src="' + histCanvas.toDataURL('image/png') + '" alt="Score Distribution" style="width:500px;height:200px;"></div>';
 
     h += '</div>';
 
