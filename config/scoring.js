@@ -37,12 +37,20 @@ Sahk.register('Scoring', function() {
     return '-';
   }
 
-  async function submitScore(cn, obs, score) { return await submitScoreForStation(cn, obs, score, stationNo); }
+  function getLatestComment(cn, st) {
+    for (var i = allScoresCache.length - 1; i >= 0; i--)
+      if (allScoresCache[i].candidate === String(cn) && allScoresCache[i].station === Number(st)) return allScoresCache[i].comment || '';
+    return '';
+  }
 
-  async function submitScoreForStation(cn, obs, score, st) {
+  async function submitScore(cn, obs, score, comment) { return await submitScoreForStation(cn, obs, score, stationNo, comment); }
+
+  async function submitScoreForStation(cn, obs, score, st, comment) {
     if (!examId || !identifier) return { success: false, error: 'Config missing' };
     try {
-      var r = await fetch(API_BASE + '/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ exam:examId, candidate:String(cn).trim(), station:Number(st), score:score, identifier:identifier.trim() }) });
+      var body = { exam:examId, candidate:String(cn).trim(), station:Number(st), score:score, identifier:identifier.trim() };
+      if (comment !== undefined && comment !== null) body.comment = comment;
+      var r = await fetch(API_BASE + '/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body) });
       var result = await r.json();
       if (r.ok) { await fetchAllScores(); if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated(); }
       return result;
@@ -54,7 +62,9 @@ Sahk.register('Scoring', function() {
     if (!entries || !entries.length) return { success: false, error: 'No entries' };
     try {
       var payload = entries.map(function(e) {
-        return { exam: examId, candidate: String(e.candidate).trim(), station: Number(e.station), score: e.score, identifier: identifier.trim() };
+        var entry = { exam: examId, candidate: String(e.candidate).trim(), station: Number(e.station), score: e.score, identifier: identifier.trim() };
+        if (e.comment !== undefined && e.comment !== null) entry.comment = e.comment;
+        return entry;
       });
       var r = await fetch(API_BASE + '/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(payload) });
       var result = await r.json();
@@ -119,8 +129,11 @@ Sahk.register('Scoring', function() {
     if (isSplitExam()) {
       html += '<button class="admin-btn admin-btn-report" id="adminCandidateReport">Candidate Report (Current Session)</button>';
       html += '<button class="admin-btn admin-btn-report" id="adminCandidateCombined">Candidate Report (All Sessions)</button>';
+      html += '<button class="admin-btn" id="adminPreviewReport" style="background:#7c4dff;color:#fff;">Preview (Current Session)</button>';
+      html += '<button class="admin-btn" id="adminPreviewCombined" style="background:#7c4dff;color:#fff;">Preview (All Sessions)</button>';
     } else {
       html += '<button class="admin-btn admin-btn-report" id="adminCandidateReport">Candidate Report</button>';
+      html += '<button class="admin-btn" id="adminPreviewReport" style="background:#7c4dff;color:#fff;">Preview Report</button>';
     }
     html += '<button class="admin-btn admin-btn-danger" id="adminClearDB">Clear Database</button><span class="admin-exam-label">'+getExamInfo()+'</span><div class="admin-status" id="adminStatus"></div></div>';
     return html;
@@ -131,6 +144,8 @@ Sahk.register('Scoring', function() {
     var cb=document.getElementById('adminClearDB'); if(cb) cb.onclick=adminClearDatabase;
     var cr=document.getElementById('adminCandidateReport'); if(cr) cr.onclick=adminGenerateCandidateReport;
     var cc=document.getElementById('adminCandidateCombined'); if(cc) cc.onclick=adminGenerateCombinedReport;
+    var pv=document.getElementById('adminPreviewReport'); if(pv) pv.onclick=adminPreviewReport;
+    var pv2=document.getElementById('adminPreviewCombined'); if(pv2) pv2.onclick=adminPreviewCombined;
   }
 
   async function adminGenerateCandidateReport() {
@@ -141,6 +156,41 @@ Sahk.register('Scoring', function() {
       } else {
         setStatus('Report generator module not loaded.', false);
       }
+    } catch(e) { setStatus('Failed: ' + e.message, false); }
+  }
+
+  async function adminPreviewReport() {
+    setStatus('Generating Preview...', true);
+    try {
+      await fetchAllScores();
+      if (!window.SahkReportGenerator || !window.SahkReportGenerator.buildPreview) {
+        setStatus('Report generator module not loaded.', false);
+        return;
+      }
+      var html = window.SahkReportGenerator.buildPreview(examId, allScoresCache);
+      var container = document.getElementById('previewContainer');
+      if (!container) { container = document.createElement('div'); container.id = 'previewContainer'; var parent = document.getElementById('scoreContainer') || document.getElementById('adminPanelContainer') || document.body; parent.appendChild(container); }
+      container.innerHTML = html;
+      container.style.display = 'block';
+      container.scrollIntoView({ behavior: 'smooth' });
+      setStatus('Preview ready.', true);
+    } catch(e) { setStatus('Failed: ' + e.message, false); }
+  }
+
+  async function adminPreviewCombined() {
+    setStatus('Generating Combined Preview...', true);
+    try {
+      if (!window.SahkReportGenerator || !window.SahkReportGenerator.buildCombinedPreview) {
+        setStatus('Report generator module not loaded.', false);
+        return;
+      }
+      var html = await window.SahkReportGenerator.buildCombinedPreview(examId, getPairedExam());
+      var container = document.getElementById('previewContainer');
+      if (!container) { container = document.createElement('div'); container.id = 'previewContainer'; var parent = document.getElementById('scoreContainer') || document.getElementById('adminPanelContainer') || document.body; parent.appendChild(container); }
+      container.innerHTML = html;
+      container.style.display = 'block';
+      container.scrollIntoView({ behavior: 'smooth' });
+      setStatus('Combined preview ready.', true);
     } catch(e) { setStatus('Failed: ' + e.message, false); }
   }
 
@@ -155,6 +205,6 @@ Sahk.register('Scoring', function() {
     } catch(e) { setStatus('Failed: ' + e.message, false); }
   }
 
-  return { init:init, setStation:setStation, fetchAllScores:fetchAllScores, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, submitScore:submitScore, submitScoreForStation:submitScoreForStation, submitScoreBatch:submitScoreBatch, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, adminGenerateCandidateReport:adminGenerateCandidateReport, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get allScoresCache(){return allScoresCache;} };
+  return { init:init, setStation:setStation, fetchAllScores:fetchAllScores, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, getLatestComment:getLatestComment, submitScore:submitScore, submitScoreForStation:submitScoreForStation, submitScoreBatch:submitScoreBatch, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, adminGenerateCandidateReport:adminGenerateCandidateReport, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get allScoresCache(){return allScoresCache;} };
 });
 window.SahkScoring = Sahk.get('Scoring');

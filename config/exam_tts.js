@@ -8,6 +8,9 @@ Sahk.register('ExamTTS', function() {
   var _synth = null;
   var _synthSupported = false;
   var _voicesReady = false;
+  var _ttsRate = 1.0;
+  var _ttsPitch = 1.0;
+  var _ttsVoiceURI = 'auto';
 
   _synthSupported = typeof window.speechSynthesis !== 'undefined' && window.speechSynthesis !== null;
   _synth = _synthSupported ? window.speechSynthesis : null;
@@ -128,9 +131,11 @@ Sahk.register('ExamTTS', function() {
       try {
         if (_synth.speaking || _synth.pending) _synth.cancel();
         var u = new SpeechSynthesisUtterance(text);
-        u.rate = 1.0;
-        u.pitch = 1.0;
+        u.rate = _ttsRate;
+        u.pitch = _ttsPitch;
         u.volume = Audio.volume;
+        var voice = getSelectedVoice();
+        if (voice) u.voice = voice;
         u.onstart = function() {};
         u.onend = function() { if (onDone) onDone(); };
         u.onerror = function(e) {
@@ -161,12 +166,58 @@ Sahk.register('ExamTTS', function() {
     if (_synth) { try { _synth.cancel(); } catch (e) {} }
   }
 
+  function getSelectedVoice() {
+    if (!_synthSupported || _ttsVoiceURI === 'auto') return null;
+    var voices = _synth.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].voiceURI === _ttsVoiceURI) return voices[i];
+    }
+    return null;
+  }
+
+  function setRate(val) { _ttsRate = val; }
+
+  function setPitch(val) { _ttsPitch = val; }
+
+  function setVoice(uri) { _ttsVoiceURI = uri; }
+
+  function populateVoiceSelect(sel) {
+    if (!sel) return;
+    while (sel.options.length > 1) sel.remove(1);
+    if (!_synthSupported) return;
+    var voices = _synth.getVoices();
+    if (!voices.length) return;
+    var seen = {};
+    for (var i = 0; i < voices.length; i++) {
+      var v = voices[i];
+      if (!v.lang || !v.lang.startsWith('en')) continue;
+      if (seen[v.voiceURI]) continue;
+      seen[v.voiceURI] = true;
+      var opt = document.createElement('option');
+      opt.value = v.voiceURI;
+      opt.textContent = v.name + ' (' + v.lang + ')';
+      sel.appendChild(opt);
+    }
+    if (_ttsVoiceURI !== 'auto') {
+      for (var j = 0; j < sel.options.length; j++) {
+        if (sel.options[j].value === _ttsVoiceURI) { sel.value = _ttsVoiceURI; break; }
+      }
+    }
+  }
+
   return {
     init: init,
     start: start,
     stop: stop,
     reset: reset,
-    get isActive() { return !!_intervalId; }
+    setRate: setRate,
+    setPitch: setPitch,
+    setVoice: setVoice,
+    populateVoiceSelect: populateVoiceSelect,
+    warmupSynth: warmupSynth,
+    get isActive() { return !!_intervalId; },
+    get voicesReady() { return _voicesReady; },
+    get synthSupported() { return _synthSupported; }
   };
 });
 window.ExamTTS = Sahk.get('ExamTTS');

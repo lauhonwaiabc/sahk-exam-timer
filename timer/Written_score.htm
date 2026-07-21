@@ -169,6 +169,10 @@
     }
     .score-submit-btn:hover { background: #388e3c; }
     .score-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .score-comment-icon { margin-left: 4px; vertical-align: middle; user-select: none; }
+    .score-comment-icon:hover { opacity: 0.8; }
+    .score-comment-area { margin-top: 2px; width: 100%; }
+    .score-comment { width: 100%; box-sizing: border-box; resize: vertical; font-size: 0.8em; font-family: inherit; padding: 3px; border: 1px solid #bbb; border-radius: 4px; }
     #adminPanelContainer {
       max-width: 600px;
       margin: 20px auto;
@@ -386,17 +390,22 @@ function renderTable() {
     bodyHtml += '<tr><td class="scoring-row-label">' + cn + '</td>';
     questions.forEach(function(q) {
       var qNum = qIndexToNumber(q);
-      var sc = '-', co = '#888';
+      var sc = '-', co = '#888', comment = '';
       if (window.SahkScoring && typeof SahkScoring.getLatestScoreForStation === 'function') {
         sc = SahkScoring.getLatestScoreForStation(cn, qNum);
         co = SCORE_COLORS[sc] || '#888';
+        comment = SahkScoring.getLatestComment(cn, qNum);
       }
+      var iconColor = comment ? '#f9a825' : (sc !== '-' ? '#999' : '#ccc');
+      var iconStyle = sc === '-' ? 'display:none' : '';
       bodyHtml += '<td><div class="scoring-cell-inner">';
       bodyHtml += '<div class="scoring-score-row">';
       bodyHtml += '<button class="score-scroll-btn score-down" data-cn="' + cn + '" data-q="' + qNum + '" data-dir="-1">&#9664;</button>';
       bodyHtml += '<span class="score-value" data-cn="' + cn + '" data-q="' + qNum + '" data-dirty="0" style="color:' + co + '">' + sc + '</span>';
       bodyHtml += '<button class="score-scroll-btn score-up" data-cn="' + cn + '" data-q="' + qNum + '" data-dir="1">&#9654;</button>';
+      bodyHtml += '<span class="score-comment-icon' + (comment ? ' has-comment' : '') + '" data-cn="' + cn + '" data-q="' + qNum + '" style="cursor:pointer;font-size:1.1em;color:' + iconColor + ';' + iconStyle + '" title="' + (comment ? 'Edit comment' : 'Add comment') + '">&#x1F4AC;</span>';
       bodyHtml += '</div>';
+      bodyHtml += '<div class="score-comment-area" data-cn="' + cn + '" data-q="' + qNum + '" style="display:none"><textarea class="score-comment" data-cn="' + cn + '" data-q="' + qNum + '" rows="2" placeholder="Comment..." style="width:100%;box-sizing:border-box;resize:vertical;font-size:0.8em;font-family:inherit;padding:3px;border:1px solid #bbb;border-radius:4px">' + (comment || '') + '</textarea></div>';
       bodyHtml += '<button class="score-submit-btn" data-cn="' + cn + '" data-q="' + qNum + '" style="display:none">Submit</button>';
       bodyHtml += '</div></td>';
     });
@@ -411,6 +420,21 @@ function renderTable() {
 
 function handleScoreClick(e) {
   var t = e.target;
+
+  if (t.classList.contains('score-comment-icon')) {
+    var cn = t.dataset.cn, qNum = parseInt(t.dataset.q);
+    var inner = t.closest('.scoring-cell-inner'); if (!inner) return;
+    var area = inner.querySelector('.score-comment-area[data-cn="' + cn + '"][data-q="' + qNum + '"]');
+    if (!area) return;
+    if (area.style.display !== 'none') {
+      area.style.display = 'none';
+    } else {
+      area.style.display = '';
+      var ta = area.querySelector('.score-comment');
+      if (ta) setTimeout(function() { ta.focus(); }, 50);
+    }
+    return;
+  }
   if (t.classList.contains('score-value') && !t.querySelector('input')) {
     var oldVal = t.textContent;
     var input = document.createElement('input');
@@ -447,6 +471,14 @@ function handleScoreClick(e) {
       if (inner) {
         var subBtn = inner.querySelector('.score-submit-btn');
         if (subBtn) subBtn.style.display = '';
+        var icon = inner.querySelector('.score-comment-icon');
+        if (icon) {
+          icon.style.display = val === '-' ? 'none' : '';
+          if (val === '-') {
+            var commentArea = inner.querySelector('.score-comment-area');
+            if (commentArea) commentArea.style.display = 'none';
+          }
+        }
       }
       updateSubmitAllVisibility();
     }
@@ -482,6 +514,14 @@ function handleScoreClick(e) {
     cell.textContent = ns;
     cell.style.color = SCORE_COLORS[ns] || '#888';
     cell.setAttribute('data-dirty', '1');
+    var icon = inner.querySelector('.score-comment-icon');
+    if (icon) {
+      icon.style.display = ns === '-' ? 'none' : '';
+      if (ns === '-') {
+        var commentArea = inner.querySelector('.score-comment-area');
+        if (commentArea) commentArea.style.display = 'none';
+      }
+    }
     var subBtn = inner.querySelector('.score-submit-btn');
     if (subBtn) subBtn.style.display = '';
     updateSubmitAllVisibility();
@@ -496,14 +536,20 @@ function handleScoreClick(e) {
     var cell2 = inner2.querySelector('.score-value');
     if (!cell2) return;
     var score = cell2.textContent;
+    var commentEl = inner2.querySelector('.score-comment[data-cn="' + cn2 + '"][data-q="' + qNum2 + '"]');
+    var comment = commentEl ? commentEl.value.trim() : '';
     t.textContent = '...';
     t.disabled = true;
-    SahkScoring.submitScoreForStation(cn2, null, score, qNum2).then(function(r) {
+    SahkScoring.submitScoreForStation(cn2, null, score, qNum2, comment).then(function(r) {
       t.textContent = 'Submit';
       t.disabled = false;
       if (r.success) {
         t.style.display = 'none';
         cell2.setAttribute('data-dirty', '0');
+        var commentArea2 = inner2.querySelector('.score-comment-area');
+        if (commentArea2) commentArea2.style.display = 'none';
+        var icon2 = inner2.querySelector('.score-comment-icon');
+        if (icon2) { icon2.style.color = comment ? '#f9a825' : '#999'; if (comment) icon2.classList.add('has-comment'); else icon2.classList.remove('has-comment'); }
         updateSubmitAllVisibility();
         if (!document.querySelector('.score-value[data-dirty="1"]')) SahkScoring.fetchAllScores().then(function() { renderTable(); });
       } else {
@@ -514,6 +560,18 @@ function handleScoreClick(e) {
 }
 
 document.getElementById('scoringTable').addEventListener('click', handleScoreClick);
+
+document.getElementById('scoringTable').addEventListener('input', function(e) {
+  var t = e.target;
+  if (t.classList.contains('score-comment')) {
+    var inner = t.closest('.scoring-cell-inner'); if (!inner) return;
+    var cell = inner.querySelector('.score-value');
+    if (cell) cell.setAttribute('data-dirty', '1');
+    var subBtn = inner.querySelector('.score-submit-btn');
+    if (subBtn) subBtn.style.display = '';
+    updateSubmitAllVisibility();
+  }
+});
 
 function updateSubmitAllVisibility() {
   var btn = document.getElementById('submitAllBtn');
@@ -529,10 +587,13 @@ document.getElementById('submitAllBtn').addEventListener('click', function() {
   if (!dirtyCells.length) return;
   var entries = [];
   dirtyCells.forEach(function(cell) {
+    var inner = cell.closest('.scoring-cell-inner');
+    var commentEl = inner ? inner.querySelector('.score-comment[data-cn="' + cell.dataset.cn + '"][data-q="' + cell.dataset.q + '"]') : null;
     entries.push({
       candidate: cell.dataset.cn,
       station: Number(cell.dataset.q),
-      score: cell.textContent
+      score: cell.textContent,
+      comment: commentEl ? commentEl.value.trim() : ''
     });
   });
   var btn = this;
@@ -548,6 +609,8 @@ document.getElementById('submitAllBtn').addEventListener('click', function() {
         if (inner) {
           var subBtn = inner.querySelector('.score-submit-btn');
           if (subBtn) subBtn.style.display = 'none';
+          var commentArea = inner.querySelector('.score-comment-area');
+          if (commentArea) commentArea.style.display = 'none';
         }
       });
       updateSubmitAllVisibility();

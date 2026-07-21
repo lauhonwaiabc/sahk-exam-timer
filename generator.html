@@ -6,40 +6,40 @@
 <title>SAHK Exam Data Generator</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; }
-h1 { text-align: center; padding: 18px; color: #00d4ff; font-size: 1.3em; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f9f9f9; color: #222; min-height: 100vh; }
+h1 { text-align: center; padding: 18px; color: #d33; font-size: 1.5em; font-weight: 900; letter-spacing: 1.5px; }
 
-.tabs { display: flex; justify-content: center; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
-.tab { padding: 8px 20px; background: #16213e; border: 1px solid #0f3460; color: #8892b0; cursor: pointer; border-radius: 6px 6px 0 0; font-size: 0.9em; transition: all 0.2s; }
-.tab:hover { color: #00d4ff; border-color: #00d4ff; }
-.tab.active { background: #0f3460; color: #00d4ff; border-color: #00d4ff; font-weight: 600; }
+.tabs { display: flex; justify-content: center; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { padding: 8px 20px; background: #e0e0e0; border: none; color: #555; cursor: pointer; border-radius: 8px; font-size: 0.9em; font-weight: 700; transition: all 0.2s; box-shadow: 0 2px 5px rgb(0 0 0 / 0.1); }
+.tab:hover { background: #ccc; color: #222; }
+.tab.active { background: #4caf50; color: white; box-shadow: 0 4px 10px rgb(76 175 80 / 0.6); }
 
 .container { max-width: 1100px; margin: 0 auto; padding: 0 14px 40px; }
 .section { display: none; }
 .section.active { display: block; }
 
-.card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 18px; margin-bottom: 14px; }
-.card h2 { color: #00d4ff; font-size: 1.05em; margin-bottom: 12px; }
-.card h3 { color: #a0b4d0; font-size: 0.9em; margin: 10px 0 6px; }
-.card h4 { color: #00d4ff; font-size: 0.85em; margin-bottom: 5px; }
+.card { background: white; border: none; border-radius: 12px; padding: 18px; margin-bottom: 14px; box-shadow: 0 3px 8px rgb(0 0 0 / 0.12); }
+.card h2 { color: #1b5e20; font-size: 1.1em; margin-bottom: 12px; font-weight: 900; }
+.card h3 { color: #333; font-size: 0.9em; margin: 10px 0 6px; font-weight: 700; }
+.card h4 { color: #2e7d32; font-size: 0.85em; margin-bottom: 5px; }
 
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
 .field { display: flex; flex-direction: column; gap: 3px; }
-.field label { font-size: 0.75em; color: #8892b0; text-transform: uppercase; letter-spacing: 0.4px; }
-.field input, .field select, .field textarea { padding: 7px 9px; border: 1px solid #0f3460; border-radius: 4px; background: #1a1a2e; color: #e0e0e0; font-size: 0.85em; }
-.field input:focus, .field select:focus { outline: none; border-color: #00d4ff; }
+.field label { font-size: 0.75em; color: #666; font-weight: 600; }
+.field input, .field select, .field textarea { padding: 7px 9px; border: 1px solid #bbb; border-radius: 4px; background: #fff; color: #222; font-size: 0.85em; }
+.field input:focus, .field select:focus { outline: none; border-color: #4caf50; }
 .field textarea { resize: vertical; min-height: 60px; font-family: monospace; font-size: 0.8em; }
 
 .radio-group { display: flex; gap: 14px; }
-.radio-group label { display: flex; align-items: center; gap: 5px; color: #e0e0e0; font-size: 0.85em; cursor: pointer; }
-.radio-group input[type="radio"] { accent-color: #00d4ff; }
-input[type="checkbox"] { accent-color: #00d4ff; margin-right: 4px; }
+.radio-group label { display: flex; align-items: center; gap: 5px; color: #333; font-size: 0.85em; cursor: pointer; }
+.radio-group input[type="radio"] { accent-color: #4caf50; }
+input[type="checkbox"] { accent-color: #4caf50; margin-right: 4px; }
 
-button { padding: 7px 18px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em; font-weight: 600; transition: background 0.15s; }
-.btn-primary { background: #00d4ff; color: #1a1a2e; } .btn-primary:hover { background: #00b8e6; }
-.btn-success { background: #4caf50; color: #fff; } .btn-success:hover { background: #43a047; }
-.btn-danger { background: #e53935; color: #fff; } .btn-danger:hover { background: #c62828; }
-.btn-warn { background: #ff9800; color: #1a1a2e; } .btn-warn:hover { background: #f57c00; }
+button { padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85em; font-weight: 700; transition: background 0.15s; }
+.btn-primary { background: #4caf50; color: #fff; } .btn-primary:hover { background: #388e3c; }
+.btn-success { background: #388e3c; color: #fff; } .btn-success:hover { background: #2e7d32; }
+.btn-danger { background: #d32f2f; color: #fff; } .btn-danger:hover { background: #b71c1c; }
+.btn-warn { background: #ff9800; color: #fff; } .btn-warn:hover { background: #f57c00; }
 .btn-sm { padding: 4px 10px; font-size: 0.75em; }
 .btn-group { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
 
@@ -48,43 +48,43 @@ button { padding: 7px 18px; border: none; border-radius: 4px; cursor: pointer; f
 
 .preview-table { overflow-x: auto; margin-top: 10px; }
 .preview-table table { width: 100%; border-collapse: collapse; font-size: 0.78em; }
-.preview-table th, .preview-table td { border: 1px solid #0f3460; padding: 5px 7px; text-align: center; min-width: 55px; }
-.preview-table th { background: #0f3460; color: #00d4ff; white-space: nowrap; }
-.preview-table td { background: #1a1a2e; }
-.preview-table .hotseat { background: #1b3a4b; color: #00d4ff; font-weight: 600; }
-.preview-table .observer { color: #ffd54f; }
-.preview-table .empty { color: #555; }
+.preview-table th, .preview-table td { border: 1px solid #ccc; padding: 5px 7px; text-align: center; min-width: 55px; }
+.preview-table th { background: #e8f5e9; color: #1b5e20; white-space: nowrap; font-weight: 700; }
+.preview-table td { background: #fff; }
+.preview-table .hotseat { background: #f0f7f5; color: #2e7d32; font-weight: 600; }
+.preview-table .observer { color: #e65100; }
+.preview-table .empty { color: #aaa; }
 
-pre.output { background: #0d1117; color: #c9d1d9; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.76em; max-height: 350px; border: 1px solid #0f3460; margin-top: 8px; white-space: pre-wrap; }
+pre.output { background: #f5f5f5; color: #333; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.76em; max-height: 350px; border: 1px solid #ddd; margin-top: 8px; white-space: pre-wrap; }
 
 .candidate-prio { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin: 6px 0; }
-.candidate-prio .item { display: flex; align-items: center; gap: 3px; background: #1a1a2e; padding: 3px 7px; border-radius: 4px; border: 1px solid #0f3460; }
-.candidate-prio .item span { color: #8892b0; font-size: 0.7em; min-width: 16px; }
-.candidate-prio .item input { width: 48px; padding: 4px 5px; border: 1px solid #0f3460; border-radius: 3px; background: #0d1117; color: #e0e0e0; font-size: 0.8em; text-align: center; }
+.candidate-prio .item { display: flex; align-items: center; gap: 3px; background: #f0f7f5; padding: 3px 7px; border-radius: 4px; border: 1px solid #c8e6c9; }
+.candidate-prio .item span { color: #666; font-size: 0.7em; min-width: 16px; font-weight: 600; }
+.candidate-prio .item input { width: 48px; padding: 4px 5px; border: 1px solid #bbb; border-radius: 3px; background: #fff; color: #222; font-size: 0.8em; text-align: center; }
 
 .station-row { display: flex; align-items: center; gap: 7px; margin: 5px 0; flex-wrap: wrap; }
-.station-row .st-name { min-width: 95px; font-size: 0.8em; color: #00d4ff; }
-.station-row input { width: 55px; padding: 4px 7px; border: 1px solid #0f3460; border-radius: 3px; background: #0d1117; color: #e0e0e0; font-size: 0.8em; text-align: center; }
+.station-row .st-name { min-width: 95px; font-size: 0.8em; color: #2e7d32; font-weight: 600; }
+.station-row input { width: 55px; padding: 4px 7px; border: 1px solid #bbb; border-radius: 3px; background: #fff; color: #222; font-size: 0.8em; text-align: center; }
 
 .debrief-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin: 8px 0; }
-.debrief-grid .group-box { background: #1a1a2e; border: 1px solid #0f3460; border-radius: 5px; padding: 8px; }
-.debrief-grid .group-box h4 { color: #00d4ff; font-size: 0.8em; margin-bottom: 5px; }
-.debrief-grid .group-box input { width: 100%; padding: 3px 5px; border: 1px solid #0f3460; border-radius: 3px; background: #0d1117; color: #e0e0e0; font-size: 0.78em; margin-bottom: 3px; }
+.debrief-grid .group-box { background: #f0f7f5; border: 1px solid #c8e6c9; border-radius: 5px; padding: 8px; }
+.debrief-grid .group-box h4 { color: #2e7d32; font-size: 0.8em; margin-bottom: 5px; }
+.debrief-grid .group-box input { width: 100%; padding: 3px 5px; border: 1px solid #bbb; border-radius: 3px; background: #fff; color: #222; font-size: 0.78em; margin-bottom: 3px; }
 
-.sc-block { background: #1a1a2e; border: 1px solid #0f3460; border-radius: 5px; padding: 10px; margin: 8px 0; }
+.sc-block { background: #f0f7f5; border: 1px solid #c8e6c9; border-radius: 5px; padding: 10px; margin: 8px 0; }
 .sc-block .ex-row { display: flex; gap: 6px; margin: 5px 0; align-items: center; flex-wrap: wrap; }
-.sc-block .ex-row input, .sc-block .ex-row select { padding: 4px 7px; border: 1px solid #0f3460; border-radius: 3px; background: #0d1117; color: #e0e0e0; font-size: 0.8em; }
+.sc-block .ex-row input, .sc-block .ex-row select { padding: 4px 7px; border: 1px solid #bbb; border-radius: 3px; background: #fff; color: #222; font-size: 0.8em; }
 
 .mapping-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 0.8em; }
-.mapping-table th { background: #0f3460; color: #00d4ff; padding: 6px 8px; text-align: left; }
-.mapping-table td { padding: 4px 8px; border-bottom: 1px solid #0f3460; }
-.mapping-table input { width: 100%; padding: 4px 6px; border: 1px solid #0f3460; border-radius: 3px; background: #0d1117; color: #e0e0e0; font-size: 0.8em; }
+.mapping-table th { background: #e8f5e9; color: #1b5e20; padding: 6px 8px; text-align: left; font-weight: 700; }
+.mapping-table td { padding: 4px 8px; border-bottom: 1px solid #e0e0e0; }
+.mapping-table input { width: 100%; padding: 4px 6px; border: 1px solid #bbb; border-radius: 3px; background: #fff; color: #222; font-size: 0.8em; }
 
 .status { padding: 7px 12px; border-radius: 4px; margin: 8px 0; font-size: 0.8em; }
-.status.ok { background: #1b3a1b; color: #4caf50; border:1px solid #4caf50; }
-.status.warn { background: #3a3a1b; color: #ffd54f; border:1px solid #ffd54f; }
+.status.ok { background: #e8f5e9; color: #1b5e20; border: 1px solid #81c784; }
+.status.warn { background: #fff3e0; color: #e65100; border: 1px solid #ffb74d; }
 
-hr { border: none; border-top: 1px solid #0f3460; margin: 14px 0; }
+hr { border: none; border-top: 1px solid #e0e0e0; margin: 14px 0; }
 
 @media (max-width: 600px) {
   .row { flex-direction: column; }
@@ -149,7 +149,7 @@ hr { border: none; border-top: 1px solid #0f3460; margin: 14px 0; }
     <h3>AM Examiner Names (one per table)</h3>
     <div class="grid-inputs" id="viva-examiner-list-am"></div>
     <h3>2b. PM Schedule — Candidate Priority &amp; Examiner Names</h3>
-    <p style="font-size:0.75em;color:#8892b0;margin:4px 0;">Defaults copied from AM. Edit below if candidate order or examiners differ for PM (e.g. examiner changes after lunch).</p>
+    <p style="font-size:0.75em;color:#777;margin:4px 0;">Defaults copied from AM. Edit below if candidate order or examiners differ for PM (e.g. examiner changes after lunch).</p>
     <h3>PM Candidate Priority (high → low)</h3>
     <div class="candidate-prio" id="viva-prio-list-pm"></div>
     <h3>PM Examiner Names (one per table)</h3>
@@ -207,7 +207,7 @@ hr { border: none; border-top: 1px solid #0f3460; margin: 14px 0; }
     <h3>Station Names</h3><div class="grid-inputs" id="osce-station-names"></div>
     <h3>AM — Session 1 Arrangement</h3>
     <div id="osce-first-arr-am"></div>
-    <p style="font-size:0.75em;color:#8892b0;margin:4px 0;">PM defaults copied from AM. Edit below if Session&nbsp;1 assignments differ for PM.</p>
+    <p style="font-size:0.75em;color:#777;margin:4px 0;">PM defaults copied from AM. Edit below if Session&nbsp;1 assignments differ for PM.</p>
     <h3>PM — Session 1 Arrangement</h3>
     <div id="osce-first-arr-pm"></div>
     <button class="btn-success" onclick="osceGenerate()">Generate OSCE Data</button>
@@ -337,9 +337,9 @@ hr { border: none; border-top: 1px solid #0f3460; margin: 14px 0; }
 
   <div class="card">
     <h2>Candidate Mapping</h2>
-    <p style="font-size:0.8em;color:#8892b0;margin-bottom:8px;">
+    <p style="font-size:0.8em;color:#777;margin-bottom:8px;">
       Map full candidate IDs to display names. Used by report generator.<br>
-      <b>Import CSV</b> with columns <code>Full ID, Short Name, Full Name, Abbr ID</code> (<a href="sample_candidate_mapping.csv" download style="color:#00d4ff;">download sample</a>).
+      <b>Import CSV</b> with columns <code>Full ID, Short Name, Full Name, Abbr ID</code> (<a href="sample_candidate_mapping.csv" download style="color:#4caf50;">download sample</a>).
     </p>
     <div class="btn-group">
       <button class="btn-primary" onclick="mappingAddRow()">+ Add Row</button>
@@ -549,9 +549,9 @@ function vivaProceed() {
   // Show constraint info (AM stats)
   var total = SPm * TAm, base = Math.floor(total / CAm), extra = total % CAm;
   var msg = 'AM Hotseats: '+base+' or '+(base+1)+' ('+extra+' get '+(base+1)+' each). ';
-  if (CAm < TAm) msg += '<b style=\"color:#e53935;\">Warning: C < T</b> — some tables may be underutilized. ';
-  if (CAm > 2*TAm) msg += '<b style=\"color:#e53935;\">Warning: C > 2T</b> — impossible to assign every candidate per session. ';
-  if (TAm < SPm) msg += '<b style=\"color:#e53935;\">Warning: Tables < Sessions</b>. ';
+  if (CAm < TAm) msg += '<b style=\"color:#d33;\">Warning: C < T</b> — some tables may be underutilized. ';
+  if (CAm > 2*TAm) msg += '<b style=\"color:#d33;\">Warning: C > 2T</b> — impossible to assign every candidate per session. ';
+  if (TAm < SPm) msg += '<b style=\"color:#d33;\">Warning: Tables < Sessions</b>. ';
   if (!(CAm >= TAm && CAm <= 2*TAm)) msg += 'Recommended: T \u2264 C \u2264 2T.';
   var existingMsg = $('viva-constraint-msg');
   if (existingMsg) existingMsg.remove();
@@ -837,7 +837,7 @@ function vivaGenerate() {
     var msg = '';
     if(!resultAM) msg += 'AM: No valid solution for '+TAm+' tables, '+SAm+' sessions, '+CAm+' candidates. ';
     if(!resultPM) msg += 'PM: No valid solution for '+TPm+' tables, '+SPm+' sessions, '+CPm+' candidates.';
-    $('viva-preview-session-am').innerHTML = '<div class="status warn" style="color:#e53935;border-color:#e53935;">'+msg+'</div>';
+    $('viva-preview-session-am').innerHTML = '<div class="status warn" style=\"color:#d33;border-color:#d33;\">'+msg+'</div>';
     return;
   }
 
@@ -849,14 +849,14 @@ function vivaGenerate() {
 
   function renderSessionView(data, exam, T, S) {
     var h='<table><thead><tr><th></th>';
-    for(var t=0;t<T;t++) h+='<th>Table '+(t+1)+'<br><span style="font-size:0.65em;font-weight:normal;color:#8892b0;">'+exam[t]+'</span></th>';
+    for(var t=0;t<T;t++) h+='<th>Table '+(t+1)+'<br><span style=\"font-size:0.65em;font-weight:normal;color:#777;\">'+exam[t]+'</span></th>';
     h+='</tr></thead><tbody>';
-    for(var s=0;s<S;s++){var sk="Session "+(s+1),d=data[sk];h+='<tr><td><b>'+sk+'</b></td>';for(var t=0;t<T;t++){var c=d.Candidate[t]||'-',o=d.Observer[t]||'';h+='<td class="hotseat">'+c+(o?' <span style="color:#ffd54f;">(obs:'+o+')</span>':'')+'</td>';}h+='</tr>';}
+    for(var s=0;s<S;s++){var sk="Session "+(s+1),d=data[sk];h+='<tr><td><b>'+sk+'</b></td>';for(var t=0;t<T;t++){var c=d.Candidate[t]||'-',o=d.Observer[t]||'';h+='<td class="hotseat">'+c+(o?' <span style="color:#e65100;">(obs:'+o+')</span>':'')+'</td>';}h+='</tr>';}
     h+='</tbody></table>';return h;
   }
   function renderTableView(data, exam, T, S) {
     var h='<table><thead><tr><th></th>';for(var s=0;s<S;s++) h+='<th>Session '+(s+1)+'</th>';h+='</tr></thead><tbody>';
-    for(var t=0;t<T;t++){h+='<tr><td><b>Table '+(t+1)+'</b><br><span style="font-size:0.7em;color:#8892b0;">'+exam[t]+'</span></td>';for(var s=0;s<S;s++){var d=data["Session "+(s+1)],c=d.Candidate[t]||'-',o=d.Observer[t]||'';h+='<td class="hotseat">'+c+(o?' <span style="color:#ffd54f;">(obs:'+o+')</span>':'')+'</td>';}h+='</tr>';}
+    for(var t=0;t<T;t++){h+='<tr><td><b>Table '+(t+1)+'</b><br><span style=\"font-size:0.7em;color:#777;\">'+exam[t]+'</span></td>';for(var s=0;s<S;s++){var d=data["Session "+(s+1)],c=d.Candidate[t]||'-',o=d.Observer[t]||'';h+='<td class="hotseat">'+c+(o?' <span style="color:#e65100;">(obs:'+o+')</span>':'')+'</td>';}h+='</tr>';}
     h+='</tbody></table>';return h;
   }
 
@@ -923,10 +923,10 @@ function osceProceed() {
   const defs=['Procedure 1','Anatomy','Rest','Regional','Equipment','Rest','Long Case 1','Long Case 2','Rest','Crisis','Communication','Rest','Procedure 2','ATLS/ACLS','Rest'];
   for(let i=0;i<N;i++){ const d=document.createElement('div'); d.className='field'; d.innerHTML=`<label>Station ${i+1}</label><input type="text" id="osce-name-${i}" value="${defs[i]||'Station '+(i+1)}">`; nc.appendChild(d); }
   // AM first arrangement
-  const faAm=$('osce-first-arr-am'); faAm.innerHTML='<div style="display:flex;gap:8px;font-size:0.75em;color:#8892b0;margin-bottom:4px;"><span style="min-width:95px;">Station</span><span style="width:55px;text-align:center;">Cand</span><span style="width:55px;text-align:center;">Obs</span></div>';
+  const faAm=$('osce-first-arr-am'); faAm.innerHTML='<div style="display:flex;gap:8px;font-size:0.75em;color:#777;margin-bottom:4px;"><span style="min-width:95px;">Station</span><span style="width:55px;text-align:center;">Cand</span><span style="width:55px;text-align:center;">Obs</span></div>';
   for(let i=0;i<N;i++){ const d=document.createElement('div'); d.className='station-row'; d.innerHTML=`<span class="st-name" id="osce-label-am-${i}">Station ${i+1}</span><input type="text" id="osce-cand-am-${i}" placeholder="#" maxlength="4"><input type="text" id="osce-obs-am-${i}" placeholder="#" maxlength="4">`; faAm.appendChild(d); }
   // PM first arrangement (defaults copied from AM style)
-  const faPm=$('osce-first-arr-pm'); faPm.innerHTML='<div style="display:flex;gap:8px;font-size:0.75em;color:#8892b0;margin-bottom:4px;"><span style="min-width:95px;">Station</span><span style="width:55px;text-align:center;">Cand</span><span style="width:55px;text-align:center;">Obs</span></div>';
+  const faPm=$('osce-first-arr-pm'); faPm.innerHTML='<div style="display:flex;gap:8px;font-size:0.75em;color:#777;margin-bottom:4px;"><span style="min-width:95px;">Station</span><span style="width:55px;text-align:center;">Cand</span><span style="width:55px;text-align:center;">Obs</span></div>';
   for(let i=0;i<N;i++){ const d=document.createElement('div'); d.className='station-row'; d.innerHTML=`<span class="st-name" id="osce-label-pm-${i}">Station ${i+1}</span><input type="text" id="osce-cand-pm-${i}" placeholder="#" maxlength="4"><input type="text" id="osce-obs-pm-${i}" placeholder="#" maxlength="4">`; faPm.appendChild(d); }
   $('osce-detail-card').scrollIntoView({behavior:'smooth'});
 }
@@ -958,14 +958,14 @@ function osceGenerate() {
   function renderSessionView(data, S) {
     let ss='<table><thead><tr><th></th>'; for(let st=0;st<N;st++) ss+=`<th>${names[st]}</th>`; ss+='</tr></thead><tbody>';
     for(let s=0;s<S;s++){ const sk=`Session ${s+1}`,d=data[sk]; ss+=`<tr><td><b>${sk}</b></td>`;
-      for(let st=0;st<N;st++){ const c=d.Candidate[st]||'-',o=d.Observer[st]||''; ss+=`<td class="${names[st].toLowerCase()==='rest'?'empty':'hotseat'}">${c}${o?` <span style="color:#ffd54f;">(obs:${o})</span>`:''}</td>`; }
+      for(let st=0;st<N;st++){ const c=d.Candidate[st]||'-',o=d.Observer[st]||''; ss+=`<td class="${names[st].toLowerCase()==='rest'?'empty':'hotseat'}">${c}${o?` <span style="color:#e65100;">(obs:${o})</span>`:''}</td>`; }
       ss+='</tr>'; }
     ss+='</tbody></table>'; return ss;
   }
   function renderStationView(data, S) {
     let sh='<table><thead><tr><th></th>'; for(let s=0;s<S;s++) sh+=`<th>Session ${s+1}</th>`; sh+='</tr></thead><tbody>';
     for(let st=0;st<N;st++){ const isR=names[st].toLowerCase()==='rest'; sh+=`<tr><td><b>${names[st]}</b></td>`;
-      for(let s=0;s<S;s++){ const d=data[`Session ${s+1}`],c=d.Candidate[st]||'-',o=d.Observer[st]||''; sh+=`<td class="${isR?'empty':'hotseat'}">${c}${o&&!isR?` <span style="color:#ffd54f;">(obs:${o})</span>`:''}</td>`; }
+      for(let s=0;s<S;s++){ const d=data[`Session ${s+1}`],c=d.Candidate[st]||'-',o=d.Observer[st]||''; sh+=`<td class="${isR?'empty':'hotseat'}">${c}${o&&!isR?` <span style="color:#e65100;">(obs:${o})</span>`:''}</td>`; }
       sh+='</tr>'; }
     sh+='</tbody></table>'; return sh;
   }
@@ -1081,9 +1081,9 @@ function debriefBuildAssignments(){
     for(var ex=0;ex<exCount;ex++){ var base=ex*gpe+1; for(var s=0;s<ns;s++) autom[sc+'-'+s+'-'+ex]=base+(s+off)%gpe; } }
   for(var sc=0;sc<scCount;sc++){ var scn=$('deb-sc-name-'+sc); var bl=document.createElement('div'); bl.className='sc-block';
     bl.innerHTML='<h4>'+(scn?scn.value:'Scenario '+(sc+1))+' — Group Assignments</h4>';
-    for(var s=0;s<ns;s++){ var r=document.createElement('div'); r.className='ex-row'; r.innerHTML='<span style=\"font-size:0.75em;color:#8892b0;min-width:75px;\">Session '+(s+1)+':</span>';
+    for(var s=0;s<ns;s++){ var r=document.createElement('div'); r.className='ex-row'; r.innerHTML='<span style=\"font-size:0.75em;color:#777;min-width:75px;\">Session '+(s+1)+':</span>';
       for(var ex=0;ex<exCount;ex++){ var exn=$('deb-ex-'+sc+'-'+ex); var nm=exn?exn.value:'Ex'+ex; var ag=autom[sc+'-'+s+'-'+ex]||'';
-        r.innerHTML+='<span style=\"font-size:0.7em;color:#a0b4d0;\">'+nm+':</span><select id=\"deb-as-'+sc+'-'+s+'-'+ex+'\"><option value=\"\">--</option>'+Array.from({length:ng},function(_,g){return '<option value=\"'+(g+1)+'\" '+(g+1===ag?'selected':'')+'>Group '+(g+1)+'</option>'}).join('')+'</select>'; }
+        r.innerHTML+='<span style=\"font-size:0.7em;color:#666;\">'+nm+':</span><select id=\"deb-as-'+sc+'-'+s+'-'+ex+'\"><option value=\"\">--</option>'+Array.from({length:ng},function(_,g){return '<option value=\"'+(g+1)+'\" '+(g+1===ag?'selected':'')+'>Group '+(g+1)+'</option>'}).join('')+'</select>'; }
       bl.appendChild(r); }
     d.appendChild(bl); }
 }

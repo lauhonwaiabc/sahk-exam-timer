@@ -2,6 +2,7 @@
 Sahk.register('DebriefTimer', () => {
   const C = Sahk.get('TimerCommon');
   const P = Sahk.get('Constants').PHASE;
+  const Audio = Sahk.get('Audio');
 
   let isCandidateMode = false;
   let lastSearchValue = '';
@@ -169,6 +170,90 @@ Sahk.register('DebriefTimer', () => {
     updateVisibility();
   }
 
+  function setupTTS(tts) {
+    var status = document.getElementById('speechStatus');
+
+    var rateSlider = document.getElementById('ttsRateSlider');
+    var rateLabel = document.getElementById('ttsRateLabel');
+    if (rateSlider) {
+      rateSlider.addEventListener('input', function() {
+        var val = parseFloat(this.value);
+        tts.setRate(val);
+        if (rateLabel) rateLabel.textContent = 'Speed: ' + val.toFixed(1) + 'x';
+      });
+    }
+
+    var pitchSlider = document.getElementById('ttsPitchSlider');
+    var pitchLabel = document.getElementById('ttsPitchLabel');
+    if (pitchSlider) {
+      pitchSlider.addEventListener('input', function() {
+        var val = parseFloat(this.value);
+        tts.setPitch(val);
+        if (pitchLabel) pitchLabel.textContent = 'Pitch: ' + val.toFixed(1);
+      });
+    }
+
+    var voiceSel = document.getElementById('voiceSelect');
+    function populateVoices() {
+      tts.populateVoiceSelect(voiceSel);
+      if (status) status.textContent = 'Speech engine ready';
+    }
+
+    if (tts.synthSupported) {
+      populateVoices();
+      if (window.speechSynthesis) {
+        window.speechSynthesis.addEventListener('voiceschanged', populateVoices);
+      }
+    } else {
+      if (status) status.textContent = 'Speech synthesis not supported in this browser';
+    }
+
+    if (voiceSel) {
+      voiceSel.addEventListener('change', function() {
+        tts.setVoice(this.value);
+        try { localStorage.setItem('sahk_tts_voice_uri', this.value); } catch(e) {}
+      });
+      var saved = null;
+      try { saved = localStorage.getItem('sahk_tts_voice_uri'); } catch(e) {}
+      if (saved && saved !== 'auto') {
+        tts.setVoice(saved);
+        for (var j = 0; j < voiceSel.options.length; j++) {
+          if (voiceSel.options[j].value === saved) { voiceSel.value = saved; break; }
+        }
+      }
+    }
+
+    var testBtn = document.getElementById('testSpeechBtn');
+    if (testBtn) {
+      testBtn.addEventListener('click', function() {
+        if (!tts.voicesReady) {
+          if (status) status.textContent = 'Speech engine loading... please try again';
+          tts.warmupSynth();
+          return;
+        }
+        tts.warmupSynth();
+        if (Audio.isMuted) Audio.setMute(false);
+        var u = new SpeechSynthesisUtterance('This is a test of the speech synthesis engine.');
+        u.rate = parseFloat(rateSlider ? rateSlider.value : 1.0);
+        u.pitch = parseFloat(pitchSlider ? pitchSlider.value : 1.0);
+        u.volume = Audio.volume;
+        var voice = null;
+        if (tts.synthSupported && voiceSel && voiceSel.value !== 'auto') {
+          var voices = window.speechSynthesis.getVoices();
+          for (var vi = 0; vi < voices.length; vi++) {
+            if (voices[vi].voiceURI === voiceSel.value) { voice = voices[vi]; break; }
+          }
+        }
+        if (voice) u.voice = voice;
+        u.onstart = function() { if (status) status.textContent = 'Playing test speech...'; };
+        u.onend = function() { if (status) status.textContent = 'Speech engine ready'; };
+        u.onerror = function() { if (status) status.textContent = 'Speech engine ready'; };
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      });
+    }
+  }
+
   function start() {
     ctrl = Sahk.get('TimerCore').createController({
       startTimeStr: START_TIME,
@@ -187,6 +272,8 @@ Sahk.register('DebriefTimer', () => {
     var tts = Sahk.get('ExamTTS');
     tts.init(ctrl, typeof DEBRIEF_SCRIPT_DATA !== 'undefined' ? DEBRIEF_SCRIPT_DATA : []);
     tts.start();
+
+    setupTTS(tts);
 
     var stopBtn = document.getElementById('stopBtn');
     if (stopBtn) {

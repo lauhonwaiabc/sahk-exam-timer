@@ -38,6 +38,15 @@
     #scriptBanner.speaking .script-placeholder { color: #fff3e0; }
     #scriptBanner.done { background: #2e7d32; }
     #scriptBanner.done .script-placeholder { color: #c8e6c9; }
+    #ttsControls {
+      display: flex; justify-content: center; align-items: center; gap: 14px;
+      margin: 10px 0; flex-wrap: wrap;
+    }
+    #ttsControls label { font-size: 0.85em; font-weight: 700; color: #555; }
+    #ttsControls input[type="range"] { width: 90px; }
+    #ttsControls select { font-size: 0.85em; padding: 4px 8px; border-radius: 4px; border: 1px solid #bbb; }
+    #ttsControls button { font-size: 0.85em; padding: 5px 12px; }
+    #speechStatus { text-align: center; font-size: 0.8em; color: #888; margin: 5px 0 10px; min-height: 1.2em; }
     @media (max-width: 600px) { #scriptBanner { display: none !important; } }
   </style>
 </head>
@@ -51,8 +60,20 @@
   <button id="stopBtn" disabled>Stop & Reset</button>
   <button id="muteBtn" aria-pressed="false">Mute</button>
   <div id="volumeControl" class="desktop-only"><span id="volumeLabel">Vol: 50%</span><input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.5"></div>
+  <button id="testSpeechBtn">Test Speech</button>
   <button id="keyboardHelpBtn" title="Keyboard shortcuts">?</button>
 </div>
+<div id="ttsControls">
+  <label id="ttsRateLabel">Speed: 1.0x</label>
+  <input type="range" id="ttsRateSlider" min="0.5" max="2.5" step="0.1" value="1.0">
+  <label id="ttsPitchLabel">Pitch: 1.0</label>
+  <input type="range" id="ttsPitchSlider" min="0.5" max="2.0" step="0.1" value="1.0">
+  <label for="voiceSelect">Voice</label>
+  <select id="voiceSelect">
+    <option value="auto">Auto (default)</option>
+  </select>
+</div>
+<div id="speechStatus">Speech engine initializing...</div>
 <div id="startTimeContainer">
   <label for="startTimeInput" style="font-weight:700;margin-right:8px;">Start Time (hh:mm:ss):</label>
   <input id="startTimeInput" type="time" step="1" style="font-size:1.1em;padding:6px 12px;border-radius:6px;border:1px solid #bbb;width:140px;"/>

@@ -61,6 +61,10 @@ Sahk.register('ScoringMatrix', function() {
           return;
         }
         var sc = Sahk.get('Scoring').getLatestScoreForStation(cn, cl.no), co = SCO(sc);
+        var comment = Sahk.get('Scoring').getLatestComment(cn, cl.no);
+        var iconColor = comment ? '#f9a825' : (sc !== '-' ? '#999' : '#ccc');
+        var iconStyle = sc === '-' ? 'display:none' : '';
+        var iconClass = comment ? ' has-comment' : '';
         var cellClass = 'scoring-matrix-cell';
         var isCurSess = false, isPrevSess = false;
         if (curKey) { var d = cfg.data[curKey]; if (d) { if (d.Candidate && d.Candidate[colIdx] === cn) isCurSess = true; } }
@@ -74,7 +78,7 @@ Sahk.register('ScoringMatrix', function() {
           if (cellSessionIdx < si_idx) cellClass += ' scoring-past-session';
           else cellClass += ' scoring-future-session';
         }
-        html += '<td class="' + cellClass + '"><div class="scoring-cell-inner"><div class="scoring-score-row"><button class="score-scroll-btn score-down" data-cn="' + cn + '" data-st="' + cl.no + '" data-dir="-1">&#9664;</button><span class="score-value" data-cn="' + cn + '" data-st="' + cl.no + '" data-dirty="0" style="color:' + co + '">' + sc + '</span><button class="score-scroll-btn score-up" data-cn="' + cn + '" data-st="' + cl.no + '" data-dir="1">&#9654;</button></div><button class="score-submit-btn" data-cn="' + cn + '" data-st="' + cl.no + '" style="display:none">Submit</button></div></td>';
+        html += '<td class="' + cellClass + '"><div class="scoring-cell-inner"><div class="scoring-score-row"><button class="score-scroll-btn score-down" data-cn="' + cn + '" data-st="' + cl.no + '" data-dir="-1">&#9664;</button><span class="score-value" data-cn="' + cn + '" data-st="' + cl.no + '" data-dirty="0" style="color:' + co + '">' + sc + '</span><button class="score-scroll-btn score-up" data-cn="' + cn + '" data-st="' + cl.no + '" data-dir="1">&#9654;</button><span class="score-comment-icon' + iconClass + '" data-cn="' + cn + '" data-st="' + cl.no + '" style="cursor:pointer;font-size:1.1em;color:' + iconColor + ';' + iconStyle + '" title="' + (comment ? 'Edit comment' : 'Add comment') + '">&#x1F4AC;</span></div><div class="score-comment-area" data-cn="' + cn + '" data-st="' + cl.no + '" style="display:none"><textarea class="score-comment" data-cn="' + cn + '" data-st="' + cl.no + '" rows="2" placeholder="Comment..." style="width:100%;box-sizing:border-box;resize:vertical;font-size:0.8em;font-family:inherit;padding:3px;border:1px solid #bbb;border-radius:4px">' + (comment || '') + '</textarea></div><button class="score-submit-btn" data-cn="' + cn + '" data-st="' + cl.no + '" style="display:none">Submit</button></div></td>';
       });
       html += '</tr>';
     });
@@ -95,6 +99,14 @@ Sahk.register('ScoringMatrix', function() {
         idx = (idx + dir + opts.length) % opts.length;
         var ns = opts[idx]; cell.textContent = ns; cell.style.color = cols[ns] || '#888';
         cell.setAttribute('data-dirty', '1');
+        var icon = inner.querySelector('.score-comment-icon');
+        if (icon) {
+          icon.style.display = ns === '-' ? 'none' : '';
+          if (ns === '-') {
+            var commentArea = inner.querySelector('.score-comment-area');
+            if (commentArea) commentArea.style.display = 'none';
+          }
+        }
         var subBtn = inner.querySelector('.score-submit-btn'); if (subBtn) subBtn.style.display = '';
         getSI().updateScoringSubmitAllVisibility();
       });
@@ -105,11 +117,17 @@ Sahk.register('ScoringMatrix', function() {
         var inner = btn.closest('.scoring-cell-inner'); if (!inner) return;
         var cell = inner.querySelector('.score-value'); if (!cell) return;
         var score = cell.textContent;
+        var commentEl = inner.querySelector('.score-comment');
+        var comment = commentEl ? commentEl.value.trim() : '';
         btn.textContent = '...'; btn.disabled = true;
-        Sahk.get('Scoring').submitScoreForStation(cn, null, score, st).then(function(r) {
+        Sahk.get('Scoring').submitScoreForStation(cn, null, score, st, comment).then(function(r) {
           btn.textContent = 'Submit'; btn.disabled = false;
           if (r.success) {
             btn.style.display = 'none'; cell.setAttribute('data-dirty', '0');
+            var commentArea = inner.querySelector('.score-comment-area');
+            if (commentArea) commentArea.style.display = 'none';
+            var icon = inner.querySelector('.score-comment-icon');
+            if (icon) { icon.style.color = comment ? '#f9a825' : '#999'; if (comment) icon.classList.add('has-comment'); else icon.classList.remove('has-comment'); }
             getSI().updateScoringSubmitAllVisibility();
             if (!document.querySelector('.score-value[data-dirty="1"], .box-score-value[data-dirty="1"]')) {
               Sahk.get('Scoring').fetchAllScores().then(function() {
@@ -134,10 +152,13 @@ Sahk.register('ScoringMatrix', function() {
         dirtyCells.forEach(function(cell) {
           var st = cell.dataset.st != null ? cell.dataset.st : (cell.dataset.q || null);
           if (st == null) return;
+          var inner = cell.closest('.scoring-cell-inner');
+          var commentEl = inner ? inner.querySelector('.score-comment') : null;
           entries.push({
             candidate: cell.dataset.cn,
             station: Number(st),
-            score: cell.textContent
+            score: cell.textContent,
+            comment: commentEl ? commentEl.value.trim() : ''
           });
         });
         if (!entries.length) return;
@@ -153,6 +174,8 @@ Sahk.register('ScoringMatrix', function() {
               if (inner) {
                 var subBtn = inner.querySelector('.score-submit-btn');
                 if (subBtn) subBtn.style.display = 'none';
+                var commentArea = inner.querySelector('.score-comment-area');
+                if (commentArea) commentArea.style.display = 'none';
               }
             });
             getSI().updateScoringSubmitAllVisibility();
@@ -169,6 +192,33 @@ Sahk.register('ScoringMatrix', function() {
         });
       });
     }
+    container.querySelectorAll('.score-comment-icon').forEach(function(icon) {
+      icon.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var cn = icon.dataset.cn, st = icon.dataset.st;
+        var inner = icon.closest('.scoring-cell-inner'); if (!inner) return;
+        var area = inner.querySelector('.score-comment-area[data-cn="' + cn + '"][data-st="' + st + '"]');
+        if (!area) return;
+        if (area.style.display !== 'none') {
+          area.style.display = 'none';
+        } else {
+          area.style.display = '';
+          var ta = area.querySelector('.score-comment');
+          if (ta) setTimeout(function() { ta.focus(); }, 50);
+        }
+      });
+    });
+    container.querySelectorAll('.score-comment').forEach(function(ta) {
+      ta.addEventListener('input', function() {
+        var cn = ta.dataset.cn, st = ta.dataset.st;
+        var inner = ta.closest('.scoring-cell-inner'); if (!inner) return;
+        var cell = inner.querySelector('.score-value');
+        if (cell) cell.setAttribute('data-dirty', '1');
+        var subBtn = inner.querySelector('.score-submit-btn');
+        if (subBtn) subBtn.style.display = '';
+        getSI().updateScoringSubmitAllVisibility();
+      });
+    });
     getSI().updateScoringSubmitAllVisibility();
   }
 

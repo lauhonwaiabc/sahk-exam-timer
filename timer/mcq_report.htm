@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAHK MCQ Report Generation</title>
+<link rel="stylesheet" href="../timer_style.css">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="../config/candidate_mapping_data.js"></script>
+<style>
+#scoreContainer { max-width: 1400px; margin: 0 auto; padding: 0 20px 40px; flex-grow: 1; }
+#scoreHeader { text-align: center; margin: 20px 0; }
+#scoreHeader h1 { font-weight: 900; font-size: 1.8rem; color: #d33; letter-spacing: 1.5px; margin: 0 0 4px; }
+#scoreHeader .subtitle { font-weight: 600; color: #555; font-size: 1rem; }
+
+.card { background: #fff; border-radius: 12px; box-shadow: 0 3px 12px rgba(0,0,0,0.12); padding: 20px 25px; margin-bottom: 16px; }
+.card h2 { font-weight: 900; font-size: 1.15em; color: #1b5e20; margin-bottom: 12px; }
+.card p.hint { font-size: 0.85em; color: #666; margin-bottom: 10px; }
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field label { font-size: 0.75em; color: #666; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+.field input, .field select { padding: 7px 9px; border: 1px solid #bbb; border-radius: 4px; background: #fff; color: #222; font-size: 0.85em; font-family: inherit; }
+.field input:focus, .field select:focus { outline: none; border-color: #4caf50; box-shadow: 0 0 0 2px rgba(76,175,80,0.2); }
+
+button { padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85em; font-weight: 700; font-family: inherit; transition: background 0.3s; }
+.btn-primary { background: #1976d2; color: #fff; } .btn-primary:hover:not(:disabled) { background: #1565c0; }
+.btn-success { background: #4caf50; color: #fff; } .btn-success:hover:not(:disabled) { background: #388e3c; }
+.btn-warn { background: #ff9800; color: #fff; } .btn-warn:hover { background: #f57c00; }
+.btn-danger { background: #e53935; color: #fff; } .btn-danger:hover { background: #c62828; }
+.btn-sm { padding: 4px 10px; font-size: 0.75em; }
+button:disabled { cursor: not-allowed; opacity: 0.6; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+.status { padding: 8px 14px; border-radius: 6px; margin: 8px 0; font-size: 0.85em; display: inline-block; font-weight: 600; }
+.status.ok { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+.status.warn { background: #fff8e1; color: #ef6c00; border: 1px solid #ffe082; }
+.status.err { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+
+/* Table for step 2 (editable) */
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.table-scroll { overflow-x: auto; border: 1px solid #ddd; border-radius: 6px; max-height: 60vh; overflow-y: auto; }
+.table-scroll table { border-collapse: collapse; font-size: 0.72em; min-width: 100%; }
+.table-scroll th { background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; padding: 6px 5px; font-weight: 700; position: sticky; top: 0; z-index: 2; text-align: center; }
+.table-scroll td { border: 1px solid #e0e0e0; padding: 3px 4px; text-align: center; background: #fff; }
+.sticky-col { position: sticky; left: 0; z-index: 1; background: #f5f5f5; font-weight: 700; }
+.sticky-col-hdr { position: sticky; left: 0; z-index: 3; background: #c8e6c9; }
+.key-row td { background: #e3f2fd; font-weight: 700; }
+.key-row .sticky-col { background: #bbdefb; color: #1565c0; }
+.table-scroll input.ans-cell { width: 44px; padding: 3px 4px; border: 1px solid #ddd; border-radius: 3px; background: #fff; color: #222; font-size: 0.9em; font-family: 'Courier New', monospace; text-align: center; font-weight: 600; }
+.table-scroll input.ans-cell:focus { outline: none; border-color: #1976d2; box-shadow: 0 0 0 2px rgba(25,118,210,0.15); }
+.table-scroll input.ans-cell.correct { background: #e8f5e9; border-color: #66bb6a; color: #2e7d32; }
+.table-scroll input.ans-cell.incorrect { background: #ffebee; border-color: #ef5350; color: #c62828; }
+
+/* Candidate report preview – matches Python Word format */
+.report-preview { max-width: 960px; margin: 0 auto; }
+.report-preview .rpt-title { font-family: Arial, sans-serif; font-weight: 900; font-size: 15px; text-align: center; color: #000; margin: 0 0 2px; }
+.report-preview .rpt-subtitle { font-family: Arial, sans-serif; font-weight: 700; font-size: 12px; text-align: center; color: #000; margin: 0 0 10px; }
+
+.info-tbl { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+.info-tbl td { border: 1px solid #000; padding: 4px 8px; font-size: 12px; }
+.info-tbl .lbl { background: #f5f5f5; font-weight: 700; text-align: right; width: 180px; font-family: Arial, sans-serif; }
+.info-tbl .val { font-family: 'Courier New', monospace; font-size: 12px; text-align: left; }
+
+.score-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.score-tbl td { border: 1px solid #000; padding: 4px 8px; font-size: 11px; }
+.score-tbl .lbl { font-family: Arial, sans-serif; font-weight: 700; text-align: right; width: 220px; }
+.score-tbl .val { font-family: 'Courier New', monospace; font-size: 11px; }
+.score-tbl .big { font-family: 'Courier New', monospace; font-weight: 900; font-size: 13px; }
+
+.mcq-tbl { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+.mcq-tbl th, .mcq-tbl td { border: 1px solid #000; padding: 2px 4px; font-size: 8px; text-align: center; }
+.mcq-tbl th { font-family: Arial, sans-serif; font-weight: 700; }
+.mcq-tbl th.section { background: #1b5e20; color: #fff; font-size: 8px; }
+.mcq-tbl th.sub { background: #e8f5e9; color: #000; font-size: 7px; }
+.mcq-tbl td { font-family: 'Courier New', monospace; font-size: 8px; }
+.mcq-tbl .sec-div { border-right: 2px solid #000; }
+.mcq-tbl .qnum { font-weight: 700; background: #f9f9f9; }
+.mcq-tbl .pass { color: #2e7d32; font-weight: 900; }
+.mcq-tbl .fail { color: #c62828; font-weight: 900; }
+.mcq-tbl .hidden { color: #ccc; }
+
+.cand-nav { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+.cand-nav label { font-weight: 700; font-size: 0.9em; }
+.cand-nav select { padding: 6px 12px; border: 1px solid #bbb; border-radius: 4px; font-size: 0.9em; font-family: inherit; }
+
+#logArea { margin-top: 10px; font-size: 0.8em; color: #666; max-height: 120px; overflow-y: auto; background: #f5f5f5; padding: 6px 10px; border-radius: 4px; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap; border-bottom: 2px solid #e0e0e0; }
+.tab { padding: 7px 16px; background: #f5f5f5; border: 1px solid #ddd; border-bottom: none; color: #666; cursor: pointer; border-radius: 6px 6px 0 0; font-size: 0.82em; font-weight: 600; }
+.tab.active { background: #fff; color: #1b5e20; border-color: #4caf50 #4caf50 #fff; }
+
+@media print {
+  body { background: white; }
+  .nav-back, .card, button, .btn-group, #logArea, .toolbar, .table-scroll, .tabs { display: none !important; }
+  #reportCard { display: block !important; }
+  .report-preview { max-width: 100%; }
+}
+
+@media (max-width: 600px) {
+  .container { padding: 0 8px 20px; }
+  .card { padding: 14px; }
+  .row { flex-direction: column; }
+  .mcq-tbl th, .mcq-tbl td { font-size: 6px; padding: 1px 2px; }
+}
+</style>
+</head>
+<body>
+
+<div class="nav-back" style="text-align:center;padding:10px 0 0;">
+  <a href="../index.htm" style="color:#666;font-size:0.85em;text-decoration:none;font-weight:600;">&#8592; Back to Main Menu</a>
+</div>
+
+<div id="scoreContainer">
+
+<div id="scoreHeader">
+  <h1>MCQ Report Generation</h1>
+  <div class="subtitle">Paper III &mdash; Candidate &amp; Question Performance Analysis</div>
+</div>
+
+<!-- Step 1: Upload -->
+<div class="card" id="uploadCard">
+  <h2>1. Upload Paper_III.xls</h2>
+  <p class="hint">
+    Upload the MCQ results file. The file must contain a <code>Reports</code> sheet with columns: <code>Roll No</code>, <code>Q 1 Options</code>, <code>Q 1 Key</code>, etc.
+  </p>
+  <div class="row">
+    <div class="field">
+      <label>Select file</label>
+      <input type="file" id="mcqFile" accept=".xls,.xlsx" onchange="handleFile(this)">
+    </div>
+    <button class="btn-primary" id="parseBtn" onclick="parseFile()" disabled>Parse File</button>
+  </div>
+  <div id="uploadStatus"></div>
+</div>
+
+<!-- Step 2: Editable Table -->
+<div class="card" id="editCard" style="display:none;">
+  <h2>2. Review &amp; Amend Answers / Keys</h2>
+  <p class="hint">
+    Edit candidate answers or correct keys directly. Changes to the KEY row update correctness highlighting instantly.
+    <span style="color:#2e7d32;">Correct</span> / <span style="color:#c62828;">Incorrect</span>.
+  </p>
+  <div class="toolbar">
+    <div class="field">
+      <label>Range</label>
+      <select id="qRange" onchange="renderEditTable()">
+        <option value="1">Q1&ndash;Q50</option>
+        <option value="2">Q51&ndash;Q100</option>
+        <option value="3">Q101&ndash;Q150</option>
+      </select>
+    </div>
+    <span id="candCount" style="font-weight:700;color:#1b5e20;"></span>
+    <span style="flex:1;"></span>
+    <button class="btn-warn btn-sm" onclick="resetKeys()">Reset Keys from Data</button>
+    <button class="btn-danger btn-sm" onclick="clearAll()">Clear All Answers</button>
+  </div>
+  <div class="table-scroll" id="answerTable"></div>
+</div>
+
+<!-- Step 3: Report -->
+<div class="card" id="reportCard" style="display:none;">
+  <h2>3. Generate Report</h2>
+  <p class="hint">Generate per-candidate MCQ reports matching the Python sahk_report output format.</p>
+  <div class="btn-group">
+    <button class="btn-success" id="genBtn" onclick="generateReport()">Generate Report</button>
+    <button class="btn-primary" id="exportBtn" onclick="exportToDocx()" disabled>Export All as .docx</button>
+  </div>
+  <div id="logArea" style="display:none;"></div>
+  <div id="reportContainer" style="margin-top:14px;"></div>
+</div>
+
+</div>
+
+<script>
+var REPORT_YEAR = 2026;
+var gData = { candidates: [], questions: 0, keyRow: {} };
+var selectedFile = null;
+var gReport = null;
+
+function $(id) { return document.getElementById(id); }
+
+function handleFile(input) {
+  selectedFile = input.files[0];
+  $('parseBtn').disabled = !selectedFile;
+  $('uploadStatus').innerHTML = selectedFile
+    ? '<span class="status ok">Selected: ' + esc(selectedFile.name) + '</span>'
+    : '';
+}
+
+function parseFile() {
+  if (!selectedFile) return;
+  $('uploadStatus').innerHTML = '<span class="status warn">Parsing...</span>';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      var sheet = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      if (rows.length < 2) { err('File has insufficient rows.'); return; }
+
+      var hdr = rows[0];
+      var col = {}; for (var i = 0; i < hdr.length; i++) col[String(hdr[i]).trim()] = i;
+      var rollIdx = col['Roll No'];
+      if (rollIdx === undefined) { err('"Roll No" column not found.'); return; }
+
+      var nQ = 0, oI = {}, kI = {};
+      for (var qi = 1; qi <= 200; qi++) {
+        var oc = 'Q ' + qi + ' Options', kc = 'Q ' + qi + ' Key';
+        if (col.hasOwnProperty(oc) && col.hasOwnProperty(kc)) { oI[qi] = col[oc]; kI[qi] = col[kc]; nQ = qi; }
+        else break;
+      }
+      if (!nQ) { err('No question columns found.'); return; }
+
+      var cands = [];
+      for (var r = 1; r < rows.length; r++) {
+        var row = rows[r], rn = String(row[rollIdx] || '').trim();
+        if (!rn) continue;
+        var ans = {};
+        for (var qi2 = 1; qi2 <= nQ; qi2++)
+          ans[qi2] = { option: String(row[oI[qi2]] || '').trim(), key: String(row[kI[qi2]] || '').trim() };
+        cands.push({ rollNo: rn, answers: ans });
+      }
+      if (!cands.length) { err('No candidate rows found.'); return; }
+
+      var kRow = {};
+      for (var qi3 = 1; qi3 <= nQ; qi3++) {
+        var cnts = {}; for (var c = 0; c < cands.length; c++) { var kk = cands[c].answers[qi3].key; if (kk && kk !== '-') cnts[kk] = (cnts[kk] || 0) + 1; }
+        var best = '', bc = 0; for (var kkk in cnts) if (cnts[kkk] > bc) { bc = cnts[kkk]; best = kkk; }
+        kRow[qi3] = best;
+      }
+
+      gData = { candidates: cands, questions: nQ, keyRow: kRow };
+      $('editCard').style.display = 'block';
+      $('reportCard').style.display = 'block';
+      $('candCount').textContent = cands.length + ' candidates, ' + nQ + ' questions';
+      renderEditTable();
+      $('uploadStatus').innerHTML = '<span class="status ok">Loaded ' + cands.length + ' candidates, ' + nQ + ' items from &ldquo;' + wb.SheetNames[0] + '&rdquo;.</span>';
+      $('editCard').scrollIntoView({ behavior: 'smooth' });
+    } catch (er) { err(er.message); }
+  };
+  reader.onerror = function() { err('File read failed.'); };
+  reader.readAsArrayBuffer(selectedFile);
+}
+
+function err(msg) { $('uploadStatus').innerHTML = '<span class="status err">Error: ' + esc(msg) + '</span>'; }
+
+// ── Editable Table ──
+
+function renderEditTable() {
+  var panel = $('answerTable');
+  if (!gData.candidates.length) { panel.innerHTML = ''; return; }
+  var rv = parseInt($('qRange').value);
+  var qS, qE;
+  if (rv === 1) { qS = 1; qE = 50; }
+  else if (rv === 2) { qS = 51; qE = 100; }
+  else { qS = 101; qE = gData.questions; }
+  qE = Math.min(qE, gData.questions);
+  var n = gData.candidates.length;
+
+  var h = '<table><thead><tr><th class="sticky-col sticky-col-hdr">Candidate</th>';
+  for (var qi = qS; qi <= qE; qi++) h += '<th>Q' + qi + ' Opt</th><th>Q' + qi + ' Key</th>';
+  h += '</tr></thead><tbody>';
+
+  h += '<tr class="key-row"><td class="sticky-col">CORRECT KEY</td>';
+  for (var qi2 = qS; qi2 <= qE; qi2++) {
+    var kv = gData.keyRow[qi2] || '';
+    h += '<td><input class="ans-cell" data-q="' + qi2 + '" data-type="key" value="' + escAttr(kv) + '" oninput="onKeyEdit(' + qi2 + ',this.value)"></td>';
+    h += '<td style="background:#e3f2fd;"></td>';
+  }
+  h += '</tr>';
+
+  for (var ci = 0; ci < n; ci++) {
+    var cand = gData.candidates[ci];
+    h += '<tr><td class="sticky-col">' + esc(cand.rollNo) + '</td>';
+    for (var qi3 = qS; qi3 <= qE; qi3++) {
+      var opt2 = cand.answers[qi3] ? cand.answers[qi3].option : '';
+      var key2 = gData.keyRow[qi3] || '';
+      var ok = opt2 && key2 && opt2.toUpperCase() === key2.toUpperCase();
+      var cls2 = opt2 ? (ok ? 'correct' : 'incorrect') : '';
+      h += '<td><input class="ans-cell ' + cls2 + '" data-ci="' + ci + '" data-q="' + qi3 + '" data-type="opt" value="' + escAttr(opt2) + '" oninput="onOptEdit(' + ci + ',' + qi3 + ',this)"></td>';
+      h += '<td></td>';
+    }
+    h += '</tr>';
+  }
+  h += '</tbody></table>';
+  panel.innerHTML = h;
+}
+
+function onOptEdit(ci, qi, el) {
+  var v = el.value.trim();
+  gData.candidates[ci].answers[qi].option = v;
+  var k2 = gData.keyRow[qi] || '';
+  var ok = v && k2 && v.toUpperCase() === k2.toUpperCase();
+  el.classList.remove('correct', 'incorrect');
+  if (v) el.classList.add(ok ? 'correct' : 'incorrect');
+}
+
+function onKeyEdit(qi, val) {
+  gData.keyRow[qi] = val.trim().toUpperCase();
+  var opts = document.querySelectorAll('input[data-q="' + qi + '"][data-type="opt"]');
+  for (var i = 0; i < opts.length; i++) {
+    var el = opts[i], ov = el.value.trim(), kk = gData.keyRow[qi] || '';
+    var ok = ov && kk && ov.toUpperCase() === kk.toUpperCase();
+    el.classList.remove('correct', 'incorrect');
+    if (ov) el.classList.add(ok ? 'correct' : 'incorrect');
+  }
+  var keys = document.querySelectorAll('input[data-q="' + qi + '"][data-type="key"]');
+  for (var j = 0; j < keys.length; j++) {
+    if (keys[j].value.trim().toUpperCase() !== (gData.keyRow[qi] || ''))
+      keys[j].value = gData.keyRow[qi] || '';
+  }
+}
+
+function resetKeys() {
+  if (!gData.candidates.length) return;
+  for (var qi = 1; qi <= gData.questions; qi++) {
+    var cnt = {}; for (var ci = 0; ci < gData.candidates.length; ci++) {
+      var kk = gData.candidates[ci].answers[qi].key; if (kk && kk !== '-') cnt[kk] = (cnt[kk] || 0) + 1;
+    }
+    var best = '', bc = 0; for (var kkk in cnt) if (cnt[kkk] > bc) { bc = cnt[kkk]; best = kkk; }
+    gData.keyRow[qi] = best;
+  }
+  renderEditTable();
+}
+
+function clearAll() {
+  if (!confirm('Clear ALL candidate answers? This cannot be undone.')) return;
+  for (var ci = 0; ci < gData.candidates.length; ci++)
+    for (var qi = 1; qi <= gData.questions; qi++)
+      gData.candidates[ci].answers[qi].option = '';
+  renderEditTable();
+}
+
+// ── Candidate Name Lookup ──
+
+function lookup(id) {
+  var rn = String(id).trim();
+  if (typeof CANDIDATE_MAPPING !== 'undefined') {
+    if (CANDIDATE_MAPPING[rn]) return CANDIDATE_MAPPING[rn];
+    for (var k in CANDIDATE_MAPPING) if (CANDIDATE_MAPPING[k].abbrId === rn) return CANDIDATE_MAPPING[k];
+    for (var k2 in CANDIDATE_MAPPING) {
+      if (rn.length >= 2 && k2.slice(-2) === rn.slice(-2)) return CANDIDATE_MAPPING[k2];
+      if (rn.length >= 3 && k2.slice(-3) === rn.slice(-3)) return CANDIDATE_MAPPING[k2];
+    }
+  }
+  return { name: rn, fullName: rn, abbrId: rn };
+}
+
+// ── Statistics ──
+
+function avg(arr) { if (!arr.length) return 0; var s = 0; for (var i = 0; i < arr.length; i++) s += arr[i]; return s / arr.length; }
+function varN(arr, m) { if (arr.length < 2) return 0; if (m === undefined) m = avg(arr); var ss = 0; for (var i = 0; i < arr.length; i++) ss += (arr[i] - m) * (arr[i] - m); return ss / arr.length; }
+function sdN(arr, m) { if (arr.length < 2) return 0; if (m === undefined) m = avg(arr); var ss = 0; for (var i = 0; i < arr.length; i++) ss += (arr[i] - m) * (arr[i] - m); return Math.sqrt(ss / (arr.length - 1)); }
+function pctN(arr, p) { if (!arr.length) return 0; var s = arr.slice().sort(function(a,b) { return a - b; }); var idx = (p / 100) * (s.length - 1); var lo = Math.floor(idx), hi = Math.ceil(idx); if (lo === hi) return s[lo]; return s[lo] + (s[hi] - s[lo]) * (idx - lo); }
+
+// ── Report Generation ──
+
+function generateReport() {
+  var cn = gData.candidates, nQ = gData.questions, kR = gData.keyRow, n = cn.length;
+
+  // Score each candidate
+  var allSc = [];
+  for (var ci = 0; ci < n; ci++) {
+    var sc = 0;
+    for (var qi = 1; qi <= nQ; qi++) {
+      var o = cn[ci].answers[qi].option, kk = kR[qi] || '';
+      if (o && kk && o.toUpperCase() === kk.toUpperCase()) sc++;
+    }
+    allSc.push(sc);
+  }
+
+  var mScore = avg(allSc);
+  var sScore = sdN(allSc, mScore);
+  var p25 = pctN(allSc, 25), p50 = pctN(allSc, 50), p75 = pctN(allSc, 75);
+  var mn = Math.min.apply(null, allSc), mx = Math.max.apply(null, allSc);
+
+  // KR-20
+  var totVar = varN(allSc, mScore);
+  var itemVarSum = 0;
+  for (var qi2 = 1; qi2 <= nQ; qi2++) {
+    var mks2 = []; for (var ci2 = 0; ci2 < n; ci2++) { var o2 = cn[ci2].answers[qi2].option, kk2 = kR[qi2] || ''; mks2.push(o2 && kk2 && o2.toUpperCase() === kk2.toUpperCase() ? 1 : 0); }
+    itemVarSum += varN(mks2, avg(mks2));
+  }
+  var kr20 = totVar > 0 ? (nQ / (nQ - 1)) * (1 - itemVarSum / totVar) : 0;
+
+  // Per-question cohort correct %
+  var qCorPct = {};
+  for (var qi3 = 1; qi3 <= nQ; qi3++) {
+    var cc = 0; for (var ci3 = 0; ci3 < n; ci3++) { var o3 = cn[ci3].answers[qi3].option, kk3 = kR[qi3] || ''; if (o3 && kk3 && o3.toUpperCase() === kk3.toUpperCase()) cc++; }
+    qCorPct[qi3] = n > 0 ? (cc / n * 100) : 0;
+  }
+
+  gReport = {
+    candidates: cn, n: n, nQ: nQ, keyRow: kR,
+    allSc: allSc, mean: mScore, std: sScore, kr20: kr20,
+    p25: p25, p50: p50, p75: p75, min: mn, max: mx,
+    qCorPct: qCorPct
+  };
+
+  renderUI();
+  $('exportBtn').disabled = false;
+  $('logArea').style.display = 'block';
+  log('Report generated: ' + n + ' candidates, ' + nQ + ' items, KR-20 = ' + kr20.toFixed(4));
+}
+
+function renderUI() {
+  var r = gReport;
+  var sorted = [];
+  for (var i = 0; i < r.n; i++) sorted.push({ rollNo: r.candidates[i].rollNo, score: r.allSc[i], idx: i });
+  sorted.sort(function(a,b) { return b.score - a.score; });
+
+  var ct = $('reportContainer');
+  var h = '';
+  h += '<div class="tabs">';
+  h += '<span class="tab active" data-tab="cand" onclick="switchTab(this,\'cand\')">Candidate Report</span>';
+  h += '<span class="tab" data-tab="qa" onclick="switchTab(this,\'qa\')">Question Analysis</span>';
+  h += '<span class="tab" data-tab="overview" onclick="switchTab(this,\'overview\')">Overview &amp; Screening</span>';
+  h += '</div>';
+
+  // Panel: Candidate Report
+  h += '<div class="report-panel" id="rp-cand">';
+  h += '<div class="cand-nav"><label>Candidate:</label>';
+  h += '<select id="candSel" onchange="renderCandReport()">';
+  for (var i2 = 0; i2 < sorted.length; i2++)
+    h += '<option value="' + sorted[i2].idx + '">' + sorted[i2].rollNo + ' (' + sorted[i2].score + '/' + r.nQ + ')</option>';
+  h += '</select></div>';
+  h += '<div id="candPreview"></div>';
+  h += '</div>';
+
+  // Panel: Question Analysis
+  h += '<div class="report-panel" id="rp-qa" style="display:none;">';
+  h += '<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:0.78em;width:100%;">';
+  h += '<thead><tr style="background:#e8f5e9;"><th>Q#</th><th>Correct %</th><th>Key</th><th>Option Freq</th></tr></thead><tbody>';
+  for (var qi4 = 1; qi4 <= r.nQ; qi4++) {
+    var pct = r.qCorPct[qi4] || 0;
+    var key4 = r.keyRow[qi4] || '';
+    var freq = {}; for (var ci4 = 0; ci4 < r.n; ci4++) { var o4 = r.candidates[ci4].answers[qi4].option; if (o4) { var parts = o4.replace(/,/g,' ').split(/\s+/); for (var p2 = 0; p2 < parts.length; p2++) { var pt = parts[p2].trim().toUpperCase(); if (pt) freq[pt] = (freq[pt] || 0) + 1; } } }
+    var freqStr = ''; for (var oo in freq) freqStr += oo + ':' + freq[oo] + ' ';
+    var dCls = pct > 90 ? 'color:#c62828;' : pct > 70 ? 'color:#ef6c00;' : pct >= 30 ? 'color:#2e7d32;' : 'color:#c62828;';
+    h += '<tr><td style="font-weight:700;text-align:center;">Q' + qi4 + '</td>';
+    h += '<td style="' + dCls + 'text-align:center;font-weight:700;">' + pct.toFixed(0) + '%</td>';
+    h += '<td style="color:#1565c0;font-weight:700;text-align:center;">' + (key4 || '-') + '</td>';
+    h += '<td style="font-size:0.8em;">' + freqStr.trim() + '</td></tr>';
+  }
+  h += '</tbody></table></div></div>';
+
+  // Panel: Overview
+  var nEasy = 0, nHard = 0;
+  for (var qi5 = 1; qi5 <= r.nQ; qi5++) {
+    var pct5 = r.qCorPct[qi5] || 0;
+    if (pct5 > 90) nEasy++;
+    if (pct5 < 30) nHard++;
+  }
+  var krLbl = r.kr20 > 0.90 ? 'Excellent' : r.kr20 > 0.80 ? 'Good' : r.kr20 > 0.70 ? 'Acceptable' : 'Questionable';
+  h += '<div class="report-panel" id="rp-overview" style="display:none;">';
+  h += '<table style="border-collapse:collapse;font-size:0.85em;margin:0 auto;"><tbody>';
+  h += '<tr><td style="text-align:right;padding:5px 10px;font-weight:700;">Total Candidates:</td><td style="padding:5px 10px;">' + r.n + '</td></tr>';
+  h += '<tr><td style="text-align:right;padding:5px 10px;font-weight:700;">Total Items:</td><td style="padding:5px 10px;">' + r.nQ + '</td></tr>';
+  h += '<tr><td style="text-align:right;padding:5px 10px;font-weight:700;">Mean Score:</td><td style="padding:5px 10px;">' + r.mean.toFixed(2) + ' / ' + r.nQ + '</td></tr>';
+  h += '<tr><td style="text-align:right;padding:5px 10px;font-weight:700;">Std Dev:</td><td style="padding:5px 10px;">' + r.std.toFixed(2) + '</td></tr>';
+  h += '<tr><td style="text-align:right;padding:5px 10px;font-weight:700;">Score Range:</td><td style="padding:5px 10px;">' + r.min + ' ' + r.max + '</td></tr>';
+  h += '<tr><td style="text-align:right;padding:5px 10px;font-weight:700;">KR-20:</td><td style="padding:5px 10px;color:' + (r.kr20 > 0.80 ? '#2e7d32' : r.kr20 > 0.70 ? '#ef6c00' : '#c62828') + ';font-weight:700;">' + r.kr20.toFixed(4) + ' (' + krLbl + ')</td></tr>';
+  h += '<tr><td style="text-align:right;padding:5px 10px;font-weight:700;">Too Easy (&gt;90%):</td><td style="padding:5px 10px;color:' + (nEasy ? '#ef6c00' : '#2e7d32') + ';">' + nEasy + '</td></tr>';
+  h += '<tr><td style="text-align:right;padding:5px 10px;font-weight:700;">Too Hard (&lt;30%):</td><td style="padding:5px 10px;color:' + (nHard ? '#ef6c00' : '#2e7d32') + ';">' + nHard + '</td></tr>';
+  h += '</tbody></table>';
+  h += '<br><div id="histContainer"></div>';
+  h += '</div>';
+
+  ct.innerHTML = h;
+  renderCandReport();
+  ct.scrollIntoView({ behavior: 'smooth' });
+}
+
+function switchTab(el, name) {
+  var ct = $('reportContainer');
+  var tabs = ct.querySelectorAll('.tab');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+  el.classList.add('active');
+  var panels = ct.querySelectorAll('.report-panel');
+  for (var j = 0; j < panels.length; j++) panels[j].style.display = 'none';
+  var panel = $('rp-' + name);
+  if (panel) panel.style.display = 'block';
+  if (name === 'cand') renderCandReport();
+}
+
+function renderCandReport() {
+  var r = gReport;
+  if (!r) return;
+  var sel = $('candSel');
+  if (!sel) return;
+  var ci = parseInt(sel.value);
+  var cand = r.candidates[ci], score = r.allSc[ci];
+  var zScore = r.std > 0 ? (score - r.mean) / r.std : 0;
+  var minfo = lookup(cand.rollNo);
+  var div = $('candPreview');
+
+  var h = '<div class="report-preview">';
+  // Title
+  h += '<div class="rpt-title">SAHK Final Examination Preparation Course ' + REPORT_YEAR + ' \u2013 Paper III</div>';
+  h += '<div class="rpt-subtitle">Multiple Choice Questions \u2013 Candidate Report</div>';
+
+  // Candidate info table
+  h += '<table class="info-tbl">';
+  h += '<tr><td class="lbl">Candidate ID</td><td class="val">' + esc(cand.rollNo) + '</td></tr>';
+  h += '<tr><td class="lbl">Name</td><td class="val">' + esc(minfo.name) + '</td></tr>';
+  h += '<tr><td class="lbl">Full Name</td><td class="val">' + esc(minfo.fullName) + '</td></tr>';
+  h += '</table>';
+
+  // Score summary table (matching Python format)
+  h += '<table class="score-tbl">';
+  h += '<tr><td class="lbl">Total Score:</td><td class="big">' + score + ' (out of ' + r.nQ + ')</td></tr>';
+  h += '<tr><td class="lbl">Mean:</td><td class="val">' + r.mean.toFixed(2) + '</td></tr>';
+  h += '<tr><td class="lbl">SD:</td><td class="val">' + r.std.toFixed(2) + '</td></tr>';
+  h += '<tr><td class="lbl" style="font-style:italic;">Benchmark performance:</td><td class="val"></td></tr>';
+  h += '<tr><td class="lbl">  Mean (&plusmn;SD):</td><td class="val">' + r.mean.toFixed(2) + ' (&plusmn; ' + r.std.toFixed(2) + ')</td></tr>';
+  h += '<tr><td class="lbl">  Min/25%/Med/75%/Max:</td><td class="val">' + r.min + ' / ' + r.p25.toFixed(1) + ' / ' + r.p50.toFixed(1) + ' / ' + r.p75.toFixed(1) + ' / ' + r.max + '</td></tr>';
+  h += '</table>';
+
+  // 3-column question grid (matching Python format exactly)
+  h += '<table class="mcq-tbl">';
+  // Header row 1: merged section labels
+  h += '<tr>';
+  h += '<th class="section" colspan="5">Q1&ndash;50</th>';
+  h += '<th class="section" colspan="5">Q51&ndash;100</th>';
+  h += '<th class="section" colspan="5">Q101&ndash;150</th>';
+  h += '</tr>';
+  // Header row 2: sub-headers
+  var subHdrs = ['Question', 'Your option', 'Answer', 'Correct %', 'Result'];
+  h += '<tr>';
+  for (var s2 = 0; s2 < 3; s2++)
+    for (var sh = 0; sh < 5; sh++)
+      h += '<th class="sub">' + subHdrs[sh] + '</th>';
+  h += '</tr>';
+
+  // Data rows (1-50)
+  for (var row = 1; row <= 50; row++) {
+    h += '<tr>';
+    for (var sec = 0; sec < 3; sec++) {
+      var qn = row + sec * 50;
+      if (qn > r.nQ) { h += '<td colspan="5"></td>'; continue; }
+      var o2 = cand.answers[qn].option;
+      var k2 = r.keyRow[qn] || '';
+      var ok = o2 && k2 && o2.toUpperCase() === k2.toUpperCase();
+      var pct2 = r.qCorPct[qn] || 0;
+      var secCls = (sec < 2 && (sec === 0 ? row === 50 : row === 50)) ? 'sec-div' : '';
+      var actSecCls = (sec < 2) ? 'sec-div' : '';
+      h += '<td class="qnum">' + qn + '</td>';
+      h += '<td>' + (o2 || '-') + '</td>';
+      h += '<td class="' + (ok ? 'hidden' : '') + '">' + (ok ? '-' : (k2 || '-')) + '</td>';
+      h += '<td>' + pct2.toFixed(0) + '%</td>';
+      h += '<td class="' + (ok ? 'pass' : 'fail') + '">' + (ok ? 'Y' : 'N') + '</td>';
+    }
+    h += '</tr>';
+  }
+  h += '</table>';
+
+  h += '<div style="text-align:center;font-weight:700;font-size:0.85em;margin-bottom:4px;">Score Distribution</div>';
+  h += '<div id="histPreview"></div>';
+  h += '</div>';
+
+  div.innerHTML = h;
+  drawHistogram(r.allSc, r.min, r.max, r.mean, score, 'histPreview');
+}
+
+function drawHistogram(scores, mn, mx, meanVal, candSc, elId) {
+  var el = document.getElementById(elId); if (!el) return;
+  var c = document.createElement('canvas');
+  c.width = 520; c.height = 180;
+  c.style.maxWidth = '100%';
+  c.style.display = 'block';
+  c.style.margin = '0 auto';
+  var ctx = c.getContext('2d');
+  var m = { top: 22, right: 15, bottom: 28, left: 42 };
+  var pw = 520 - m.left - m.right;
+  var ph = 180 - m.top - m.bottom;
+
+  var uniq = [], freq = {};
+  for (var v = mn; v <= mx; v++) { uniq.push(v); freq[v] = 0; }
+  for (var i = 0; i < scores.length; i++) { freq[scores[i]]++; }
+  var nBars = uniq.length;
+  if (nBars === 0) { el.innerHTML = ''; el.appendChild(c); return; }
+  var maxCount = Math.max.apply(null, Object.keys(freq).map(function(k){return freq[k];})) || 1;
+  var barW = Math.min(Math.floor(pw / nBars) - 2, 40);
+
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 520, 180);
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.beginPath();
+  ctx.moveTo(m.left, m.top); ctx.lineTo(m.left, m.top + ph); ctx.lineTo(m.left + pw, m.top + ph); ctx.stroke();
+
+  for (var b = 0; b < nBars; b++) {
+    var sc = uniq[b], cnt = freq[sc];
+    var bh = (cnt / maxCount) * ph;
+    var bx = m.left + b * (pw / nBars) + (pw / nBars - barW) / 2;
+    var by = m.top + ph - bh;
+    ctx.fillStyle = '#4682B4'; ctx.globalAlpha = 0.7; ctx.fillRect(bx, by, barW, bh); ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#333'; ctx.strokeRect(bx, by, barW, bh);
+    if (cnt > 0) { ctx.fillStyle = '#333'; ctx.font = '9px Courier New'; ctx.textAlign = 'center'; ctx.fillText(cnt, bx + barW / 2, by - 4); }
+    ctx.fillStyle = '#333'; ctx.font = '8px Arial'; ctx.textAlign = 'center'; ctx.fillText(sc, bx + barW / 2, m.top + ph + 14);
+  }
+
+  if (mx > mn) {
+    var meanIdx = meanVal - mn;
+    var mxLn = m.left + meanIdx * (pw / nBars) + pw / nBars / 2;
+    ctx.strokeStyle = '#c62828'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(mxLn, m.top); ctx.lineTo(mxLn, m.top + ph); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#c62828'; ctx.font = 'bold 9px Arial'; ctx.textAlign = 'left'; ctx.fillText('Mean=' + meanVal.toFixed(1), mxLn + 4, m.top - 4);
+    if (candSc !== undefined && candSc !== null) {
+      var candIdx = candSc - mn;
+      var cxLn = m.left + candIdx * (pw / nBars) + pw / nBars / 2;
+      ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cxLn, m.top); ctx.lineTo(cxLn, m.top + ph); ctx.stroke();
+      ctx.fillStyle = '#2e7d32'; ctx.font = 'bold 9px Arial'; ctx.textAlign = 'right'; ctx.fillText('You=' + candSc, cxLn - 4, m.top - 4);
+    }
+  }
+
+  ctx.fillStyle = '#333'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.fillText('Score Distribution', 520 / 2, m.top - 6);
+  ctx.save(); ctx.translate(12, m.top + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = '#333'; ctx.font = '9px Arial'; ctx.textAlign = 'center'; ctx.fillText('Count', 0, 0); ctx.restore();
+
+  el.innerHTML = ''; el.appendChild(c);
+}
+
+function drawHistogramCanvas(scores, candidateScore, meanVal, mn, mx, width, height) {
+  var c = document.createElement('canvas'); c.width = width * 2; c.height = height * 2;
+  c.style.width = width + 'px'; c.style.height = height + 'px';
+  var ctx = c.getContext('2d'); ctx.scale(2, 2);
+  var m = { top: 25, right: 15, bottom: 30, left: 45 };
+  var pw = width - m.left - m.right;
+  var ph = height - m.top - m.bottom;
+
+  var uniq = [], freq = {};
+  for (var v = mn; v <= mx; v++) { uniq.push(v); freq[v] = 0; }
+  for (var i = 0; i < scores.length; i++) { freq[scores[i]]++; }
+  var nBars = uniq.length;
+  if (nBars === 0) return c;
+  var maxCount = Math.max.apply(null, Object.keys(freq).map(function(k){return freq[k];})) || 1;
+  var barW = Math.min(Math.floor(pw / nBars) - 2, 40);
+
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.beginPath();
+  ctx.moveTo(m.left, m.top); ctx.lineTo(m.left, m.top + ph); ctx.lineTo(m.left + pw, m.top + ph); ctx.stroke();
+
+  for (var b = 0; b < nBars; b++) {
+    var sc = uniq[b], cnt = freq[sc];
+    var bh = (cnt / Math.max(maxCount, 1)) * ph;
+    var bx = m.left + b * (pw / nBars) + (pw / nBars - barW) / 2;
+    var by = m.top + ph - bh;
+    ctx.fillStyle = '#4682B4'; ctx.globalAlpha = 0.7; ctx.fillRect(bx, by, barW, bh); ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#333'; ctx.strokeRect(bx, by, barW, bh);
+    if (cnt > 0) { ctx.fillStyle = '#333'; ctx.font = '10px Courier New'; ctx.textAlign = 'center'; ctx.fillText(cnt, bx + barW / 2, by - 4); }
+    ctx.fillStyle = '#333'; ctx.font = '9px Arial'; ctx.textAlign = 'center'; ctx.fillText(sc, bx + barW / 2, m.top + ph + 16);
+  }
+  if (mx > mn) {
+    var meanIdxD = meanVal - mn;
+    var mxLnD = m.left + meanIdxD * (pw / nBars) + pw / nBars / 2;
+    ctx.strokeStyle = '#c62828'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(mxLnD, m.top); ctx.lineTo(mxLnD, m.top + ph); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#c62828'; ctx.font = '9px Arial'; ctx.textAlign = 'left'; ctx.fillText('Mean=' + meanVal.toFixed(1), mxLnD + 4, m.top - 4);
+    if (candidateScore !== null && candidateScore !== undefined) {
+      var candIdxD = candidateScore - mn;
+      var cxLnD = m.left + candIdxD * (pw / nBars) + pw / nBars / 2;
+      ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cxLnD, m.top); ctx.lineTo(cxLnD, m.top + ph); ctx.stroke();
+      ctx.fillStyle = '#2e7d32'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'right'; ctx.fillText('You=' + candidateScore, cxLnD - 4, m.top - 4);
+    }
+  }
+  ctx.fillStyle = '#333'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.fillText('Score Distribution', width / 2, m.top - 6);
+  ctx.save(); ctx.translate(12, m.top + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = '#333'; ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillText('Count', 0, 0); ctx.restore();
+  return c;
+}
+
+function canvasToImageEl(canvas, imgId, widthEmu, heightEmu) {
+  var dataUrl = canvas.toDataURL('image/png');
+  return {
+    id: imgId,
+    base64: dataUrl,
+    widthEmu: widthEmu,
+    heightEmu: heightEmu,
+    xml: '<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
+      '<wp:extent cx="' + widthEmu + '" cy="' + heightEmu + '"/>' +
+      '<wp:docPr id="' + imgId + '" name="chart' + imgId + '.png"/>' +
+      '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+      '<pic:pic><pic:nvPicPr><pic:cNvPr id="' + imgId + '" name="chart' + imgId + '.png"/>' +
+      '<pic:cNvPicPr/></pic:nvPicPr><pic:blipFill>' +
+      '<a:blip r:embed="rId' + imgId + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+      '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + widthEmu + '" cy="' + heightEmu + '"/></a:xfrm>' +
+      '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>' +
+      '</a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>'
+  };
+}
+
+// ── .docx Export ──
+
+function exportToDocx() {
+  if (!gReport) return;
+  log('Generating .docx...');
+  var r = gReport;
+  var sorted = [];
+  for (var i = 0; i < r.n; i++) sorted.push({ rollNo: r.candidates[i].rollNo, score: r.allSc[i], idx: i });
+  sorted.sort(function(a,b) { return b.score - a.score; });
+
+  try {
+    var images = [];
+    var xml = buildDocx(r, sorted, images);
+    buildZip(images, xml, 'mcq_candidate_report.docx');
+  } catch (err) {
+    log('Export failed: ' + err.message);
+  }
+}
+
+function buildZip(images, xmlBody, filename) {
+  var zip = new JSZip();
+
+  var ctXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>';
+  if (images.length > 0) ctXml += '<Default Extension="png" ContentType="image/png"/>';
+  ctXml += '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>';
+  zip.file('[Content_Types].xml', ctXml);
+
+  zip.folder('_rels').file('.rels',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+    '</Relationships>');
+
+  var docRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+  for (var j = 0; j < images.length; j++)
+    docRels += '<Relationship Id="rId' + (j + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image' + (j + 1) + '.png"/>';
+  docRels += '</Relationships>';
+  var wf = zip.folder('word');
+  wf.folder('_rels').file('document.xml.rels', docRels);
+
+  if (images.length > 0) {
+    var mf = wf.folder('media');
+    for (var k = 0; k < images.length; k++) {
+      var b64 = images[k].base64;
+      if (b64.indexOf(',') !== -1) b64 = b64.split(',')[1];
+      mf.file('image' + (k + 1) + '.png', b64, { base64: true });
+    }
+  }
+
+  var docXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" ' +
+    'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" ' +
+    'xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+    'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" ' +
+    'xmlns:v="urn:schemas-microsoft-com:vml" ' +
+    'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ' +
+    'xmlns:w10="urn:schemas-microsoft-com:office:word" ' +
+    'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
+    'xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" ' +
+    'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+    'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+    '<w:documentDefaults><w:pPrDefault><w:pPr><w:spacing w:after="0" w:before="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:documentDefaults>' +
+    '<w:body>' + xmlBody + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="0" w:footer="0"/></w:sectPr>' +
+    '</w:body></w:document>';
+  wf.file('document.xml', docXml);
+
+  zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+    .then(function(blob) { download(blob, filename); log('.docx saved for ' + (images.length || 'all') + ' candidates.'); })
+    .catch(function(e) { log('Zip error: ' + e.message); });
+}
+
+function buildDocx(r, sorted, images) {
+  var body = '';
+  var imgId = 0;
+
+  for (var i = 0; i < sorted.length; i++) {
+    if (i > 0) body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+    var c = sorted[i], cand = r.candidates[c.idx], score = c.score;
+    var mi = lookup(cand.rollNo);
+
+    body += boldP('SAHK Final Examination Preparation Course ' + REPORT_YEAR + ' \u2013 Paper III', 12, 'center');
+    body += boldP('Multiple Choice Questions \u2013 Candidate Report', 10, 'center');
+    body += emptyP2();
+
+    // Info table
+    body += docTbl2(9000, 2);
+    body += docRow2([docCell2('Candidate ID', true), docCell2(cand.rollNo, false, 'Courier New')], [true, false]);
+    body += docRow2([docCell2('Name', true), docCell2(mi.name, false, 'Courier New')], [true, false]);
+    body += docRow2([docCell2('Full Name', true), docCell2(mi.fullName, false, 'Courier New')], [true, false]);
+    body += '</w:tbl>';
+
+    body += emptyP2();
+
+    // Score table
+    body += docTbl2(9000, 2);
+    var rows = [
+      ['Total Score:', score + ' (out of ' + r.nQ + ')', true, true],
+      ['Mean:', r.mean.toFixed(2), false, false],
+      ['SD:', r.std.toFixed(2), false, false],
+      ['Benchmark performance:', '', false, false],
+      ['  Mean (±SD):', r.mean.toFixed(2) + ' (± ' + r.std.toFixed(2) + ')', false, false],
+      ['  Min/25%/Med/75%/Max:', r.min + ' / ' + r.p25.toFixed(1) + ' / ' + r.p50.toFixed(1) + ' / ' + r.p75.toFixed(1) + ' / ' + r.max, false, false]
+    ];
+    for (var ri = 0; ri < rows.length; ri++) {
+      body += docRow2([docCell2(rows[ri][0], true, 'Arial', false, rows[ri][2] ? 24 : 20),
+        docCell2(rows[ri][1], rows[ri][3], 'Courier New', false, rows[ri][2] ? 24 : 20)], [true, false]);
+    }
+    body += '</w:tbl>';
+    body += emptyP2();
+
+    // MCQ grid &mdash; 15 cols, 100% width (5000 pct)
+    body += '<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="5000" w:type="pct"/>' +
+      '<w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+      '<w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+      '<w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+      '<w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+      '<w:insideH w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+      '<w:insideV w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tblBorders></w:tblPr><w:tblGrid>';
+    body += '<w:gridCol w:w="280"/><w:gridCol w:w="340"/><w:gridCol w:w="340"/><w:gridCol w:w="460"/><w:gridCol w:w="280"/>';
+    body += '<w:gridCol w:w="280"/><w:gridCol w:w="340"/><w:gridCol w:w="340"/><w:gridCol w:w="460"/><w:gridCol w:w="280"/>';
+    body += '<w:gridCol w:w="280"/><w:gridCol w:w="340"/><w:gridCol w:w="340"/><w:gridCol w:w="460"/><w:gridCol w:w="280"/>';
+    body += '</w:tblGrid>';
+
+    // Header row 1: section labels (merged)
+    body += '<w:tr><w:trPr><w:trHeight w:val="170" w:hRule="atLeast"/></w:trPr>';
+    ['Q1-50', 'Q51-100', 'Q101-150'].forEach(function(lbl) {
+      body += '<w:tc><w:tcPr><w:gridSpan w:val="5"/><w:shd w:val="clear" w:color="auto" w:fill="1B5E20"/><w:vAlign w:val="center"/></w:tcPr>' +
+        '<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="14"/><w:szCs w:val="14"/><w:color w:val="FFFFFF"/>' +
+        '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/></w:rPr><w:t xml:space="preserve">' + lbl + '</w:t></w:r></w:p></w:tc>';
+    });
+    body += '</w:tr>';
+
+    // Header row 2: sub-headers
+    body += '<w:tr><w:trPr><w:trHeight w:val="160" w:hRule="atLeast"/></w:trPr>';
+    var hdrs = ['Question', 'Your option', 'Answer', 'Correct %', 'Result'];
+    for (var s2 = 0; s2 < 3; s2++)
+      for (var sh = 0; sh < 5; sh++)
+        body += '<w:tc><w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="E8F5E9"/><w:vAlign w:val="center"/></w:tcPr>' +
+          '<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="12"/><w:szCs w:val="12"/>' +
+          '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/></w:rPr><w:t xml:space="preserve">' + hdrs[sh] + '</w:t></w:r></w:p></w:tc>';
+    body += '</w:tr>';
+
+    // Data rows
+    for (var r2 = 1; r2 <= 50; r2++) {
+      body += '<w:tr><w:trPr><w:trHeight w:val="150" w:hRule="atLeast"/></w:trPr>';
+      for (var sec2 = 0; sec2 < 3; sec2++) {
+        var qn = r2 + sec2 * 50;
+        if (qn > r.nQ) { body += '<w:tc><w:tcPr><w:gridSpan w:val="5"/></w:tcPr><w:p></w:p></w:tc>'; continue; }
+        var oo = cand.answers[qn].option;
+        var kk2 = r.keyRow[qn] || '';
+        var ok2 = oo && kk2 && oo.toUpperCase() === kk2.toUpperCase();
+        var pct3 = r.qCorPct[qn] || 0;
+
+        body += td2(String(qn), true, 'Arial', 14);
+        body += td2(oo || '-', false, 'Courier New', 14);
+        var keyDisp = ok2 ? '-' : (kk2 || '-');
+        var keyColor = ok2 ? 'C0C0C0' : '000000';
+        body += td2(keyDisp, false, 'Courier New', 14, keyColor);
+        body += td2(pct3.toFixed(0) + '%', false, 'Courier New', 14);
+        var res = ok2 ? 'Y' : 'N';
+        var rColor = ok2 ? '2E7D32' : 'C62828';
+        body += td2(res, true, 'Courier New', 14, rColor);
+      }
+      body += '</w:tr>';
+    }
+    body += '</w:tbl>';
+    body += emptyP2();
+
+    // Per-candidate histogram
+    imgId++;
+    var candCanvas = drawHistogramCanvas(r.allSc, score, r.mean, r.min, r.max, 480, 170);
+    var candImg = canvasToImageEl(candCanvas, imgId, 4800000, 1700000);
+    images.push(candImg);
+    body += candImg.xml;
+  }
+
+  return body;
+}
+
+// ── Docx XML helpers ──
+
+function xmlEsc2(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); }
+
+function docP2(text, sz, bold, align) {
+  var pp = '<w:p><w:pPr>';
+  if (align) pp += '<w:jc w:val="' + align + '"/>';
+  pp += '<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>';
+  var rPr = '<w:rPr><w:sz w:val="' + (sz * 2) + '"/><w:szCs w:val="' + (sz * 2) + '"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/>';
+  if (bold) rPr = '<w:rPr><w:b/><w:sz w:val="' + (sz * 2) + '"/><w:szCs w:val="' + (sz * 2) + '"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/>';
+  return pp + '<w:r>' + rPr + '</w:rPr><w:t xml:space="preserve">' + xmlEsc2(text) + '</w:t></w:r></w:p>';
+}
+
+function boldP(text, sz, align) { return docP2(text, sz, true, align); }
+
+function emptyP2() { return '<w:p><w:pPr><w:spacing w:before="0" w:after="120"/></w:pPr></w:p>'; }
+
+function docTbl2(width, cols) {
+  return '<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="5000" w:type="pct"/>' +
+    '<w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+    '<w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+    '<w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+    '<w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+    '<w:insideH w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+    '<w:insideV w:val="single" w:sz="4" w:space="0" w:color="000000"/></w:tblBorders></w:tblPr><w:tblGrid>' +
+    Array(cols).fill('<w:gridCol w:w="' + Math.round(9000 / cols) + '"/>').join('') +
+    '</w:tblGrid>';
+}
+
+function td2(text, bold, font, sz, color) {
+  var rPr = '';
+  if (bold) rPr += '<w:b/>';
+  rPr += '<w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/>';
+  if (color) rPr += '<w:color w:val="' + color + '"/>';
+  rPr += '<w:rFonts w:ascii="' + font + '" w:hAnsi="' + font + '" w:eastAsia="' + font + '" w:cs="' + font + '"/>';
+  return '<w:tc><w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr>' + rPr + '</w:rPr><w:t xml:space="preserve">' + xmlEsc2(text || '') + '</w:t></w:r></w:p></w:tc>';
+}
+
+function docCell2(text, bold, font, big, szOverride) {
+  var rPr = '';
+  if (bold) rPr += '<w:b/>';
+  var f = font || 'Arial';
+  var s = szOverride || (big ? 24 : 20);
+  rPr += '<w:sz w:val="' + s + '"/><w:szCs w:val="' + s + '"/>';
+  rPr += '<w:rFonts w:ascii="' + f + '" w:hAnsi="' + f + '" w:eastAsia="' + f + '" w:cs="' + f + '"/>';
+  return '<w:p><w:pPr><w:jc w:val="left"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr>' + rPr + '</w:rPr><w:t xml:space="preserve">' + xmlEsc2(text || '') + '</w:t></w:r></w:p>';
+}
+
+function docRow2(cellInners, shades) {
+  var s = '<w:tr><w:trPr><w:trHeight w:val="230" w:hRule="atLeast"/></w:trPr>';
+  for (var i2 = 0; i2 < cellInners.length; i2++) {
+    var tcPr = '';
+    if (shades && shades[i2]) tcPr += '<w:shd w:val="clear" w:color="auto" w:fill="F0F0F0"/>';
+    if (tcPr) tcPr = '<w:tcPr>' + tcPr + '</w:tcPr>';
+    s += '<w:tc>' + tcPr + cellInners[i2] + '</w:tc>';
+  }
+  s += '</w:tr>';
+  return s;
+}
+
+function log(msg) {
+  var la = $('logArea');
+  la.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg + '\n' + la.textContent;
+}
+
+function download(blob, filename) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function escAttr(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+</script>
+
+</body>
+</html>
