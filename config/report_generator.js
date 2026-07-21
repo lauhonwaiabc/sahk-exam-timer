@@ -150,9 +150,9 @@ Sahk.register('ReportGenerator', function() {
     return Object.keys(all).map(Number).sort(function(a, b) { return a - b; });
   }
   function getExamConfig(examId) {
-    if (examId === 'written') return { title:'Paper I', itemName:'Question', expected:12, passPer:5, totalPass:60, maxScore:96, minScore:24, type:'written' };
+    if (examId === 'written') return { title:'Paper I /n Clinical Scenario & SAQs', itemName:'Question', expected:12, passPer:5, totalPass:60, maxScore:96, minScore:24, type:'written' };
     if (examId === 'viva_am' || examId === 'viva_pm') return { title:'Viva Examination', itemName:'Table', expected:6, passPer:5, totalPass:30, maxScore:48, minScore:12, type:'viva', batch:examId.replace('viva_','').toUpperCase() };
-    if (examId === 'osce_am' || examId === 'osce_pm') return { title:'OSCE', itemName:'Station', expected:10, passPer:5, totalPass:50, maxScore:80, minScore:20, type:'osce', batch:examId.replace('osce_','').toUpperCase() };
+    if (examId === 'osce_am' || examId === 'osce_pm') return { title:'OSCE Examination', itemName:'Station', expected:10, passPer:5, totalPass:50, maxScore:80, minScore:20, type:'osce', batch:examId.replace('osce_','').toUpperCase() };
     return { title:examId, itemName:'Station', expected:10, passPer:5, totalPass:50, maxScore:80, minScore:20, type:examId };
   }
 
