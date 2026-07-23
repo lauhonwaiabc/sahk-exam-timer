@@ -16,11 +16,9 @@ Sahk.register('TimeSync', function() {
   var locked = false;
 
   var SYNC_SOURCES = [
-    { name: 'TimeAPI', url: 'https://timeapi.io/api/Time/current/zone?timeZone=Asia/Hong_Kong', type: 'json', extract: function(d) { return Date.UTC(d.year, d.month - 1, d.day, d.hour, d.minute, d.seconds, d.milliSeconds || 0) - 28800000; } },
     { name: 'Cloudflare', url: 'https://www.cloudflare.com/cdn-cgi/trace', type: 'text', extract: function(t) { var m = t.match(/ts=(\d+)/); return m ? parseInt(m[1], 10) * 1000 : NaN; } },
-    { name: 'WorldTimeAPI', url: 'https://worldtimeapi.org/api/timezone/Asia/Hong_Kong', type: 'json', extract: function(d) { return d.unixtime * 1000; } },
     { name: 'CurrentMillis', url: 'https://currentmillis.com/time/minutes-since-unix-epoch.php', type: 'text', extract: function(t) { return parseInt(t.trim(), 10) * 60000; } },
-    { name: 'Google', url: 'https://www.google.com', type: 'header' }
+    { name: 'TimeAPI', url: 'https://timeapi.io/api/Time/current/zone?timeZone=Asia/Hong_Kong', type: 'json', extract: function(d) { return Date.UTC(d.year, d.month - 1, d.day, d.hour, d.minute, d.seconds, d.milliSeconds || 0) - 28800000; } }
   ];
 
   function getCorrectedNow() {
@@ -123,25 +121,42 @@ Sahk.register('TimeSync', function() {
       }
     }
 
-    results.sort(function(a, b) { return Math.abs(a.diff) - Math.abs(b.diff); });
-    results.push({ name: 'Local', serverMs: Date.now(), localMs: Date.now(), diff: 0 });
-    lastResults = results;
+    var priorityOrder = ['Cloudflare', 'CurrentMillis', 'TimeAPI', 'Local'];
+    var prioResults = [];
+    for (var pi = 0; pi < priorityOrder.length; pi++) {
+      var found = null;
+      for (var ri = 0; ri < results.length; ri++) {
+        if (results[ri].name === priorityOrder[pi]) { found = results[ri]; break; }
+      }
+      if (found) { prioResults.push(found); }
+      else if (priorityOrder[pi] === 'Local') { prioResults.push({ name: 'Local', serverMs: Date.now(), localMs: Date.now(), diff: 0 }); }
+    }
+    lastResults = prioResults;
 
     if (!locked) {
-      var accepted = null;
-      for (var ri = 0; ri < results.length; ri++) {
-        if (Math.abs(results[ri].diff) <= MAX_OFFSET_MS) {
-          accepted = results[ri];
+      var keep = null;
+      for (var ri = 0; ri < prioResults.length; ri++) {
+        if (prioResults[ri].name === activeSourceName && prioResults[ri].name !== 'Local') {
+          keep = prioResults[ri];
           break;
         }
       }
-      if (accepted !== null) {
-        applyResult(accepted);
-        if (syncRetryTimer) { clearTimeout(syncRetryTimer); syncRetryTimer = null; }
+      if (keep) {
+        applyResult(keep);
       } else {
-        applyResult(null);
-        var delay = 10000 + Math.floor(Math.random() * 5000);
-        syncRetryTimer = setTimeout(syncStandardTime, delay);
+        var accepted = null;
+        for (var ri = 0; ri < prioResults.length; ri++) {
+          if (prioResults[ri].name !== 'Local') {
+            accepted = prioResults[ri];
+            break;
+          }
+        }
+        if (accepted !== null) {
+          applyResult(accepted);
+          if (syncRetryTimer) { clearTimeout(syncRetryTimer); syncRetryTimer = null; }
+        } else {
+          applyResult(null);
+        }
       }
     }
   }
