@@ -290,6 +290,7 @@ Sahk.register('TimerCore', function() {
     async function startTimers() {
       if (isRunning || isStarting) return;
       isStarting = true;
+      TimeSync.lock();
       await TimeSync.syncStandardTime();
       isRunning = true;
       isStarting = false;
@@ -309,6 +310,7 @@ Sahk.register('TimerCore', function() {
     function pauseTimers() {
       if (!isRunning) return;
       isRunning = false;
+      TimeSync.unlock();
       var sb = el('startBtn'); if (sb) sb.disabled = false;
       var pb = el('pauseBtn'); if (pb) pb.disabled = true;
       var stb = el('stopBtn'); if (stb) stb.disabled = false;
@@ -323,6 +325,7 @@ Sahk.register('TimerCore', function() {
 
     function stopTimers() {
       isRunning = false;
+      TimeSync.unlock();
       var sb = el('startBtn'); if (sb) sb.disabled = false;
       var pb = el('pauseBtn'); if (pb) pb.disabled = true;
       var stb = el('stopBtn'); if (stb) stb.disabled = true;
@@ -504,6 +507,7 @@ Sahk.register('TimerCore', function() {
       renderBottomContent();
       startTime = endTime = null;
 
+      TimeSync.initArrows();
       TimeSync.syncStandardTime();
       setInterval(function() { TimeSync.syncStandardTime(); }, 60000);
 
