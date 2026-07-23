@@ -156,13 +156,10 @@ Sahk.register('ScoringUI', function() {
     }, 350);
   }
 
-  window.renderScoringMode = function() {
-    SM.renderScoringMode(cfg, _obsAtStation, _candAtStation, _candidateSession);
-  };
-
   function renderScoringMode() {
     SM.renderScoringMode(cfg, _obsAtStation, _candAtStation, _candidateSession);
   }
+  window.renderScoringMode = renderScoringMode;
 
   function applyRoleConfig() {
     _precomputeMaps();

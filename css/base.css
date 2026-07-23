@@ -154,17 +154,6 @@ button:hover:not(:disabled) {
     margin-right: 8px;
 }
 
-/* ===== Time Sync Warning ===== */
-#syncWarning {
-    display: none;
-    background: #fff3e0;
-    color: #e65100;
-    text-align: center;
-    padding: 6px;
-    font-weight: 700;
-    font-size: 0.9em;
-}
-
 /* ===== Offset Buttons ===== */
 .offset-btn {
     font-size: 0.9em;
@@ -358,8 +347,8 @@ input.locked {
 /* ===== Print Styles ===== */
 @media print {
     #clock, #controls, #topMenu, #startTimeContainer, #searchContainer,
-    #syncWarning, #roleHeader, .offset-btn, .score-scroll-btn, .score-submit-btn,
+    #roleHeader, .offset-btn, .score-scroll-btn, .score-submit-btn,
     .box-score-btn, .box-score-save, #progressBarContainer, #volumeControl,
-    #keyboardHelpBtn, #syncStatusBadge { display: none !important; }
+    #keyboardHelpBtn { display: none !important; }
     body { font-size: 10pt; background: white; color: black; }
 }

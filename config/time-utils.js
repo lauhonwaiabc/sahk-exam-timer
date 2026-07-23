@@ -48,7 +48,6 @@ Sahk.register('TimeUtils', function() {
     addSeconds: addSeconds,
     parseTimeString: parseTimeString,
     formatTimeHMSSec: formatTimeHMSSec,
-    fmtHHMMSS: formatTimeHMSSec,
     formatTime: formatTime,
     formatAbsoluteTime: formatAbsoluteTime,
     secsToHHMM: secsToHHMM,

@@ -127,12 +127,12 @@ Sahk.register('Scoring', function() {
   function createAdminPanel() {
     var html = '<div class="admin-panel"><h3 class="admin-header">Admin Controls</h3><button class="admin-btn" id="adminExportCSV">Export CSV</button>';
     if (isSplitExam()) {
-      html += '<button class="admin-btn admin-btn-report" id="adminCandidateReport">Candidate Report (Current Session)</button>';
-      html += '<button class="admin-btn admin-btn-report" id="adminCandidateCombined">Candidate Report (All Sessions)</button>';
+      html += '<button class="admin-btn admin-btn-report" id="adminCandidateReport" style="background:#00897b;color:#fff;">Candidate Report (Current Session)</button>';
+      html += '<button class="admin-btn admin-btn-report" id="adminCandidateCombined" style="background:#00897b;color:#fff;">Candidate Report (All Sessions)</button>';
       html += '<button class="admin-btn" id="adminPreviewReport" style="background:#7c4dff;color:#fff;">Preview (Current Session)</button>';
       html += '<button class="admin-btn" id="adminPreviewCombined" style="background:#7c4dff;color:#fff;">Preview (All Sessions)</button>';
     } else {
-      html += '<button class="admin-btn admin-btn-report" id="adminCandidateReport">Candidate Report</button>';
+      html += '<button class="admin-btn admin-btn-report" id="adminCandidateReport" style="background:#00897b;color:#fff;">Candidate Report</button>';
       html += '<button class="admin-btn" id="adminPreviewReport" style="background:#7c4dff;color:#fff;">Preview Report</button>';
     }
     html += '<button class="admin-btn admin-btn-danger" id="adminClearDB">Clear Database</button><span class="admin-exam-label">'+getExamInfo()+'</span><div class="admin-status" id="adminStatus"></div></div>';

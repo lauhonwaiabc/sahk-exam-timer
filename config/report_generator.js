@@ -531,7 +531,6 @@ Sahk.register('ReportGenerator', function() {
       var r = await fetch(API_BASE + '/scores/' + exam);
       if (r.ok) {
         var data = await r.json();
-        console.log('Fetched ' + data.length + ' scores for ' + exam);
         return data;
       }
       console.warn('Fetch failed for ' + exam + ': HTTP ' + r.status);
@@ -545,7 +544,6 @@ Sahk.register('ReportGenerator', function() {
     try {
       var scores1 = await fetchScoresForExam(exam1);
       var scores2 = await fetchScoresForExam(exam2);
-      console.log('Combined report: ' + exam1 + ' = ' + scores1.length + ' scores, ' + exam2 + ' = ' + scores2.length + ' scores');
       if (!scores1.length && !scores2.length) { alert('No scores available for either session.'); return; }
       if (!scores2.length) console.warn('No scores found for ' + exam2 + '. Only ' + exam1 + ' data used.');
       if (!scores1.length) console.warn('No scores found for ' + exam1 + '. Only ' + exam2 + ' data used.');
@@ -557,7 +555,6 @@ Sahk.register('ReportGenerator', function() {
         var s = all[i], key = String(s.candidate).trim() + '|' + Number(s.station);
         if (!seen[key]) { seen[key] = true; deduped.unshift(s); }
       }
-      console.log('Combined deduped: ' + deduped.length + ' scores, unique candidates: ' + Object.keys(buildCandidateResults(deduped)).length);
 
       var cfg = getExamConfig(exam1);
       cfg.batch = 'All Sessions';

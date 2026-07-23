@@ -103,11 +103,11 @@ Sahk.register('TimeSync', function() {
         var opts = { cache: 'no-cache' };
         if (src.type === 'header') opts.method = 'HEAD';
         var res = await fetch(src.url, opts);
-        if (!res.ok) { console.log('TimeSync: ' + src.name + ' HTTP ' + res.status); continue; }
+        if (!res.ok) { continue; }
         var serverMs;
         if (src.type === 'header') {
           var dateStr = res.headers.get('Date');
-          if (!dateStr) { console.log('TimeSync: ' + src.name + ' no Date header'); continue; }
+          if (!dateStr) { continue; }
           serverMs = new Date(dateStr).getTime();
         } else {
           var data = src.type === 'text' ? await res.text() : await res.json();
@@ -118,10 +118,8 @@ Sahk.register('TimeSync', function() {
         var latency = Math.floor(rtt / 2);
         var adjustedServerMs = serverMs + latency;
         var diff = adjustedServerMs - resTime;
-        console.log('TimeSync: ' + src.name + ' diff=' + diff + 'ms (' + (diff / 60000).toFixed(1) + 'min), rtt=' + rtt + 'ms');
         results.push({ name: src.name, serverMs: adjustedServerMs, localMs: resTime, diff: diff });
       } catch(e) {
-        console.log('TimeSync: ' + SYNC_SOURCES[si].name + ' error=' + (e.message || e));
       }
     }
 
@@ -138,7 +136,6 @@ Sahk.register('TimeSync', function() {
         }
       }
       if (accepted !== null) {
-        console.log('TimeSync: auto-selected source="' + accepted.name + '" serverTime=' + new Date(accepted.serverMs).toISOString());
         applyResult(accepted);
         if (syncRetryTimer) { clearTimeout(syncRetryTimer); syncRetryTimer = null; }
       } else {

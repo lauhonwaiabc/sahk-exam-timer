@@ -32,8 +32,6 @@ window.Sahk = (function() {
     register: register,
     get: get,
     list: list,
-    isLoaded: isLoaded,
-    _modules: modules,
-    _order: loadOrder
+    isLoaded: isLoaded
   };
 })();
