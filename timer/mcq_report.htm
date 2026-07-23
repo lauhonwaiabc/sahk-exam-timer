@@ -260,14 +260,13 @@ function renderEditTable() {
   var n = gData.candidates.length;
 
   var h = '<table><thead><tr><th class="sticky-col sticky-col-hdr">Candidate</th>';
-  for (var qi = qS; qi <= qE; qi++) h += '<th>Q' + qi + ' Opt</th><th>Q' + qi + ' Key</th>';
+  for (var qi = qS; qi <= qE; qi++) h += '<th>Q' + qi + '</th>';
   h += '</tr></thead><tbody>';
 
-  h += '<tr class="key-row"><td class="sticky-col">CORRECT KEY</td>';
+  h += '<tr class="key-row"><td class="sticky-col">KEY</td>';
   for (var qi2 = qS; qi2 <= qE; qi2++) {
     var kv = gData.keyRow[qi2] || '';
     h += '<td><input class="ans-cell" data-q="' + qi2 + '" data-type="key" value="' + escAttr(kv) + '" oninput="onKeyEdit(' + qi2 + ',this.value)"></td>';
-    h += '<td style="background:#e3f2fd;"></td>';
   }
   h += '</tr>';
 
@@ -280,7 +279,6 @@ function renderEditTable() {
       var ok = opt2 && key2 && opt2.toUpperCase() === key2.toUpperCase();
       var cls2 = opt2 ? (ok ? 'correct' : 'incorrect') : '';
       h += '<td><input class="ans-cell ' + cls2 + '" data-ci="' + ci + '" data-q="' + qi3 + '" data-type="opt" value="' + escAttr(opt2) + '" oninput="onOptEdit(' + ci + ',' + qi3 + ',this)"></td>';
-      h += '<td></td>';
     }
     h += '</tr>';
   }
@@ -511,8 +509,6 @@ function renderCandReport() {
   // Score summary table (matching Python format)
   h += '<table class="score-tbl">';
   h += '<tr><td class="lbl">Total Score:</td><td class="big">' + score + ' (out of ' + r.nQ + ')</td></tr>';
-  h += '<tr><td class="lbl">Mean:</td><td class="val">' + r.mean.toFixed(2) + '</td></tr>';
-  h += '<tr><td class="lbl">SD:</td><td class="val">' + r.std.toFixed(2) + '</td></tr>';
   h += '<tr><td class="lbl" style="font-style:italic;">Benchmark performance:</td><td class="val"></td></tr>';
   h += '<tr><td class="lbl">  Mean (&plusmn;SD):</td><td class="val">' + r.mean.toFixed(2) + ' (&plusmn; ' + r.std.toFixed(2) + ')</td></tr>';
   h += '<tr><td class="lbl">  Min/25%/Med/75%/Max:</td><td class="val">' + r.min + ' / ' + r.p25.toFixed(1) + ' / ' + r.p50.toFixed(1) + ' / ' + r.p75.toFixed(1) + ' / ' + r.max + '</td></tr>';
@@ -786,8 +782,6 @@ function buildDocx(r, sorted, images) {
     body += docTbl2(9000, 2);
     var rows = [
       ['Total Score:', score + ' (out of ' + r.nQ + ')', true, true],
-      ['Mean:', r.mean.toFixed(2), false, false],
-      ['SD:', r.std.toFixed(2), false, false],
       ['Benchmark performance:', '', false, false],
       ['  Mean (±SD):', r.mean.toFixed(2) + ' (± ' + r.std.toFixed(2) + ')', false, false],
       ['  Min/25%/Med/75%/Max:', r.min + ' / ' + r.p25.toFixed(1) + ' / ' + r.p50.toFixed(1) + ' / ' + r.p75.toFixed(1) + ' / ' + r.max, false, false]
