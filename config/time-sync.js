@@ -1,14 +1,26 @@
 'use strict';
 Sahk.register('TimeSync', function() {
 
-  var timeOffset = 0;
-  var syncFailures = 0;
   var syncRetryTimer = null;
   var syncStatus = 'unknown';
+  var syncSource = '';
   var statusListeners = [];
+  var MAX_OFFSET_MS = 10000;
+
+  var serverBaseTime = null;
+  var serverBaseLocal = null;
+
+  var SYNC_SOURCES = [
+    { name: 'TimeAPI', url: 'https://timeapi.io/api/Time/current/zone?timeZone=Asia/Hong_Kong', type: 'json', extract: function(d) { return Date.UTC(d.year, d.month - 1, d.day, d.hour, d.minute, d.seconds, d.milliSeconds || 0) - 28800000; } },
+    { name: 'Cloudflare', url: 'https://www.cloudflare.com/cdn-cgi/trace', type: 'text', extract: function(t) { var m = t.match(/ts=(\d+)/); return m ? parseInt(m[1], 10) * 1000 : NaN; } },
+    { name: 'WorldTimeAPI', url: 'https://worldtimeapi.org/api/timezone/Asia/Hong_Kong', type: 'json', extract: function(d) { return d.unixtime * 1000; } }
+  ];
 
   function getCorrectedNow() {
-    return Date.now() + timeOffset;
+    if (serverBaseTime !== null) {
+      return serverBaseTime + (Date.now() - serverBaseLocal);
+    }
+    return Date.now();
   }
 
   function setSyncStatus(status) {
@@ -22,60 +34,74 @@ Sahk.register('TimeSync', function() {
   function updateStatusBadge() {
     var badge = document.getElementById('syncStatusBadge');
     if (!badge) return;
-    var icon, color, text;
     switch (syncStatus) {
-      case 'synced': icon = '\uD83D\uDFE2'; color = '#2e7d32'; text = 'Synced'; break;
-      case 'local': icon = '\uD83D\uDFE1'; color = '#e65100'; text = 'Local Time'; break;
-      case 'stale': icon = '\uD83D\uDFE0'; color = '#f57c00'; text = 'Stale'; break;
-      case 'offline': icon = '\uD83D\uDD34'; color = '#d32f2f'; text = 'Offline'; break;
-      default: icon = '\u26AA'; color = '#888'; text = 'Unknown'; break;
+      case 'synced': badge.textContent = 'Source: ' + syncSource; badge.title = 'Using ' + syncSource + ' time'; break;
+      default: badge.textContent = 'Source: Local'; badge.title = 'Local time'; break;
     }
-    badge.innerHTML = '<span style="color:' + color + ';font-size:1.2em;margin-right:4px">' + icon + '</span><span style="color:' + color + ';font-weight:700">' + text + '</span>';
-    badge.title = 'Time sync status: ' + text + (syncStatus === 'stale' ? ' (' + syncFailures + ' attempts)' : '');
+  }
+
+  function getCurrentOffset() {
+    if (serverBaseTime !== null) {
+      return getCorrectedNow() - Date.now();
+    }
+    return 0;
   }
 
   async function syncStandardTime() {
-    try {
-      var response = await fetch('https://timeapi.io/api/Time/current/zone?timeZone=Asia/Hong_Kong');
-      var data = await response.json();
-      var standardTime = new Date(data.dateTime).getTime();
-      timeOffset = standardTime - Date.now();
-      syncFailures = 0;
+    var results = [];
+
+    for (var si = 0; si < SYNC_SOURCES.length; si++) {
+      try {
+        var src = SYNC_SOURCES[si];
+        var reqTime = Date.now();
+        var res = await fetch(src.url, { cache: 'no-cache' });
+        if (!res.ok) { console.log('TimeSync: ' + src.name + ' HTTP ' + res.status); continue; }
+        var data = src.type === 'text' ? await res.text() : await res.json();
+        var serverMs = src.extract(data);
+        var resTime = Date.now();
+        var rtt = resTime - reqTime;
+        var latency = Math.floor(rtt / 2);
+        var adjustedServerMs = serverMs + latency;
+        var diff = adjustedServerMs - resTime;
+        console.log('TimeSync: ' + src.name + ' diff=' + diff + 'ms (' + (diff / 60000).toFixed(1) + 'min), rtt=' + rtt + 'ms');
+        results.push({ name: src.name, serverMs: adjustedServerMs, localMs: resTime, diff: diff });
+      } catch(e) {
+        console.log('TimeSync: ' + SYNC_SOURCES[si].name + ' error=' + (e.message || e));
+      }
+    }
+
+    results.sort(function(a, b) { return Math.abs(a.diff) - Math.abs(b.diff); });
+
+    var accepted = null;
+    var acceptedName = 'none';
+    for (var ri = 0; ri < results.length; ri++) {
+      if (Math.abs(results[ri].diff) <= MAX_OFFSET_MS) {
+        accepted = results[ri];
+        acceptedName = results[ri].name;
+        break;
+      }
+    }
+
+    if (accepted !== null) {
+      serverBaseTime = accepted.serverMs;
+      serverBaseLocal = accepted.localMs;
+      syncSource = acceptedName;
+      console.log('TimeSync: using source="' + acceptedName + '" serverTime=' + new Date(serverBaseTime).toISOString());
       setSyncStatus('synced');
       if (syncRetryTimer) { clearTimeout(syncRetryTimer); syncRetryTimer = null; }
-      var warn = document.getElementById('syncWarning');
-      if (warn) warn.style.display = 'none';
-    } catch (e) {
-      console.error('Failed to fetch standard time, using local time', e);
-      syncFailures++;
-      if (syncFailures === 1) {
-        timeOffset = 0;
-        setSyncStatus('local');
-        var warn = document.getElementById('syncWarning');
-        if (warn) {
-          warn.textContent = '\u26A0 Time sync unavailable \u2014 using local time';
-          warn.style.display = 'block';
-        }
-      } else if (syncFailures >= 5) {
-        setSyncStatus('stale');
-        var warn2 = document.getElementById('syncWarning');
-        if (warn2) {
-          warn2.textContent = '\u26A0 Time sync stale (' + syncFailures + ' attempts) \u2014 using local time';
-          warn2.style.display = 'block';
-        }
-      } else {
-        setSyncStatus('local');
-      }
-      if (syncRetryTimer) clearTimeout(syncRetryTimer);
-      var delay = Math.min(2000 * Math.pow(2, Math.min(syncFailures - 1, 4)), 32000);
+    } else {
+      serverBaseTime = null;
+      serverBaseLocal = null;
+      setSyncStatus('local');
+      var delay = 10000 + Math.floor(Math.random() * 5000);
       syncRetryTimer = setTimeout(syncStandardTime, delay);
     }
   }
 
   function updateClock() {
-    var clock = document.getElementById('clock');
-    if (clock) {
-      clock.textContent = new Date(getCorrectedNow()).toTimeString().slice(0, 8);
+    var display = document.getElementById('timeDisplay');
+    if (display) {
+      display.textContent = new Date(getCorrectedNow()).toTimeString().slice(0, 8);
     }
   }
 
@@ -93,7 +119,6 @@ Sahk.register('TimeSync', function() {
     getCorrectedNow: getCorrectedNow,
     onStatusChange: onStatusChange,
     get syncStatus() { return syncStatus; },
-    get timeOffset() { return timeOffset; },
-    set timeOffset(v) { timeOffset = v; }
+    getCurrentOffset: getCurrentOffset
   };
 });

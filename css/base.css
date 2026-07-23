@@ -26,13 +26,6 @@ body {
     gap: 16px;
 }
 
-#syncStatusBadge {
-    font-size: 0.7em;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
 /* ===== Controls ===== */
 #controls {
     text-align: center;
