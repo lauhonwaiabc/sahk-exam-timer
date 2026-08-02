@@ -79,13 +79,6 @@ Sahk.register('ScoringUI', function() {
     var tr = document.getElementById('transitModeBtn'); if (tr) tr.style.display = 'none';
     var tb = document.getElementById('toggleModeBtn'); if (tb) tb.textContent = cfg.modeLabel;
     Sahk.get('Scoring').fetchAllScores().then(function() { renderScoringMode(); });
-    if (window.scoringRefreshId !== null) clearInterval(window.scoringRefreshId);
-    window.scoringRefreshId = setInterval(function() {
-      if (window.isInScoringMode) {
-        var dirty = document.querySelector('.score-value[data-dirty="1"], .box-score-value[data-dirty="1"]');
-        if (!dirty) Sahk.get('Scoring').fetchAllScores().then(function() { if (typeof renderScoringMode === 'function') renderScoringMode(); });
-      }
-    }, 30000);
   }
 
   function exitScoringMode() {

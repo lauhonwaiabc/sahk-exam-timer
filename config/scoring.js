@@ -5,6 +5,32 @@ Sahk.register('Scoring', function() {
     : 'https://us-central1-sahk-timer.cloudfunctions.net/app';
   var examId = '', role = '', stationNo = null, stationName = '', identifier = '';
   var allScoresCache = [], onScoresUpdated = null;
+  var unsubScores = null;
+
+  function notifyScoresUpdated() {
+    if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated();
+  }
+
+  function subscribeScores() {
+    if (!examId || !window.SahkAuth || !SahkAuth.getUser()) return;
+    if (unsubScores) return;
+    try {
+      unsubScores = firebase.firestore().collection('scores')
+        .where('exam', '==', examId)
+        .onSnapshot(function(snap) {
+          var items = [];
+          snap.forEach(function(doc) { items.push({ id: doc.id, ...doc.data() }); });
+          allScoresCache = items;
+          notifyScoresUpdated();
+        }, function(err) {
+          console.error('scores listener error:', err);
+          fetchAllScores().then(notifyScoresUpdated);
+        });
+    } catch (e) {
+      console.error('subscribeScores error:', e);
+      fetchAllScores().then(notifyScoresUpdated);
+    }
+  }
 
   function init(config) {
     examId = config.examId || ''; role = config.role || '';
@@ -13,7 +39,8 @@ Sahk.register('Scoring', function() {
     identifier = ((config.stationName || '') + ' ' + config.stationNo).trim();
     onScoresUpdated = config.onScoresUpdated || null;
     return fetchAllScores().then(function() {
-      if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated();
+      subscribeScores();
+      notifyScoresUpdated();
     });
   }
 
@@ -52,7 +79,7 @@ Sahk.register('Scoring', function() {
       if (comment !== undefined && comment !== null) body.comment = comment;
       var r = await fetch(API_BASE + '/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body) });
       var result = await r.json();
-      if (r.ok) { await fetchAllScores(); if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated(); }
+      if (r.ok) notifyScoresUpdated();
       return result;
     } catch(e) { return { success: false, error: e.message }; }
   }
@@ -68,7 +95,7 @@ Sahk.register('Scoring', function() {
       });
       var r = await fetch(API_BASE + '/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(payload) });
       var result = await r.json();
-      if (r.ok) { await fetchAllScores(); if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated(); }
+      if (r.ok) notifyScoresUpdated();
       return result;
     } catch(e) { return { success: false, error: e.message }; }
   }
