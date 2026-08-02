@@ -5,18 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>SAHK Written Score Reporting</title>
   <link rel="stylesheet" href="../timer_style.css"/>
-  <script src="../config/sahk.js"></script>
-  <script src="../config/constants.js"></script>
-  <script src="../config/firebase-config.js"></script>
-  <script src="../config/written_score_data.js"></script>
+  <script src="../config/sahk.js?v=20260802g"></script>
+  <script src="../config/constants.js?v=20260802g"></script>
+  <script src="../config/firebase-config.js?v=20260802g"></script>
+  <script src="../config/written_score_data.js?v=20260802g"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="../config/firebase-auth.js"></script>
-  <script src="../config/scoring.js"></script>
-  <script src="../config/candidate_mapping_data.js"></script>
+  <script src="../config/firebase-auth.js?v=20260802g"></script>
+  <script src="../config/scoring.js?v=20260802g"></script>
+  <script src="../config/candidate_mapping_data.js?v=20260802g"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="../config/report_generator.js"></script>
+  <script src="../config/report_generator.js?v=20260802g"></script>
   <style>
     body { background: #f9f9f9; }
     #scoreContainer {
@@ -260,7 +260,8 @@
       </table>
     </div>
     <div id="submitAllContainer">
-      <button id="submitAllBtn" style="display:none">Submit All Changes</button>
+      <button id="submitAllBtn">Submit All Changes</button>
+      <button id="writtenRefreshBtn" style="font-size:1.1em;padding:10px 32px;border-radius:8px;border:none;background:#1565c0;color:white;font-weight:700;cursor:pointer;">Read / Refresh All</button>
     </div>
     <div id="adminPanelContainer"></div>
     <div class="last-refresh" id="lastRefresh"></div>
@@ -273,7 +274,6 @@
 var roleConfig = null, currentRole = 'candidate', examinerName = null, examinerGroup = null;
 var SCORE_OPTIONS = ['-', 2, 3, 4, 5, 6, 7, 8];
 var SCORE_COLORS = { '-': '#000000', 2: '#d32f2f', 3: '#ff9800', 4: '#fdd835', 5: '#4caf50', 6: '#2196f3', 7: '#3f51b5', 8: '#9c27b0' };
-var refreshInterval = null;
 
 try {
   var raw = sessionStorage.getItem('sahk_role_config');
@@ -551,7 +551,7 @@ function handleScoreClick(e) {
         var icon2 = inner2.querySelector('.score-comment-icon');
         if (icon2) { icon2.style.color = comment ? '#f9a825' : '#999'; if (comment) icon2.classList.add('has-comment'); else icon2.classList.remove('has-comment'); }
         updateSubmitAllVisibility();
-        if (!document.querySelector('.score-value[data-dirty="1"]')) SahkScoring.fetchAllScores().then(function() { renderTable(); });
+        if (!document.querySelector('.score-value[data-dirty="1"]')) renderTable();
       } else {
         alert('Failed: ' + (r.error || 'Unknown'));
       }
@@ -575,11 +575,7 @@ document.getElementById('scoringTable').addEventListener('input', function(e) {
 
 function updateSubmitAllVisibility() {
   var btn = document.getElementById('submitAllBtn');
-  if (document.querySelector('.score-value[data-dirty="1"]')) {
-    btn.style.display = '';
-  } else {
-    btn.style.display = 'none';
-  }
+  if (btn) btn.style.display = '';
 }
 
 document.getElementById('submitAllBtn').addEventListener('click', function() {
@@ -614,7 +610,7 @@ document.getElementById('submitAllBtn').addEventListener('click', function() {
         }
       });
       updateSubmitAllVisibility();
-      SahkScoring.fetchAllScores().then(function() { renderTable(); });
+      renderTable();
     } else {
       alert('Failed: ' + (r.error || 'Unknown'));
     }
@@ -628,15 +624,16 @@ function setupAdminPanel() {
   SahkScoring.initAdminEvents();
 }
 
-if (refreshInterval) clearInterval(refreshInterval);
-refreshInterval = setInterval(function() {
-  var dirty = document.querySelector('.score-value[data-dirty="1"]');
-  if (!dirty) SahkScoring.fetchAllScores().then(function() { renderTable(); });
-}, 30000);
-
-window.addEventListener('beforeunload', function() {
-  if (refreshInterval) clearInterval(refreshInterval);
-});
+var writtenRefreshBtn = document.getElementById('writtenRefreshBtn');
+if (writtenRefreshBtn) {
+  writtenRefreshBtn.addEventListener('click', function() {
+    writtenRefreshBtn.disabled = true; writtenRefreshBtn.textContent = 'Reading...';
+    SahkScoring.refreshScores().then(function() {
+      writtenRefreshBtn.disabled = false; writtenRefreshBtn.textContent = 'Read / Refresh All';
+      renderTable();
+    });
+  });
+}
 </script>
 </body>
 </html>

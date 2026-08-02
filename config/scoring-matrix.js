@@ -83,12 +83,23 @@ Sahk.register('ScoringMatrix', function() {
       html += '</tr>';
     });
     html += '</tbody></table></div>';
-    html += '<div style="text-align:center;margin-top:16px"><button id="scoringSubmitAllBtn" style="font-size:1.1em;padding:10px 32px;border-radius:8px;border:none;background:#2e7d32;color:white;font-weight:700;cursor:pointer;transition:background 0.3s;display:none">Submit All Changes</button></div>';
+    var refreshLabel = window.currentRole === 'admin' ? 'Read / Refresh All' : 'Read / Refresh Station';
+    html += '<div style="text-align:center;margin-top:16px"><button id="scoringSubmitAllBtn" style="font-size:1.1em;padding:10px 32px;border-radius:8px;border:none;background:#2e7d32;color:white;font-weight:700;cursor:pointer;transition:background 0.3s">Submit All Changes</button> <button id="scoringRefreshBtn" data-label="' + refreshLabel + '" style="font-size:1.1em;padding:10px 32px;border-radius:8px;border:none;background:#1565c0;color:white;font-weight:700;cursor:pointer">' + refreshLabel + '</button></div>';
     return html;
   }
 
   function bindScoringEvents(container) {
     if (!container) return;
+    var refreshBtn = document.getElementById('scoringRefreshBtn');
+    if (refreshBtn) {
+      var refreshLabel = refreshBtn.getAttribute('data-label') || 'Read / Refresh All';
+      refreshBtn.addEventListener('click', function() {
+        refreshBtn.disabled = true; refreshBtn.textContent = 'Reading...';
+        Sahk.get('Scoring').refreshScores().then(function() {
+          refreshBtn.disabled = false; refreshBtn.textContent = refreshLabel;
+        });
+      });
+    }
     container.querySelectorAll('.score-scroll-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var dir = parseInt(btn.dataset.dir), cn = btn.dataset.candidate || btn.dataset.cn, st = btn.dataset.st;
@@ -130,9 +141,7 @@ Sahk.register('ScoringMatrix', function() {
             if (icon) { icon.style.color = comment ? '#f9a825' : '#999'; if (comment) icon.classList.add('has-comment'); else icon.classList.remove('has-comment'); }
             getSI().updateScoringSubmitAllVisibility();
             if (!document.querySelector('.score-value[data-dirty="1"], .box-score-value[data-dirty="1"]')) {
-              Sahk.get('Scoring').fetchAllScores().then(function() {
-                if (typeof renderScoringMode === 'function') renderScoringMode();
-              });
+              if (typeof window.renderScoringMode === 'function') window.renderScoringMode();
             }
           } else {
             alert('Failed: ' + (r.error || 'Unknown'));
@@ -179,9 +188,7 @@ Sahk.register('ScoringMatrix', function() {
               }
             });
             getSI().updateScoringSubmitAllVisibility();
-            Sahk.get('Scoring').fetchAllScores().then(function() {
-              if (typeof renderScoringMode === 'function') renderScoringMode();
-            });
+            if (typeof window.renderScoringMode === 'function') window.renderScoringMode();
           } else {
             alert('Failed: ' + (r.error || 'Unknown'));
           }
@@ -223,6 +230,7 @@ Sahk.register('ScoringMatrix', function() {
   }
 
   function renderScoringMode(cfg, obsAtStation, candAtStation, candidateSession) {
+    if (!cfg || typeof cfg !== 'object') return;
     var typeId = cfg.type === 'table' ? 'tableModeContainer' : 'stationModeContainer';
     var mainC = document.getElementById(typeId);
     var candidateC = document.getElementById('candidateModeContainer');

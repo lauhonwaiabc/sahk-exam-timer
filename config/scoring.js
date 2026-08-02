@@ -5,31 +5,9 @@ Sahk.register('Scoring', function() {
     : 'https://us-central1-sahk-timer.cloudfunctions.net/app';
   var examId = '', role = '', stationNo = null, stationName = '', identifier = '';
   var allScoresCache = [], onScoresUpdated = null;
-  var unsubScores = null;
 
   function notifyScoresUpdated() {
     if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated();
-  }
-
-  function subscribeScores() {
-    if (!examId || !window.SahkAuth || !SahkAuth.getUser()) return;
-    if (unsubScores) return;
-    try {
-      unsubScores = firebase.firestore().collection('scores')
-        .where('exam', '==', examId)
-        .onSnapshot(function(snap) {
-          var items = [];
-          snap.forEach(function(doc) { items.push({ id: doc.id, ...doc.data() }); });
-          allScoresCache = items;
-          notifyScoresUpdated();
-        }, function(err) {
-          console.error('scores listener error:', err);
-          fetchAllScores().then(notifyScoresUpdated);
-        });
-    } catch (e) {
-      console.error('subscribeScores error:', e);
-      fetchAllScores().then(notifyScoresUpdated);
-    }
   }
 
   function init(config) {
@@ -38,18 +16,55 @@ Sahk.register('Scoring', function() {
     stationName = config.stationName || '';
     identifier = ((config.stationName || '') + ' ' + config.stationNo).trim();
     onScoresUpdated = config.onScoresUpdated || null;
-    return fetchAllScores().then(function() {
-      subscribeScores();
-      notifyScoresUpdated();
-    });
+    return Promise.resolve();
   }
 
   function setStation(no) { stationNo = no; }
 
-  async function fetchAllScores() {
+  async function fetchAllScores(station) {
     if (!examId) return;
-    try { var r = await fetch(API_BASE + '/scores/' + examId); if (r.ok) allScoresCache = await r.json(); else console.error('fetchAllScores failed:', r.status); }
+    var url = API_BASE + '/scores/' + examId + (station != null ? '/station/' + station : '');
+    try { var r = await fetch(url); if (r.ok) allScoresCache = await r.json(); else console.error('fetchAllScores failed:', r.status); }
     catch(e) { console.error('fetchAllScores error:', e); }
+  }
+
+  function refreshScores() {
+    var st = (role === 'examiner' && stationNo != null) ? stationNo : null;
+    return fetchAllScores(st).then(function() { notifyScoresUpdated(); });
+  }
+
+  async function fetchScoreFor(cn, st) {
+    if (!examId) return null;
+    try {
+      var r = await fetch(API_BASE + '/scores/' + examId + '/' + encodeURIComponent(String(cn)) + '/' + Number(st));
+      if (!r.ok) { console.error('fetchScoreFor failed:', r.status); return null; }
+      var rec = await r.json();
+      if (rec && rec.score !== undefined && rec.score !== null) {
+        upsertLocalScores([{ exam: examId, candidate: String(cn), station: Number(st), score: rec.score, comment: rec.comment != null ? rec.comment : null }]);
+      }
+      return rec;
+    } catch(e) { console.error('fetchScoreFor error:', e); return null; }
+  }
+
+  function upsertLocalScores(entries) {
+    if (!entries || !entries.length) return;
+    entries.forEach(function(e) {
+      var keyExam = e.exam || examId;
+      var keyCand = String(e.candidate).trim();
+      var keySt = Number(e.station);
+      var replaced = false;
+      for (var i = allScoresCache.length - 1; i >= 0; i--) {
+        var it = allScoresCache[i];
+        if (String(it.exam) === String(keyExam) && String(it.candidate) === keyCand && Number(it.station) === keySt) {
+          allScoresCache[i] = { id: it.id, exam: keyExam, timestamp: Date.now(), identifier: e.identifier || identifier, candidate: keyCand, station: keySt, score: e.score, comment: e.comment != null ? e.comment : (it.comment != null ? it.comment : null) };
+          replaced = true;
+          break;
+        }
+      }
+      if (!replaced) {
+        allScoresCache.push({ id: '', exam: keyExam, timestamp: Date.now(), identifier: e.identifier || identifier, candidate: keyCand, station: keySt, score: e.score, comment: e.comment != null ? e.comment : null });
+      }
+    });
   }
 
   function getLatestScore(cn) {
@@ -79,7 +94,10 @@ Sahk.register('Scoring', function() {
       if (comment !== undefined && comment !== null) body.comment = comment;
       var r = await fetch(API_BASE + '/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body) });
       var result = await r.json();
-      if (r.ok) notifyScoresUpdated();
+      if (r.ok) {
+        upsertLocalScores([body]);
+        notifyScoresUpdated();
+      }
       return result;
     } catch(e) { return { success: false, error: e.message }; }
   }
@@ -95,7 +113,10 @@ Sahk.register('Scoring', function() {
       });
       var r = await fetch(API_BASE + '/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(payload) });
       var result = await r.json();
-      if (r.ok) notifyScoresUpdated();
+      if (r.ok) {
+        upsertLocalScores(payload);
+        notifyScoresUpdated();
+      }
       return result;
     } catch(e) { return { success: false, error: e.message }; }
   }
@@ -232,6 +253,6 @@ Sahk.register('Scoring', function() {
     } catch(e) { setStatus('Failed: ' + e.message, false); }
   }
 
-  return { init:init, setStation:setStation, fetchAllScores:fetchAllScores, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, getLatestComment:getLatestComment, submitScore:submitScore, submitScoreForStation:submitScoreForStation, submitScoreBatch:submitScoreBatch, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, adminGenerateCandidateReport:adminGenerateCandidateReport, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get allScoresCache(){return allScoresCache;} };
+  return { init:init, setStation:setStation, fetchAllScores:fetchAllScores, refreshScores:refreshScores, fetchScoreFor:fetchScoreFor, getLatestScore:getLatestScore, getLatestScoreForStation:getLatestScoreForStation, getLatestComment:getLatestComment, submitScore:submitScore, submitScoreForStation:submitScoreForStation, submitScoreBatch:submitScoreBatch, getExamInfo:getExamInfo, createAdminPanel:createAdminPanel, initAdminEvents:initAdminEvents, adminGenerateCandidateReport:adminGenerateCandidateReport, get examId(){return examId;}, get role(){return role;}, get stationNo(){return stationNo;}, get identifier(){return identifier;}, get allScoresCache(){return allScoresCache;} };
 });
 window.SahkScoring = Sahk.get('Scoring');

@@ -14,15 +14,15 @@
   #scriptBanner.done .script-placeholder { color: #c8e6c9; }
   @media (max-width: 600px) { #scriptBanner { display: none !important; } }
 </style>
-<script src="../config/sahk.js"></script>
-  <script src="../config/constants.js"></script>
-  <script src="../config/time-utils.js"></script>
-  <script src="../config/phase-engine.js"></script>
-  <script src="../config/firebase-config.js"></script>
-  <script src="../config/audio.js"></script>
-  <script src="../config/time-sync.js"></script>
-  <script src="../config/viva_config.js"></script>
-  <script src="../config/viva_tables.js"></script>
+<script src="../config/sahk.js?v=20260802g"></script>
+  <script src="../config/constants.js?v=20260802g"></script>
+  <script src="../config/time-utils.js?v=20260802g"></script>
+  <script src="../config/phase-engine.js?v=20260802g"></script>
+  <script src="../config/firebase-config.js?v=20260802g"></script>
+  <script src="../config/audio.js?v=20260802g"></script>
+  <script src="../config/time-sync.js?v=20260802g"></script>
+  <script src="../config/viva_config.js?v=20260802g"></script>
+  <script src="../config/viva_tables.js?v=20260802g"></script>
   <script>
   (function loadData(){
     var examMode = new URLSearchParams(window.location.search).get('mode')||'am';
@@ -40,23 +40,23 @@
     document.head.appendChild(s);
   })();
   </script>
-  <script src="../config/timer-core.js"></script>
-  <script src="../config/common_timer.js"></script>
+  <script src="../config/timer-core.js?v=20260802g"></script>
+  <script src="../config/common_timer.js?v=20260802g"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="../config/firebase-auth.js"></script>
-  <script src="../config/scoring.js"></script>
-  <script src="../config/candidate_mapping_data.js"></script>
+  <script src="../config/firebase-auth.js?v=20260802g"></script>
+  <script src="../config/scoring.js?v=20260802g"></script>
+  <script src="../config/candidate_mapping_data.js?v=20260802g"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="../config/report_generator.js"></script>
-  <script src="../config/scoring-inline.js"></script>
-  <script src="../config/scoring-matrix.js"></script>
-  <script src="../config/scoring_ui.js"></script>
-<script src="../config/generic_timer.js"></script>
-<script src="../config/viva_script.js"></script>
-<script src="../config/exam_tts.js"></script>
-<script src="../config/viva_timer.js"></script>
+  <script src="../config/report_generator.js?v=20260802g"></script>
+  <script src="../config/scoring-inline.js?v=20260802g"></script>
+  <script src="../config/scoring-matrix.js?v=20260802g"></script>
+  <script src="../config/scoring_ui.js?v=20260802g"></script>
+<script src="../config/generic_timer.js?v=20260802g"></script>
+<script src="../config/viva_script.js?v=20260802g"></script>
+<script src="../config/exam_tts.js?v=20260802g"></script>
+<script src="../config/viva_timer.js?v=20260802g"></script>
 </head>
 <body>
 <div id="clock" style="display:flex;flex-direction:column;align-items:center;gap:0;padding:8px 0"><span id="timeDisplay">00:00:00</span><span id="syncStatusBadge" style="color:#fff;background:#000;padding:0 4px;font:8px Arial;border-radius:2px;line-height:1">Local</span></div>
@@ -109,7 +109,7 @@
 var roleConfig = null, currentRole = 'candidate', activeStationNo = 1;
 var SCORE_OPTIONS = ['-', 2, 3, 4, 5, 6, 7, 8];
 var SCORE_COLORS = { '-': '#000000', 2: '#d32f2f', 3: '#ff9800', 4: '#fdd835', 5: '#4caf50', 6: '#2196f3', 7: '#3f51b5', 8: '#9c27b0' };
-var isInScoringMode = false, scoringIsolateStation = null, scoringRefreshId = null;
+var isInScoringMode = false, scoringIsolateStation = null;
 window.showInlineScoring = false;
 window.currentRole = currentRole;
 window.activeStationNo = activeStationNo;

@@ -11,14 +11,16 @@ Sahk.register('ScoringInline', function() {
     return (typeof SCORE_COLORS !== 'undefined' && SCORE_COLORS) ? SCORE_COLORS : Sahk.get('Constants').SCORE_COLORS;
   };
 
+  function _setBoxSaveLabel(btn, label) {
+    if (!btn) return;
+    btn.textContent = label;
+    btn.style.background = label === 'Submit' ? '#2e7d32' : '#1565c0';
+  }
+
   function updateScoringSubmitAllVisibility() {
     var btn = document.getElementById('scoringSubmitAllBtn');
     if (!btn) return;
-    if (document.querySelector('.score-value[data-dirty="1"], .box-score-value[data-dirty="1"]')) {
-      btn.style.display = '';
-    } else {
-      btn.style.display = 'none';
-    }
+    btn.style.display = '';
   }
 
   function makeScoreEditable(span, onCommit) {
@@ -101,25 +103,7 @@ Sahk.register('ScoringInline', function() {
           }
           var box = row.closest('.osce-box,.viva-box'); if (!box) box = row.parentNode;
           var saveBtn = box ? box.querySelector('.box-score-save') : null;
-          if (saveBtn) saveBtn.style.display = '';
-          updateScoringSubmitAllVisibility();
-        });
-        return;
-      }
-      if (t.classList.contains('score-value') && !t.querySelector('input') && !t.closest('.scoring-cell-obs') && !t.closest('.scoring-cell-rest')) {
-        makeScoreEditable(t, function(val, cell) {
-          cell.setAttribute('data-dirty', '1');
-          var inner = cell.closest('.scoring-cell-inner'); if (!inner) return;
-          var icon = inner.querySelector('.score-comment-icon');
-          if (icon) {
-            icon.style.display = val === '-' ? 'none' : '';
-            if (val === '-') {
-              var commentArea = inner.querySelector('.score-comment-area');
-              if (commentArea) commentArea.style.display = 'none';
-            }
-          }
-          var subBtn = inner.querySelector('.score-submit-btn');
-          if (subBtn) subBtn.style.display = '';
+          _setBoxSaveLabel(saveBtn, 'Submit');
           updateScoringSubmitAllVisibility();
         });
         return;
@@ -142,7 +126,7 @@ Sahk.register('ScoringInline', function() {
           }
         }
         var box = row.closest('.osce-box,.viva-box'); if (!box) box = row.parentNode;
-        var saveBtn = box ? box.querySelector('.box-score-save') : null; if (saveBtn) saveBtn.style.display = '';
+        var saveBtn = box ? box.querySelector('.box-score-save') : null; _setBoxSaveLabel(saveBtn, 'Submit');
         updateScoringSubmitAllVisibility();
       } else if (t.classList.contains('box-score-save')) {
         var cn2 = t.dataset.cn, st2 = parseInt(t.dataset.st);
@@ -153,27 +137,44 @@ Sahk.register('ScoringInline', function() {
         var commentArea = box2.querySelector('.box-score-comment-area[data-cn="' + cn2 + '"][data-st="' + st2 + '"]');
         var commentEl = commentArea ? commentArea.querySelector('.box-score-comment') : null;
         var comment = commentEl ? commentEl.value.trim() : '';
-        t.textContent = '...'; t.disabled = true;
-        Sahk.get('Scoring').submitScoreForStation(cn2, null, score, st2, comment).then(function(r) {
-          t.textContent = 'Submit'; t.disabled = false;
-          if (r.success) {
-            t.style.display = 'none'; cell2.setAttribute('data-dirty', '0');
-            if (commentArea) commentArea.style.display = 'none';
-            var icon = row2.querySelector('.box-score-comment-icon');
-            if (icon) { icon.style.color = comment ? '#f9a825' : '#999'; if (comment) icon.classList.add('has-comment'); else icon.classList.remove('has-comment'); }
-            updateScoringSubmitAllVisibility();
-            if (!document.querySelector('.box-score-value[data-dirty="1"], .score-value[data-dirty="1"]')) {
-              Sahk.get('Scoring').fetchAllScores().then(function() {
-                if (typeof renderScoringMode === 'function') renderScoringMode();
-              });
+        var icon2 = row2.querySelector('.box-score-comment-icon');
+        if (t.textContent.trim().toUpperCase() === 'READ') {
+          t.textContent = '...'; t.disabled = true;
+          Sahk.get('Scoring').fetchScoreFor(cn2, st2).then(function(rec) {
+            _setBoxSaveLabel(t, 'Read'); t.disabled = false;
+            var has = rec && rec.score !== undefined && rec.score !== null;
+            var ns = has ? String(rec.score) : '-';
+            cell2.textContent = ns;
+            cell2.style.color = _getScoreColor(ns);
+            cell2.setAttribute('data-dirty', '0');
+            var cm = has && rec.comment != null ? String(rec.comment) : '';
+            if (commentEl) commentEl.value = cm;
+            if (icon2) {
+              icon2.style.display = ns === '-' ? 'none' : '';
+              icon2.style.color = cm ? '#f9a825' : '#999';
+              if (cm) icon2.classList.add('has-comment'); else icon2.classList.remove('has-comment');
             }
-          } else {
-            alert('Failed: ' + (r.error || 'Unknown'));
-          }
-        }).catch(function(err) {
-          t.textContent = 'Submit'; t.disabled = false;
-          alert('Error: ' + (err.message || 'Unknown'));
-        });
+          });
+        } else {
+          t.textContent = '...'; t.disabled = true;
+          Sahk.get('Scoring').submitScoreForStation(cn2, null, score, st2, comment).then(function(r) {
+            _setBoxSaveLabel(t, 'Read'); t.disabled = false;
+            if (r.success) {
+              cell2.setAttribute('data-dirty', '0');
+              if (commentArea) commentArea.style.display = 'none';
+              if (icon2) { icon2.style.color = comment ? '#f9a825' : '#999'; if (comment) icon2.classList.add('has-comment'); else icon2.classList.remove('has-comment'); }
+              updateScoringSubmitAllVisibility();
+              if (!document.querySelector('.box-score-value[data-dirty="1"], .score-value[data-dirty="1"]')) {
+                if (typeof window.renderScoringMode === 'function') window.renderScoringMode();
+              }
+            } else {
+              alert('Failed: ' + (r.error || 'Unknown'));
+            }
+          }).catch(function(err) {
+            _setBoxSaveLabel(t, 'Read'); t.disabled = false;
+            alert('Error: ' + (err.message || 'Unknown'));
+          });
+        }
       }
     });
     bc.addEventListener('input', function(e) {
@@ -186,7 +187,7 @@ Sahk.register('ScoringInline', function() {
         var cell = row.querySelector('.box-score-value');
         if (cell) cell.setAttribute('data-dirty', '1');
         var saveBtn = box.querySelector('.box-score-save');
-        if (saveBtn) saveBtn.style.display = '';
+        _setBoxSaveLabel(saveBtn, 'Submit');
         updateScoringSubmitAllVisibility();
       }
     });
@@ -204,7 +205,7 @@ Sahk.register('ScoringInline', function() {
     }
     var iconColor = comment ? '#f9a825' : (sc !== '-' ? '#999' : '#ccc');
     var iconClass = comment ? ' has-comment' : '';
-    return '<div class="box-score-row"><span class="role-label">Score</span><button class="box-score-btn score-down" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" data-dir="-1">&#9664;</button><span class="box-score-value" style="color:' + sco + '">' + sc + '</span><button class="box-score-btn score-up" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" data-dir="1">&#9654;</button><span class="box-score-comment-icon' + iconClass + '" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="cursor:pointer;font-size:1.2em;color:' + iconColor + ';' + (sc === '-' ? 'display:none' : '') + '" title="' + (comment ? 'Edit comment' : 'Add comment') + '">&#x1F4AC;</span></div><div class="box-score-comment-area" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="display:none;width:100%;min-width:100%"><textarea class="box-score-comment" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" rows="2" placeholder="Comment..." style="width:100%;max-width:100%;box-sizing:border-box;resize:vertical;font-size:0.85em;font-family:inherit;padding:4px;border:1px solid #bbb;border-radius:4px;min-width:100%">' + (comment || '') + '</textarea></div><button class="box-score-save" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="display:none">Submit</button>';
+    return '<div class="box-score-row"><span class="role-label">Score</span><button class="box-score-btn score-down" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" data-dir="-1">&#9664;</button><span class="box-score-value" style="color:' + sco + '">' + sc + '</span><button class="box-score-btn score-up" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" data-dir="1">&#9654;</button><span class="box-score-comment-icon' + iconClass + '" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="cursor:pointer;font-size:1.2em;color:' + iconColor + ';' + (sc === '-' ? 'display:none' : '') + '" title="' + (comment ? 'Edit comment' : 'Add comment') + '">&#x1F4AC;</span></div><div class="box-score-comment-area" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="display:none;width:100%;min-width:100%"><textarea class="box-score-comment" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" rows="2" placeholder="Comment..." style="width:100%;max-width:100%;box-sizing:border-box;resize:vertical;font-size:0.85em;font-family:inherit;padding:4px;border:1px solid #bbb;border-radius:4px;min-width:100%">' + (comment || '') + '</textarea></div><button class="box-score-save" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="font-size:0.8em;padding:3px 12px;border-radius:6px;border:none;background:#1565c0;color:white;cursor:pointer">Read</button>';
   }
 
   return {

@@ -78,13 +78,12 @@ Sahk.register('ScoringUI', function() {
       : (window.scoringIsolateStation != null ? Number(window.scoringIsolateStation) : null);
     var tr = document.getElementById('transitModeBtn'); if (tr) tr.style.display = 'none';
     var tb = document.getElementById('toggleModeBtn'); if (tb) tb.textContent = cfg.modeLabel;
-    Sahk.get('Scoring').fetchAllScores().then(function() { renderScoringMode(); });
+    renderScoringMode();
   }
 
   function exitScoringMode() {
     window.isInScoringMode = false;
     var tr = document.getElementById('transitModeBtn'); if (tr) tr.style.display = '';
-    if (window.scoringRefreshId !== null) { clearInterval(window.scoringRefreshId); window.scoringRefreshId = null; }
     renderScoringMode();
     if (typeof window.refreshTimerDisplay === 'function') window.refreshTimerDisplay();
   }
