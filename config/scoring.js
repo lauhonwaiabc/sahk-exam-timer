@@ -5,6 +5,22 @@ Sahk.register('Scoring', function() {
     : 'https://us-central1-sahk-timer.cloudfunctions.net/app';
   var examId = '', role = '', stationNo = null, stationName = '', identifier = '';
   var allScoresCache = [], onScoresUpdated = null;
+  var _scoreIndex = {};
+  var _lastFetchMs = 0;
+  var CACHE_FRESH_MS = 2000;
+
+  function _rebuildIndex() {
+    _scoreIndex = {};
+    for (var i = 0; i < allScoresCache.length; i++) {
+      var it = allScoresCache[i];
+      _scoreIndex[String(it.candidate).trim() + '|' + Number(it.station)] = i;
+    }
+  }
+
+  function _findCached(cn, st) {
+    var idx = _scoreIndex[String(cn).trim() + '|' + Number(st)];
+    return idx === undefined ? null : allScoresCache[idx];
+  }
 
   function notifyScoresUpdated() {
     if (onScoresUpdated && typeof onScoresUpdated === 'function') onScoresUpdated();
@@ -35,7 +51,7 @@ Sahk.register('Scoring', function() {
   async function fetchAllScores(station) {
     if (!examId) return;
     var url = API_BASE + '/scores/' + examId + (station != null ? '/station/' + station : '');
-    try { var r = await fetch(url, { headers: await _authHeaders() }); if (r.ok) allScoresCache = await r.json(); else console.error('fetchAllScores failed:', r.status); }
+    try { var r = await fetch(url, { headers: await _authHeaders() }); if (r.ok) { allScoresCache = await r.json(); _lastFetchMs = Date.now(); _rebuildIndex(); } else console.error('fetchAllScores failed:', r.status); }
     catch(e) { console.error('fetchAllScores error:', e); }
   }
 
@@ -46,15 +62,10 @@ Sahk.register('Scoring', function() {
 
   async function fetchScoreFor(cn, st) {
     if (!examId) return null;
-    try {
-      var r = await fetch(API_BASE + '/scores/' + examId + '/' + encodeURIComponent(String(cn)) + '/' + Number(st), { headers: await _authHeaders() });
-      if (!r.ok) { console.error('fetchScoreFor failed:', r.status); return null; }
-      var rec = await r.json();
-      if (rec && rec.score !== undefined && rec.score !== null) {
-        upsertLocalScores([{ exam: examId, candidate: String(cn), station: Number(st), score: rec.score, comment: rec.comment != null ? rec.comment : null }]);
-      }
-      return rec;
-    } catch(e) { console.error('fetchScoreFor error:', e); return null; }
+    var cached = _findCached(cn, Number(st));
+    if (cached && Date.now() - _lastFetchMs < CACHE_FRESH_MS) return cached;
+    await fetchAllScores((role === 'examiner' && stationNo != null) ? stationNo : null);
+    return _findCached(cn, Number(st));
   }
 
   function upsertLocalScores(entries) {
@@ -63,37 +74,31 @@ Sahk.register('Scoring', function() {
       var keyExam = e.exam || examId;
       var keyCand = String(e.candidate).trim();
       var keySt = Number(e.station);
-      var replaced = false;
-      for (var i = allScoresCache.length - 1; i >= 0; i--) {
-        var it = allScoresCache[i];
-        if (String(it.exam) === String(keyExam) && String(it.candidate) === keyCand && Number(it.station) === keySt) {
-          allScoresCache[i] = { id: it.id, exam: keyExam, timestamp: Date.now(), identifier: e.identifier || identifier, candidate: keyCand, station: keySt, score: e.score, comment: e.comment != null ? e.comment : (it.comment != null ? it.comment : null) };
-          replaced = true;
-          break;
-        }
-      }
-      if (!replaced) {
-        allScoresCache.push({ id: '', exam: keyExam, timestamp: Date.now(), identifier: e.identifier || identifier, candidate: keyCand, station: keySt, score: e.score, comment: e.comment != null ? e.comment : null });
+      var key = keyCand + '|' + keySt;
+      var idx = _scoreIndex[key];
+      var now = Date.now();
+      if (idx !== undefined && idx >= 0 && idx < allScoresCache.length) {
+        allScoresCache[idx] = { id: allScoresCache[idx].id, exam: keyExam, timestamp: now, identifier: e.identifier || identifier, candidate: keyCand, station: keySt, score: e.score, comment: e.comment != null ? e.comment : (allScoresCache[idx].comment != null ? allScoresCache[idx].comment : null) };
+      } else {
+        allScoresCache.push({ id: '', exam: keyExam, timestamp: now, identifier: e.identifier || identifier, candidate: keyCand, station: keySt, score: e.score, comment: e.comment != null ? e.comment : null });
+        _scoreIndex[key] = allScoresCache.length - 1;
       }
     });
   }
 
   function getLatestScore(cn) {
-    for (var i = allScoresCache.length - 1; i >= 0; i--)
-      if (allScoresCache[i].candidate === String(cn) && Number(allScoresCache[i].station) === stationNo) return allScoresCache[i].score;
-    return '-';
+    var rec = _findCached(cn, stationNo);
+    return rec ? rec.score : '-';
   }
 
   function getLatestScoreForStation(cn, st) {
-    for (var i = allScoresCache.length - 1; i >= 0; i--)
-      if (allScoresCache[i].candidate === String(cn) && allScoresCache[i].station === Number(st)) return allScoresCache[i].score;
-    return '-';
+    var rec = _findCached(cn, Number(st));
+    return rec ? rec.score : '-';
   }
 
   function getLatestComment(cn, st) {
-    for (var i = allScoresCache.length - 1; i >= 0; i--)
-      if (allScoresCache[i].candidate === String(cn) && allScoresCache[i].station === Number(st)) return allScoresCache[i].comment || '';
-    return '';
+    var rec = _findCached(cn, Number(st));
+    return rec && rec.comment ? rec.comment : '';
   }
 
   async function submitScore(cn, obs, score, comment) { return await submitScoreForStation(cn, obs, score, stationNo, comment); }
@@ -169,7 +174,7 @@ Sahk.register('Scoring', function() {
     if (!confirm('Delete ALL scores for ' + getExamInfo() + '?')) return;
     try {
       var r = await fetch(API_BASE + '/scores/' + examId, { method:'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-      if (r.ok) { alert('Cleared'); allScoresCache = []; if (onScoresUpdated) onScoresUpdated(); }
+      if (r.ok) { alert('Cleared'); allScoresCache = []; _rebuildIndex(); if (onScoresUpdated) onScoresUpdated(); }
       else if (r.status === 401 || r.status === 403) { _adminToken = ''; alert('Access denied. You may not have admin privileges.'); }
       else alert('Failed');
     } catch(e) { alert('Failed: ' + e.message); }
