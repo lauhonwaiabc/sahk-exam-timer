@@ -156,13 +156,17 @@ Sahk.register('ReportGenerator', function() {
     return { title:examId, itemName:'Station', expected:10, passPer:5, totalPass:50, maxScore:80, minScore:20, type:examId };
   }
 
-  // ── Station name lookup (OSCE only) ──
+  // ── Station name lookup (OSCE station names / Viva table themes) ──
   function stationNameFor(cfg, st) {
-    if (cfg.type !== 'osce') return '';
     try {
-      if (typeof STATION_NAMES !== 'undefined' && STATION_NAMES) {
+      if (cfg.type === 'osce' && typeof STATION_NAMES !== 'undefined' && STATION_NAMES) {
         var nm = STATION_NAMES[Number(st) - 1];
         if (nm) return String(nm);
+      } else if (cfg.type === 'viva' && typeof VIVA_THEMES_AM !== 'undefined' && typeof VIVA_THEMES_PM !== 'undefined') {
+        var isAm = (cfg.batch || '').toUpperCase() !== 'PM';
+        var themes = isAm ? VIVA_THEMES_AM : VIVA_THEMES_PM;
+        var tm = themes && themes[Number(st) - 1];
+        if (tm) return String(tm);
       }
     } catch (e) {}
     return '';
