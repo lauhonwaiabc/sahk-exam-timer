@@ -528,7 +528,14 @@ Sahk.register('ReportGenerator', function() {
       ? 'http://localhost:3000'
       : 'https://us-central1-sahk-timer.cloudfunctions.net/app';
     try {
-      var r = await fetch(API_BASE + '/scores/' + exam);
+      var headers = { 'Content-Type': 'application/json' };
+      if (window.SahkAuth && window.SahkAuth.getIdToken) {
+        try {
+          var token = await window.SahkAuth.getIdToken(false);
+          if (token) headers['Authorization'] = 'Bearer ' + token;
+        } catch (e) { console.warn('Could not obtain auth token:', e); }
+      }
+      var r = await fetch(API_BASE + '/scores/' + exam, { headers: headers });
       if (r.ok) {
         var data = await r.json();
         return data;

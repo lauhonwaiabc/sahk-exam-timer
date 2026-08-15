@@ -21,10 +21,21 @@ Sahk.register('Scoring', function() {
 
   function setStation(no) { stationNo = no; }
 
+  async function _authHeaders() {
+    var headers = { 'Content-Type': 'application/json' };
+    try {
+      if (window.SahkAuth && window.SahkAuth.getIdToken) {
+        var token = await window.SahkAuth.getIdToken(false);
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+      }
+    } catch(e) { console.warn('Could not obtain auth token:', e); }
+    return headers;
+  }
+
   async function fetchAllScores(station) {
     if (!examId) return;
     var url = API_BASE + '/scores/' + examId + (station != null ? '/station/' + station : '');
-    try { var r = await fetch(url); if (r.ok) allScoresCache = await r.json(); else console.error('fetchAllScores failed:', r.status); }
+    try { var r = await fetch(url, { headers: await _authHeaders() }); if (r.ok) allScoresCache = await r.json(); else console.error('fetchAllScores failed:', r.status); }
     catch(e) { console.error('fetchAllScores error:', e); }
   }
 
@@ -36,7 +47,7 @@ Sahk.register('Scoring', function() {
   async function fetchScoreFor(cn, st) {
     if (!examId) return null;
     try {
-      var r = await fetch(API_BASE + '/scores/' + examId + '/' + encodeURIComponent(String(cn)) + '/' + Number(st));
+      var r = await fetch(API_BASE + '/scores/' + examId + '/' + encodeURIComponent(String(cn)) + '/' + Number(st), { headers: await _authHeaders() });
       if (!r.ok) { console.error('fetchScoreFor failed:', r.status); return null; }
       var rec = await r.json();
       if (rec && rec.score !== undefined && rec.score !== null) {
@@ -92,7 +103,7 @@ Sahk.register('Scoring', function() {
     try {
       var body = { exam:examId, candidate:String(cn).trim(), station:Number(st), score:score, identifier:identifier.trim() };
       if (comment !== undefined && comment !== null) body.comment = comment;
-      var r = await fetch(API_BASE + '/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body) });
+      var r = await fetch(API_BASE + '/scores', { method:'POST', headers: await _authHeaders(), body:JSON.stringify(body) });
       var result = await r.json();
       if (r.ok) {
         upsertLocalScores([body]);
@@ -111,7 +122,7 @@ Sahk.register('Scoring', function() {
         if (e.comment !== undefined && e.comment !== null) entry.comment = e.comment;
         return entry;
       });
-      var r = await fetch(API_BASE + '/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(payload) });
+      var r = await fetch(API_BASE + '/scores', { method:'POST', headers: await _authHeaders(), body:JSON.stringify(payload) });
       var result = await r.json();
       if (r.ok) {
         upsertLocalScores(payload);

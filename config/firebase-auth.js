@@ -58,6 +58,9 @@ Sahk.register('Auth', function() {
   function getUser() { return currentUser; }
 
   async function getIdToken(forceRefresh) {
+    if (!currentUser && auth && !authReady) {
+      await new Promise(function(resolve) { onAuthStateChanged(resolve); });
+    }
     if (!currentUser) return null;
     return await currentUser.getIdToken(forceRefresh || false);
   }
