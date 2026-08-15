@@ -7,6 +7,7 @@ Sahk.register('Scoring', function() {
   var allScoresCache = [], onScoresUpdated = null;
   var _scoreIndex = {};
   var _lastFetchMs = 0;
+  var _singleFresh = {};
   var CACHE_FRESH_MS = 2000;
 
   function _rebuildIndex() {
@@ -20,6 +21,15 @@ Sahk.register('Scoring', function() {
   function _findCached(cn, st) {
     var idx = _scoreIndex[String(cn).trim() + '|' + Number(st)];
     return idx === undefined ? null : allScoresCache[idx];
+  }
+
+  function _removeLocalScore(cn, st) {
+    var key = String(cn).trim() + '|' + Number(st);
+    if (key in _scoreIndex) {
+      allScoresCache.splice(_scoreIndex[key], 1);
+      _rebuildIndex();
+    }
+    delete _singleFresh[key];
   }
 
   function notifyScoresUpdated() {
@@ -62,10 +72,27 @@ Sahk.register('Scoring', function() {
 
   async function fetchScoreFor(cn, st) {
     if (!examId) return null;
-    var cached = _findCached(cn, Number(st));
-    if (cached && Date.now() - _lastFetchMs < CACHE_FRESH_MS) return cached;
-    await fetchAllScores((role === 'examiner' && stationNo != null) ? stationNo : null);
-    return _findCached(cn, Number(st));
+    var stNum = Number(st);
+    var key = String(cn).trim() + '|' + stNum;
+    var cached = _findCached(cn, stNum);
+    var lastGood = Math.max(_lastFetchMs, _singleFresh[key] || 0);
+    if (cached && Date.now() - lastGood < CACHE_FRESH_MS) return cached;
+    try {
+      var url = API_BASE + '/scores/' + encodeURIComponent(examId) + '/' + encodeURIComponent(String(cn).trim()) + '/' + stNum;
+      var r = await fetch(url, { headers: await _authHeaders() });
+      if (r.ok) {
+        var rec = await r.json();
+        if (rec) {
+          upsertLocalScores([{ exam: rec.exam || examId, candidate: rec.candidate, station: rec.station, score: rec.score, comment: rec.comment, identifier: rec.identifier }]);
+          _singleFresh[key] = Date.now();
+        } else {
+          _removeLocalScore(cn, stNum);
+        }
+        return rec;
+      }
+      console.error('fetchScoreFor failed:', r.status);
+    } catch(e) { console.error('fetchScoreFor error:', e); }
+    return _findCached(cn, stNum);
   }
 
   function upsertLocalScores(entries) {
@@ -156,15 +183,26 @@ Sahk.register('Scoring', function() {
   }
 
   async function adminExportCSV() {
-    var token = await _getAdminToken();
-    if (!token) return;
+    if (role !== 'admin') { alert('Access denied. Admin privileges required.'); return; }
     try {
-      var r = await fetch(API_BASE + '/export/' + examId, {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (r.ok) { var b = await r.blob(); var u = window.URL.createObjectURL(b); var a = document.createElement('a'); a.href = u; a.download = examId + '_scores.csv'; a.click(); window.URL.revokeObjectURL(u); }
-      else if (r.status === 401 || r.status === 403) { _adminToken = ''; alert('Access denied. You may not have admin privileges.'); }
-      else alert('Failed');
+      await fetchAllScores();
+      var items = allScoresCache.slice();
+      if (!items.length) { alert('No scores available to export.'); return; }
+      items.sort(function(a, b) { return String(a.timestamp).localeCompare(String(b.timestamp)); });
+      var headers = ['Exam', 'Timestamp', 'Identifier', 'Candidate', 'Station', 'Score', 'Comment'];
+      var rows = items.map(function(s) { return [s.exam, s.timestamp, s.identifier, s.candidate, s.station, s.score, s.comment || '']; });
+      var csv = [headers.join(',')].concat(rows.map(function(r) {
+        return r.map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
+      })).join('\n');
+      var blob = new Blob([csv], { type: 'text/csv' });
+      var u = window.URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = u;
+      a.download = examId + '_scores.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(u);
     } catch(e) { alert('Failed: ' + e.message); }
   }
 
