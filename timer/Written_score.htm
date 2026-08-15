@@ -397,13 +397,13 @@ function renderTable() {
         comment = SahkScoring.getLatestComment(cn, qNum);
       }
       var iconColor = comment ? '#f9a825' : (sc !== '-' ? '#999' : '#ccc');
-      var iconStyle = sc === '-' ? 'display:none' : '';
+      var iconStyle = sc === '-' ? 'pointer-events:none;cursor:default' : '';
       bodyHtml += '<td><div class="scoring-cell-inner">';
       bodyHtml += '<div class="scoring-score-row">';
       bodyHtml += '<button class="score-scroll-btn score-down" data-cn="' + cn + '" data-q="' + qNum + '" data-dir="-1">&#9664;</button>';
       bodyHtml += '<span class="score-value" data-cn="' + cn + '" data-q="' + qNum + '" data-dirty="0" style="color:' + co + '">' + sc + '</span>';
       bodyHtml += '<button class="score-scroll-btn score-up" data-cn="' + cn + '" data-q="' + qNum + '" data-dir="1">&#9654;</button>';
-      bodyHtml += '<span class="score-comment-icon' + (comment ? ' has-comment' : '') + '" data-cn="' + cn + '" data-q="' + qNum + '" style="cursor:pointer;font-size:1.1em;color:' + iconColor + ';' + iconStyle + '" title="' + (comment ? 'Edit comment' : 'Add comment') + '">&#x1F4AC;</span>';
+      bodyHtml += '<span class="score-comment-icon' + (comment ? ' has-comment' : '') + '" data-cn="' + cn + '" data-q="' + qNum + '" style="font-size:1.1em;color:' + iconColor + ';' + (iconStyle || 'cursor:pointer') + '" title="' + (sc !== '-' ? (comment ? 'Edit comment' : 'Add comment') : 'Enter a score first') + '">&#x1F4AC;</span>';
       bodyHtml += '</div>';
       bodyHtml += '<div class="score-comment-area" data-cn="' + cn + '" data-q="' + qNum + '" style="display:none"><textarea class="score-comment" data-cn="' + cn + '" data-q="' + qNum + '" rows="2" placeholder="Comment..." style="width:100%;box-sizing:border-box;resize:vertical;font-size:0.8em;font-family:inherit;padding:3px;border:1px solid #bbb;border-radius:4px">' + (comment || '') + '</textarea></div>';
       bodyHtml += '<button class="score-submit-btn" data-cn="' + cn + '" data-q="' + qNum + '" style="display:none">Submit</button>';
@@ -416,6 +416,19 @@ function renderTable() {
   body.innerHTML = bodyHtml;
 
   document.getElementById('lastRefresh').textContent = 'Last refreshed: ' + new Date().toLocaleTimeString();
+}
+
+function _setCommentDisabled(icon, disabled) {
+  if (!icon) return;
+  if (disabled) {
+    icon.style.color = '#ccc';
+    icon.style.pointerEvents = 'none';
+    icon.style.cursor = 'default';
+  } else {
+    icon.style.color = icon.classList.contains('has-comment') ? '#f9a825' : '#999';
+    icon.style.pointerEvents = 'auto';
+    icon.style.cursor = 'pointer';
+  }
 }
 
 function handleScoreClick(e) {
@@ -473,7 +486,7 @@ function handleScoreClick(e) {
         if (subBtn) subBtn.style.display = '';
         var icon = inner.querySelector('.score-comment-icon');
         if (icon) {
-          icon.style.display = val === '-' ? 'none' : '';
+          _setCommentDisabled(icon, val === '-');
           if (val === '-') {
             var commentArea = inner.querySelector('.score-comment-area');
             if (commentArea) commentArea.style.display = 'none';
@@ -516,7 +529,7 @@ function handleScoreClick(e) {
     cell.setAttribute('data-dirty', '1');
     var icon = inner.querySelector('.score-comment-icon');
     if (icon) {
-      icon.style.display = ns === '-' ? 'none' : '';
+      _setCommentDisabled(icon, ns === '-');
       if (ns === '-') {
         var commentArea = inner.querySelector('.score-comment-area');
         if (commentArea) commentArea.style.display = 'none';
@@ -549,7 +562,7 @@ function handleScoreClick(e) {
         var commentArea2 = inner2.querySelector('.score-comment-area');
         if (commentArea2) commentArea2.style.display = 'none';
         var icon2 = inner2.querySelector('.score-comment-icon');
-        if (icon2) { icon2.style.color = comment ? '#f9a825' : '#999'; if (comment) icon2.classList.add('has-comment'); else icon2.classList.remove('has-comment'); }
+        if (icon2) { if (comment) icon2.classList.add('has-comment'); else icon2.classList.remove('has-comment'); _setCommentDisabled(icon2, String(score) === '-'); }
         updateSubmitAllVisibility();
         if (!document.querySelector('.score-value[data-dirty="1"]')) renderTable();
       } else {

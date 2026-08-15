@@ -11,6 +11,19 @@ Sahk.register('ScoringInline', function() {
     return (typeof SCORE_COLORS !== 'undefined' && SCORE_COLORS) ? SCORE_COLORS : Sahk.get('Constants').SCORE_COLORS;
   };
 
+  function _setCommentDisabled(icon, disabled) {
+    if (!icon) return;
+    if (disabled) {
+      icon.style.color = '#ccc';
+      icon.style.pointerEvents = 'none';
+      icon.style.cursor = 'default';
+    } else {
+      icon.style.color = icon.classList.contains('has-comment') ? '#f9a825' : '#999';
+      icon.style.pointerEvents = 'auto';
+      icon.style.cursor = 'pointer';
+    }
+  }
+
   function _setBoxSaveLabel(btn, label) {
     if (!btn) return;
     btn.textContent = label;
@@ -95,7 +108,7 @@ Sahk.register('ScoringInline', function() {
           var row = cell.closest('.box-score-row'); if (!row) return;
           var icon = row.querySelector('.box-score-comment-icon');
           if (icon) {
-            icon.style.display = val === '-' ? 'none' : '';
+            _setCommentDisabled(icon, val === '-');
             if (val === '-') {
               var area = row.parentNode.querySelector('.box-score-comment-area[data-cn="' + icon.dataset.cn + '"][data-st="' + icon.dataset.st + '"]');
               if (area) area.style.display = 'none';
@@ -119,7 +132,7 @@ Sahk.register('ScoringInline', function() {
         cell.setAttribute('data-dirty', '1');
         var icon = row.querySelector('.box-score-comment-icon');
         if (icon) {
-          icon.style.display = ns === '-' ? 'none' : '';
+          _setCommentDisabled(icon, ns === '-');
           if (ns === '-') {
             var area = row.parentNode.querySelector('.box-score-comment-area[data-cn="' + cn + '"][data-st="' + st + '"]');
             if (area) area.style.display = 'none';
@@ -150,8 +163,7 @@ Sahk.register('ScoringInline', function() {
             var cm = has && rec.comment != null ? String(rec.comment) : '';
             if (commentEl) commentEl.value = cm;
             if (icon2) {
-              icon2.style.display = ns === '-' ? 'none' : '';
-              icon2.style.color = cm ? '#f9a825' : '#999';
+              _setCommentDisabled(icon2, ns === '-');
               if (cm) icon2.classList.add('has-comment'); else icon2.classList.remove('has-comment');
             }
           });
@@ -162,7 +174,7 @@ Sahk.register('ScoringInline', function() {
             if (r.success) {
               cell2.setAttribute('data-dirty', '0');
               if (commentArea) commentArea.style.display = 'none';
-              if (icon2) { icon2.style.color = comment ? '#f9a825' : '#999'; if (comment) icon2.classList.add('has-comment'); else icon2.classList.remove('has-comment'); }
+              if (icon2) { if (comment) icon2.classList.add('has-comment'); else icon2.classList.remove('has-comment'); _setCommentDisabled(icon2, String(cell2.textContent) === '-'); }
               updateScoringSubmitAllVisibility();
               if (!document.querySelector('.box-score-value[data-dirty="1"], .score-value[data-dirty="1"]')) {
                 if (typeof window.renderScoringMode === 'function') window.renderScoringMode();
@@ -205,7 +217,7 @@ Sahk.register('ScoringInline', function() {
     }
     var iconColor = comment ? '#f9a825' : (sc !== '-' ? '#999' : '#ccc');
     var iconClass = comment ? ' has-comment' : '';
-    return '<div class="box-score-row"><span class="role-label">Score</span><button class="box-score-btn score-down" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" data-dir="-1">&#9664;</button><span class="box-score-value" style="color:' + sco + '">' + sc + '</span><button class="box-score-btn score-up" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" data-dir="1">&#9654;</button><span class="box-score-comment-icon' + iconClass + '" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="cursor:pointer;font-size:1.2em;color:' + iconColor + ';' + (sc === '-' ? 'display:none' : '') + '" title="' + (comment ? 'Edit comment' : 'Add comment') + '">&#x1F4AC;</span></div><div class="box-score-comment-area" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="display:none;width:100%;min-width:100%"><textarea class="box-score-comment" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" rows="2" placeholder="Comment..." style="width:100%;max-width:100%;box-sizing:border-box;resize:vertical;font-size:0.85em;font-family:inherit;padding:4px;border:1px solid #bbb;border-radius:4px;min-width:100%">' + (comment || '') + '</textarea></div><button class="box-score-save" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="font-size:0.8em;padding:3px 12px;border-radius:6px;border:none;background:#1565c0;color:white;cursor:pointer">Read</button>';
+    return '<div class="box-score-row"><span class="role-label">Score</span><button class="box-score-btn score-down" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" data-dir="-1">&#9664;</button><span class="box-score-value" style="color:' + sco + '">' + sc + '</span><button class="box-score-btn score-up" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" data-dir="1">&#9654;</button><span class="box-score-comment-icon' + iconClass + '" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="font-size:1.2em;color:' + iconColor + ';' + (sc === '-' ? 'pointer-events:none;cursor:default' : 'cursor:pointer') + '" title="' + (sc !== '-' ? (comment ? 'Edit comment' : 'Add comment') : 'Enter a score first') + '">&#x1F4AC;</span></div><div class="box-score-comment-area" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="display:none;width:100%;min-width:100%"><textarea class="box-score-comment" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" rows="2" placeholder="Comment..." style="width:100%;max-width:100%;box-sizing:border-box;resize:vertical;font-size:0.85em;font-family:inherit;padding:4px;border:1px solid #bbb;border-radius:4px;min-width:100%">' + (comment || '') + '</textarea></div><button class="box-score-save" data-cn="' + cnRaw + '" data-st="' + (stationIdx + 1) + '" style="font-size:0.8em;padding:3px 12px;border-radius:6px;border:none;background:#1565c0;color:white;cursor:pointer">Read</button>';
   }
 
   return {
