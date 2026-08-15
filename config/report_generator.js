@@ -156,6 +156,32 @@ Sahk.register('ReportGenerator', function() {
     return { title:examId, itemName:'Station', expected:10, passPer:5, totalPass:50, maxScore:80, minScore:20, type:examId };
   }
 
+  // ── Station name lookup (OSCE only) ──
+  function stationNameFor(cfg, st) {
+    if (cfg.type !== 'osce') return '';
+    try {
+      if (typeof STATION_NAMES !== 'undefined' && STATION_NAMES) {
+        var nm = STATION_NAMES[Number(st) - 1];
+        if (nm) return String(nm);
+      }
+    } catch (e) {}
+    return '';
+  }
+  function stationLabel(cfg, st) {
+    var nm = stationNameFor(cfg, st);
+    return nm ? (cfg.itemName + ' ' + st + '\n' + nm) : (cfg.itemName + ' ' + st);
+  }
+  function stationLabelHtml(cfg, st) {
+    var nm = stationNameFor(cfg, st);
+    return nm ? (cfg.itemName + ' ' + st + '<br>' + nm) : (cfg.itemName + ' ' + st);
+  }
+  function escXmlBr(s) {
+    var parts = cleanText(String(s)).split('\n');
+    var out = '';
+    for (var i = 0; i < parts.length; i++) { if (i > 0) out += '<w:br/>'; out += escXml(parts[i]); }
+    return out;
+  }
+
   // ── Histogram → PNG base64 ──
   function drawHistogramCanvas(scores, candidateScore, passVal, width, height) {
     var c = document.createElement('canvas'); c.width = width * 2; c.height = height * 2;
@@ -254,10 +280,13 @@ Sahk.register('ReportGenerator', function() {
       xml += '<w:tr>';
       for (var ci = 0; ci < rows[ri].length; ci++) {
         var cell = rows[ri][ci];
-        var cellVal = cell.text || '', cellBold = cell.bold || false;
+        var cellLines = String(cell.text || '').split('\n'), cellBold = cell.bold || false;
         var cellColor = cell.color || '000000', cellBg = cell.bg || 'auto', cellSize = cell.size || 18;
             var cellAlign = cell.align || 'center';
-        xml += '<w:tc><w:tcPr>' + (cellBg !== 'auto' ? '<w:shd w:val="clear" w:color="auto" w:fill="' + cellBg + '"/>' : '') + '<w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="' + cellAlign + '"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr>' + (cellBold ? '<w:b/>' : '') + '<w:color w:val="' + cellColor + '"/><w:sz w:val="' + cellSize + '"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr><w:t xml:space="preserve">' + escXml(String(cellVal)) + '</w:t></w:r></w:p></w:tc>';
+        var cellRuns = '<w:r><w:rPr>' + (cellBold ? '<w:b/>' : '') + '<w:color w:val="' + cellColor + '"/><w:sz w:val="' + cellSize + '"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr>';
+        for (var li = 0; li < cellLines.length; li++) { if (li > 0) cellRuns += '<w:br/>'; cellRuns += '<w:t xml:space="preserve">' + escXml(cellLines[li]) + '</w:t>'; }
+        cellRuns += '</w:r>';
+        xml += '<w:tc><w:tcPr>' + (cellBg !== 'auto' ? '<w:shd w:val="clear" w:color="auto" w:fill="' + cellBg + '"/>' : '') + '<w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="' + cellAlign + '"/><w:spacing w:before="0" w:after="0"/></w:pPr>' + cellRuns + '</w:p></w:tc>';
       }
       xml += '</w:tr>';
     }
@@ -485,7 +514,7 @@ Sahk.register('ReportGenerator', function() {
         var pfText = '-', pfColor = '000000';
         if (sc !== null && sc !== undefined) { pfText = sc >= cfg.passPer ? 'PASS' : 'FAIL'; pfColor = sc >= cfg.passPer ? '2e7d32' : 'c62828'; }
         itemRows.push([
-          {text:cfg.itemName+' '+st},{text:scoreDisp},
+          {text:stationLabel(cfg, st)},{text:scoreDisp},
           {text:pfText,bold:true,color:pfColor},
           {text:qs.mean.toFixed(2)+' (\u00b1 '+qs.std.toFixed(2)+')'},
           {text:qs.passRate.toFixed(1)+'%'}
@@ -514,7 +543,7 @@ Sahk.register('ReportGenerator', function() {
       var cmtTableXml = '<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="5000" w:type="pct"/><w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="999999"/><w:left w:val="single" w:sz="4" w:space="0" w:color="999999"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="999999"/><w:right w:val="single" w:sz="4" w:space="0" w:color="999999"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="999999"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="999999"/></w:tblBorders></w:tblPr><w:tblGrid><w:gridCol w:w="3000"/><w:gridCol w:w="6000"/></w:tblGrid>';
       cmtTableXml += '<w:tr><w:tc><w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="F0F0F0"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="18"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr><w:t>' + escXml(cfg.itemName) + '</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="F0F0F0"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="18"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr><w:t>Comment</w:t></w:r></w:p></w:tc></w:tr>';
       for (var ei = 0; ei < cmtEntries.length; ei++) {
-        cmtTableXml += '<w:tr><w:tc><w:tcPr><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="18"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr><w:t>' + escXml(cfg.itemName + ' ' + cmtEntries[ei].station) + '</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:vAlign w:val="top"/></w:tcPr>' + makeMultilineP(cmtEntries[ei].text, '') + '</w:tc></w:tr>';
+        cmtTableXml += '<w:tr><w:tc><w:tcPr><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="18"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr>' + escXmlBr(stationLabel(cfg, cmtEntries[ei].station)) + '</w:r></w:p></w:tc><w:tc><w:tcPr><w:vAlign w:val="top"/></w:tcPr>' + makeMultilineP(cmtEntries[ei].text, '') + '</w:tc></w:tr>';
       }
       cmtTableXml += '</w:tbl>';
       xml += cmtTableXml;
@@ -634,7 +663,7 @@ Sahk.register('ReportGenerator', function() {
     h += '<div class="rpt-panel" id="pv-qa"><div style="max-width:500px;margin:0 auto;"><table class="card-table"><thead><tr style="background:#e8f5e9;font-weight:700;"><td>' + cfg.itemName + '</td><td>Pass Rate %</td><td>Mean</td><td>SD</td></tr></thead><tbody>';
     for (var si = 0; si < allStations.length; si++) {
       var st = allStations[si], qs2 = qStats[st] || { mean:0, std:0, passRate:0 };
-      h += '<tr><td style="font-weight:700;">' + cfg.itemName + ' ' + st + '</td><td>' + qs2.passRate.toFixed(1) + '%</td><td>' + qs2.mean.toFixed(2) + '</td><td>' + qs2.std.toFixed(2) + '</td></tr>';
+      h += '<tr><td style="font-weight:700;">' + stationLabelHtml(cfg, st) + '</td><td>' + qs2.passRate.toFixed(1) + '%</td><td>' + qs2.mean.toFixed(2) + '</td><td>' + qs2.std.toFixed(2) + '</td></tr>';
     }
     h += '</tbody></table></div></div>';
 
@@ -702,7 +731,7 @@ Sahk.register('ReportGenerator', function() {
       var scoreDisp = stScore !== null && stScore !== undefined ? String(stScore) : '-';
       var pfText = '-', pfCls = '';
       if (stScore !== null && stScore !== undefined) { pfText = stScore >= pd.cfg.passPer ? 'PASS' : 'FAIL'; pfCls = stScore >= pd.cfg.passPer ? 'pass' : 'fail'; }
-      h += '<tr><td style="font-weight:700;">' + pd.cfg.itemName + ' ' + st + '</td><td>' + scoreDisp + '</td><td class="' + pfCls + '">' + pfText + '</td><td>' + qs2.mean.toFixed(2) + ' (\u00b1 ' + qs2.std.toFixed(2) + ')</td><td>' + qs2.passRate.toFixed(1) + '%</td></tr>';
+      h += '<tr><td style="font-weight:700;">' + stationLabelHtml(pd.cfg, st) + '</td><td>' + scoreDisp + '</td><td class="' + pfCls + '">' + pfText + '</td><td>' + qs2.mean.toFixed(2) + ' (\u00b1 ' + qs2.std.toFixed(2) + ')</td><td>' + qs2.passRate.toFixed(1) + '%</td></tr>';
     }
     h += '</tbody></table>';
 
@@ -712,7 +741,7 @@ Sahk.register('ReportGenerator', function() {
       var cst = pd.allStations[ci];
       var ccmt = (sc.details.comments && sc.details.comments[cst]) ? sc.details.comments[cst] : '';
       if (ccmt) {
-        h += '<tr><td style="font-weight:700;">' + pd.cfg.itemName + ' ' + cst + '</td><td style="white-space:pre-wrap">' + ccmt.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</td></tr>';
+        h += '<tr><td style="font-weight:700;">' + stationLabelHtml(pd.cfg, cst) + '</td><td style="white-space:pre-wrap">' + ccmt.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</td></tr>';
       }
     }
     h += '</tbody></table>';
