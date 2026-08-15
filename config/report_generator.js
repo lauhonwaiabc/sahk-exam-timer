@@ -182,7 +182,7 @@ Sahk.register('ReportGenerator', function() {
   function escXmlBr(s) {
     var parts = cleanText(String(s)).split('\n');
     var out = '';
-    for (var i = 0; i < parts.length; i++) { if (i > 0) out += '<w:br/>'; out += escXml(parts[i]); }
+    for (var i = 0; i < parts.length; i++) { if (i > 0) out += '<w:br/>'; out += '<w:t xml:space="preserve">' + escXml(parts[i]) + '</w:t>'; }
     return out;
   }
 
