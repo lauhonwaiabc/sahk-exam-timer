@@ -1,16 +1,16 @@
 'use strict';
-const START_TIME_AM = "09:30:00";
-const START_TIME_PM = "13:45:00";
+const START_TIME_AM = "09:00:00";
+const START_TIME_PM = "13:30:00";
 const NUM_STATIONS = 15;
 const BASE_NUM_SESSIONS = 15;
 
-const ENABLE_PREPARATION = true
+const ENABLE_PREPARATION = true;
 const PREPARATION_SESSION_INDEX = 0;
 
 const ENABLE_BREAK = false;
 const BREAK_SESSION_INDEX_RAW = 0;
 
-const ENABLE_CONCLUSION = true
+const ENABLE_CONCLUSION = true;
 const CONCLUSION_SESSION_INDEX = (ENABLE_PREPARATION ? 1 : 0) + BASE_NUM_SESSIONS + (ENABLE_BREAK ? 1 : 0);
 
 const standardPhases = [
@@ -21,11 +21,6 @@ const standardPhases = [
 const preparationPhases = [
   { title: "Transit", duration: 120, info: "2 minutes" },
   { title: "Preparation", duration: 1680, info: "28 minutes" }
-];
-
-const breakPhase = [
-  { title: "Transit", duration: 120, info: "2 minutes" },
-  { title: "Break", duration: 780, info: "13 minutes" }
 ];
 
 const conclusionPhases = [
