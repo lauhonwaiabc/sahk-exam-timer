@@ -423,6 +423,10 @@ Sahk.register('ReportGenerator', function() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+    }).catch(function(e) {
+      console.error(e);
+      var s = document.getElementById('adminStatus');
+      if (s) { s.textContent = 'Report download failed: ' + (e.message || e); s.style.color = '#c62828'; }
     });
   }
 

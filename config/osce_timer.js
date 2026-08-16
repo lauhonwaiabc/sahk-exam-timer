@@ -18,6 +18,7 @@ Sahk.register('OsceTimer', function() {
     var tts = Sahk.get('ExamTTS');
     tts.init(timer.getController(), typeof OSCE_SCRIPT_DATA !== 'undefined' ? OSCE_SCRIPT_DATA : []);
     tts.start();
+    tts.setupControls();
 
     var stopBtn = document.getElementById('stopBtn');
     if (stopBtn) {

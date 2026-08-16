@@ -4,6 +4,9 @@ Sahk.register('TimerCore', function() {
   var PE = Sahk.get('PhaseEngine');
   var Audio = Sahk.get('Audio');
   var TimeSync = Sahk.get('TimeSync');
+  if (!TU || !PE || !Audio || !TimeSync) {
+    throw new Error('TimerCore: missing dependency module (need TimeUtils, PhaseEngine, Audio, TimeSync)');
+  }
 
   function createController(config) {
     var startTimeStr = config.startTimeStr;
@@ -32,6 +35,12 @@ Sahk.register('TimerCore', function() {
     var SESSION_TIMES = [];
 
     Audio.isMuted = mutedByDefault;
+
+    function _toast(msg) {
+      var EH = Sahk.get('ErrorHandler');
+      if (EH && EH.showToast) { EH.showToast(msg, 'info'); }
+      else { alert(msg); }
+    }
 
     function recalculateScheduledTimes() {
       scheduledTimes = PE.recalculateScheduledTimes(startTimeStr, sessionPhases);
@@ -204,7 +213,7 @@ Sahk.register('TimerCore', function() {
         p = 0;
         if (s >= sessionPhases.length) {
           stopTimers();
-          alert('All sessions completed!');
+          _toast('All sessions completed!');
           return;
         }
       }
@@ -281,7 +290,7 @@ Sahk.register('TimerCore', function() {
         }
 
         if (countdownSecondsLeft <= 0) {
-          if (enableBeep) Audio.beep(5);
+          if (enableBeep) Audio.beep(2);
           moveToNextPhase();
         }
       }, 100);
@@ -290,8 +299,12 @@ Sahk.register('TimerCore', function() {
     async function startTimers() {
       if (isRunning || isStarting) return;
       isStarting = true;
+      if (Audio.prewarm) Audio.prewarm();
       TimeSync.lock();
-      await TimeSync.syncStandardTime();
+      try {
+        await TimeSync.syncStandardTime();
+      } catch(e) {
+      }
       isRunning = true;
       isStarting = false;
       if (countdownSecondsLeft <= 0) resetTimerToCurrentPhase();
@@ -480,11 +493,12 @@ Sahk.register('TimerCore', function() {
 
       setInterval(function() {
         if (isRunning) return;
-        var now = new Date(TimeSync.getCorrectedNow());
-        var nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        var nowDate = new Date(TimeSync.getCorrectedNow());
+        var nowMs = nowDate.getHours() * 3600000 + nowDate.getMinutes() * 60000 + nowDate.getSeconds() * 1000 + nowDate.getMilliseconds();
         for (var s = 0; s < scheduledTimes.length; s++) {
           for (var p = 0; p < scheduledTimes[s].length; p++) {
-            if (Math.abs(nowSec - scheduledTimes[s][p]) < 1) {
+            var deltaMs = nowMs - scheduledTimes[s][p] * 1000;
+            if (deltaMs >= 0 && deltaMs < 1000) {
               if (selectedSessionIndex !== s || selectedPhaseIndex !== p) {
                 selectedSessionIndex = s;
                 selectedPhaseIndex = p;
@@ -499,7 +513,7 @@ Sahk.register('TimerCore', function() {
             }
           }
         }
-      }, 1000);
+      }, 250);
 
       renderSections();
       renderPhases();

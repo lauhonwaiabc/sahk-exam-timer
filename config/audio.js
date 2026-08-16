@@ -3,6 +3,7 @@ Sahk.register('Audio', function() {
 
   var beepAudioCtx = null;
   var beeping = false;
+  var lastBeepStart = 0;
   var isMuted = true;
   var volume = 0.5;
 
@@ -12,14 +13,31 @@ Sahk.register('Audio', function() {
     }
   }
 
+  function prewarm() {
+    initBeep();
+    if (beepAudioCtx && beepAudioCtx.state === 'suspended') {
+      beepAudioCtx.resume();
+    }
+  }
+
   function beep(times) {
     times = times || 1;
-    if (isMuted || beeping) return;
-    beeping = true;
+    if (isMuted) return;
+    var now = Date.now();
+    if (now - lastBeepStart < 1500) return;
+    lastBeepStart = now;
     initBeep();
+    if (beepAudioCtx && beepAudioCtx.state === 'suspended') {
+      beepAudioCtx.resume();
+    }
+    if (beeping) return;
+    beeping = true;
     var count = 0;
     function play() {
-      if (count >= times) { beeping = false; return; }
+      if (count >= times) {
+        beeping = false;
+        return;
+      }
       var osc = beepAudioCtx.createOscillator();
       var gain = beepAudioCtx.createGain();
       gain.gain.value = volume;
@@ -74,6 +92,7 @@ Sahk.register('Audio', function() {
 
   return {
     beep: beep,
+    prewarm: prewarm,
     setVolume: setVolume,
     toggleMute: toggleMute,
     setMuted: setMuted,

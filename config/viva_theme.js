@@ -22,5 +22,5 @@ const VIVA_THEMES_PM = [
   "theme_7_pm",
   "theme_8_pm",
   "theme_9_pm",
-  "theme_10_am"
+  "theme_10_pm"
 ];

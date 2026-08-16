@@ -30,6 +30,11 @@ h1{color:#2e7d32}
 
 <script src="../config/sahk.js"></script>
 <script src="../config/constants.js"></script>
+<script src="../config/error-handler.js"></script>
+<script src="../config/time-utils.js"></script>
+<script src="../config/phase-engine.js"></script>
+<script src="../config/audio.js"></script>
+<script src="../config/time-sync.js"></script>
 <script src="../config/timer-core.js"></script>
 <script>
 'use strict';
@@ -108,18 +113,20 @@ assert(typeof ctrl.isMuted === 'boolean', 'API: isMuted is boolean');
 assert(ctrl.isMuted === true, 'API: mutedByDefault respected');
 
 // --- start / pause / stop state transitions ---
-ctrl.startTimers();
-assert(ctrl.isRunning === true, 'State: isRunning true after startTimers');
-ctrl.pauseTimers();
-assert(ctrl.isRunning === false, 'State: isRunning false after pauseTimers');
-ctrl.stopTimers();
-assert(ctrl.isRunning === false, 'State: isRunning false after stopTimers');
+(async function() {
+  await ctrl.startTimers();
+  assert(ctrl.isRunning === true, 'State: isRunning true after startTimers');
+  ctrl.pauseTimers();
+  assert(ctrl.isRunning === false, 'State: isRunning false after pauseTimers');
+  ctrl.stopTimers();
+  assert(ctrl.isRunning === false, 'State: isRunning false after stopTimers');
 
-// --- Summary ---
-var summary = document.createElement('div');
-summary.className = 'summary ' + (failCount === 0 ? 'all-pass' : 'has-fail');
-summary.textContent = 'Total: ' + (passCount + failCount) + ' tests | Passed: ' + passCount + ' | Failed: ' + failCount;
-results.appendChild(summary);
+  // --- Summary ---
+  var summary = document.createElement('div');
+  summary.className = 'summary ' + (failCount === 0 ? 'all-pass' : 'has-fail');
+  summary.textContent = 'Total: ' + (passCount + failCount) + ' tests | Passed: ' + passCount + ' | Failed: ' + failCount;
+  results.appendChild(summary);
+})();
 </script>
 </body>
 </html>

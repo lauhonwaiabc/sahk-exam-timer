@@ -232,7 +232,7 @@ Sahk.register('DebriefTimer', () => {
           return;
         }
         tts.warmupSynth();
-        if (Audio.isMuted) Audio.setMute(false);
+        if (Audio.isMuted) Audio.setMuted(false);
         var u = new SpeechSynthesisUtterance('This is a test of the speech synthesis engine.');
         u.rate = parseFloat(rateSlider ? rateSlider.value : 1.0);
         u.pitch = parseFloat(pitchSlider ? pitchSlider.value : 1.0);

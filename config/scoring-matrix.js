@@ -5,6 +5,12 @@ Sahk.register('ScoringMatrix', function() {
   var _unlockInactive = false;
   var SI = null;
 
+  function _toast(msg) {
+    var EH = Sahk.get('ErrorHandler');
+    if (EH && EH.showToast) { EH.showToast(msg, 'error'); }
+    else { alert(msg); }
+  }
+
   function getSI() {
     if (!SI) SI = Sahk.get('ScoringInline');
     return SI;
@@ -123,6 +129,7 @@ Sahk.register('ScoringMatrix', function() {
         var cell = inner.querySelector('.score-value'); if (!cell) return;
         var opts = getSI().getScoreOptions(); var cols = (typeof SCORE_COLORS !== 'undefined' && SCORE_COLORS) ? SCORE_COLORS : Sahk.get('Constants').SCORE_COLORS;
         var cur = cell.textContent, idx = opts.indexOf(cur === '-' ? '-' : Number(cur));
+        if (idx < 0) idx = 0;
         idx = (idx + dir + opts.length) % opts.length;
         var ns = opts[idx]; cell.textContent = ns; cell.style.color = cols[ns] || '#888';
         cell.setAttribute('data-dirty', '1');
@@ -181,11 +188,11 @@ Sahk.register('ScoringMatrix', function() {
               if (typeof window.renderScoringMode === 'function') window.renderScoringMode();
             }
           } else {
-            alert('Failed: ' + (r.error || 'Unknown'));
+            _toast('Failed: ' + (r.error || 'Unknown'));
           }
         }).catch(function(err) {
           btn.textContent = 'Submit'; btn.disabled = false;
-          alert('Error: ' + (err.message || 'Unknown'));
+          _toast('Error: ' + (err.message || 'Unknown'));
         });
       });
     });

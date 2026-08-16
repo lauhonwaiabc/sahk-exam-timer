@@ -14,6 +14,7 @@ Sahk.register('VivaTimer', function() {
     var tts = Sahk.get('ExamTTS');
     tts.init(timer.getController(), typeof VIVA_SCRIPT_DATA !== 'undefined' ? VIVA_SCRIPT_DATA : []);
     tts.start();
+    tts.setupControls();
 
     var stopBtn = document.getElementById('stopBtn');
     if (stopBtn) {

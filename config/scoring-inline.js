@@ -11,6 +11,12 @@ Sahk.register('ScoringInline', function() {
     return (typeof SCORE_COLORS !== 'undefined' && SCORE_COLORS) ? SCORE_COLORS : Sahk.get('Constants').SCORE_COLORS;
   };
 
+  function _toast(msg) {
+    var EH = Sahk.get('ErrorHandler');
+    if (EH && EH.showToast) { EH.showToast(msg, 'error'); }
+    else { alert(msg); }
+  }
+
   function _setCommentDisabled(icon, disabled) {
     if (!icon) return;
     if (disabled) {
@@ -33,7 +39,8 @@ Sahk.register('ScoringInline', function() {
   function updateScoringSubmitAllVisibility() {
     var btn = document.getElementById('scoringSubmitAllBtn');
     if (!btn) return;
-    btn.style.display = '';
+    var dirty = document.querySelectorAll('.box-score-value[data-dirty="1"], .score-value[data-dirty="1"]').length;
+    btn.disabled = dirty === 0;
   }
 
   function makeScoreEditable(span, onCommit) {
@@ -60,7 +67,7 @@ Sahk.register('ScoringInline', function() {
       } else {
         var n = Number(val);
         if (isNaN(n) || _getScoreOptions().indexOf(n) === -1) {
-          alert('Score must be one of: ' + _getScoreOptions().join(', ') + ' or "-"');
+          _toast('Score must be one of: ' + _getScoreOptions().join(', ') + ' or "-"');
           val = oldVal;
         } else {
           val = String(n);
@@ -127,6 +134,7 @@ Sahk.register('ScoringInline', function() {
         var cell = row.querySelector('.box-score-value'); if (!cell) return;
         var opts = _getScoreOptions(); var cols = _getScoreColors();
         var cur = cell.textContent, idx = opts.indexOf(cur === '-' ? '-' : Number(cur));
+        if (idx < 0) idx = 0;
         idx = (idx + dir + opts.length) % opts.length;
         var ns = opts[idx]; cell.textContent = ns; cell.style.color = cols[ns] || '#888';
         cell.setAttribute('data-dirty', '1');
@@ -180,11 +188,11 @@ Sahk.register('ScoringInline', function() {
                 if (typeof window.renderScoringMode === 'function') window.renderScoringMode();
               }
             } else {
-              alert('Failed: ' + (r.error || 'Unknown'));
+              _toast('Failed: ' + (r.error || 'Unknown'));
             }
           }).catch(function(err) {
             _setBoxSaveLabel(t, 'Read'); t.disabled = false;
-            alert('Error: ' + (err.message || 'Unknown'));
+            _toast('Error: ' + (err.message || 'Unknown'));
           });
         }
       }

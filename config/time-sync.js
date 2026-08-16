@@ -5,6 +5,7 @@ Sahk.register('TimeSync', function() {
   var syncStatus = 'unknown';
   var statusListeners = [];
   var MAX_OFFSET_MS = 10000;
+  var FETCH_TIMEOUT_MS = 8000;
 
   var serverBaseTime = null;
   var serverBaseLocal = null;
@@ -91,6 +92,23 @@ Sahk.register('TimeSync', function() {
     });
   }
 
+  function fetchWithTimeout(url, opts, ms) {
+    return new Promise(function(resolve, reject) {
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var timer = setTimeout(function() {
+        if (ctrl) { try { ctrl.abort(); } catch(e) {} }
+        reject(new Error('timeout'));
+      }, ms);
+      var o = opts || {};
+      if (ctrl) o.signal = ctrl.signal;
+      fetch(url, o).then(function(r) {
+        clearTimeout(timer); resolve(r);
+      }, function(e) {
+        clearTimeout(timer); reject(e);
+      });
+    });
+  }
+
   async function syncStandardTime() {
     var results = [];
 
@@ -100,7 +118,7 @@ Sahk.register('TimeSync', function() {
         var reqTime = Date.now();
         var opts = { cache: 'no-cache' };
         if (src.type === 'header') opts.method = 'HEAD';
-        var res = await fetch(src.url, opts);
+        var res = await fetchWithTimeout(src.url, opts, FETCH_TIMEOUT_MS);
         if (!res.ok) { continue; }
         var serverMs;
         if (src.type === 'header') {

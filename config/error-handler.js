@@ -39,11 +39,25 @@ Sahk.register('ErrorHandler', function() {
     catch(e) { reportError(e, context); throw e; }
   }
 
+  function showToast(message, type) {
+    if (!document.body) return;
+    var t = document.createElement('div');
+    t.className = 'sahk-toast' + (type ? ' ' + type : '');
+    t.textContent = message;
+    document.body.appendChild(t);
+    setTimeout(function() { t.classList.add('show'); }, 10);
+    setTimeout(function() {
+      t.classList.remove('show');
+      setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, 4000);
+  }
+
   return {
     reportError: reportError,
     warn: warn,
     onError: onError,
     safe: safe,
-    safeAsync: safeAsync
+    safeAsync: safeAsync,
+    showToast: showToast
   };
 });

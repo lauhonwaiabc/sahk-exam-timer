@@ -540,13 +540,12 @@ function renderCandReport() {
       var k2 = r.keyRow[qn] || '';
       var ok = o2 && k2 && o2.toUpperCase() === k2.toUpperCase();
       var pct2 = r.qCorPct[qn] || 0;
-      var secCls = (sec < 2 && (sec === 0 ? row === 50 : row === 50)) ? 'sec-div' : '';
-      var actSecCls = (sec < 2) ? 'sec-div' : '';
+      var divCls = (sec < 2) ? ' sec-div' : '';
       h += '<td class="qnum">' + qn + '</td>';
       h += '<td>' + (o2 || '-') + '</td>';
       h += '<td class="' + (ok ? 'hidden' : '') + '">' + (ok ? '-' : (k2 || '-')) + '</td>';
       h += '<td>' + pct2.toFixed(0) + '%</td>';
-      h += '<td class="' + (ok ? 'pass' : 'fail') + '">' + (ok ? 'Y' : 'N') + '</td>';
+      h += '<td class="' + (ok ? 'pass' : 'fail') + divCls + '">' + (ok ? 'Y' : 'N') + '</td>';
     }
     h += '</tr>';
   }
@@ -577,7 +576,8 @@ function drawHistogram(scores, mn, mx, meanVal, candSc, elId) {
   var nBars = uniq.length;
   if (nBars === 0) { el.innerHTML = ''; el.appendChild(c); return; }
   var maxCount = Math.max.apply(null, Object.keys(freq).map(function(k){return freq[k];})) || 1;
-  var barW = Math.min(Math.floor(pw / nBars) - 2, 40);
+  var barW = Math.max(1, Math.min(Math.floor(pw / nBars) - 2, 40));
+  var labelStep = Math.max(1, Math.ceil(nBars / 40));
 
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 500, 200);
   ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.beginPath();
@@ -591,7 +591,9 @@ function drawHistogram(scores, mn, mx, meanVal, candSc, elId) {
     ctx.fillStyle = '#4682B4'; ctx.globalAlpha = 0.7; ctx.fillRect(bx, by, barW, bh); ctx.globalAlpha = 1;
     ctx.strokeStyle = '#333'; ctx.strokeRect(bx, by, barW, bh);
     if (cnt > 0) { ctx.fillStyle = '#333'; ctx.font = '9px Courier New'; ctx.textAlign = 'center'; ctx.fillText(cnt, bx + barW / 2, by - 4); }
-    ctx.fillStyle = '#333'; ctx.font = '8px Arial'; ctx.textAlign = 'center'; ctx.fillText(sc, bx + barW / 2, m.top + ph + 14);
+    if (b % labelStep === 0) {
+      ctx.fillStyle = '#333'; ctx.font = '8px Arial'; ctx.textAlign = 'center'; ctx.fillText(sc, bx + barW / 2, m.top + ph + 14);
+    }
   }
 
   if (mx > mn) {
@@ -628,7 +630,8 @@ function drawHistogramCanvas(scores, candidateScore, meanVal, mn, mx, width, hei
   var nBars = uniq.length;
   if (nBars === 0) return c;
   var maxCount = Math.max.apply(null, Object.keys(freq).map(function(k){return freq[k];})) || 1;
-  var barW = Math.min(Math.floor(pw / nBars) - 2, 40);
+  var barW = Math.max(1, Math.min(Math.floor(pw / nBars) - 2, 40));
+  var labelStep = Math.max(1, Math.ceil(nBars / 40));
 
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height);
   ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.beginPath();
@@ -642,7 +645,9 @@ function drawHistogramCanvas(scores, candidateScore, meanVal, mn, mx, width, hei
     ctx.fillStyle = '#4682B4'; ctx.globalAlpha = 0.7; ctx.fillRect(bx, by, barW, bh); ctx.globalAlpha = 1;
     ctx.strokeStyle = '#333'; ctx.strokeRect(bx, by, barW, bh);
     if (cnt > 0) { ctx.fillStyle = '#333'; ctx.font = '10px Courier New'; ctx.textAlign = 'center'; ctx.fillText(cnt, bx + barW / 2, by - 4); }
-    ctx.fillStyle = '#333'; ctx.font = '9px Arial'; ctx.textAlign = 'center'; ctx.fillText(sc, bx + barW / 2, m.top + ph + 16);
+    if (b % labelStep === 0) {
+      ctx.fillStyle = '#333'; ctx.font = '9px Arial'; ctx.textAlign = 'center'; ctx.fillText(sc, bx + barW / 2, m.top + ph + 16);
+    }
   }
   if (mx > mn) {
     var meanIdxD = meanVal - mn;

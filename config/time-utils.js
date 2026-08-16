@@ -15,7 +15,7 @@ Sahk.register('TimeUtils', function() {
   }
 
   function formatTimeHMSSec(secs) {
-    secs %= 86400;
+    secs = ((secs % 86400) + 86400) % 86400;
     var h = Math.floor(secs / 3600);
     var m = Math.floor((secs % 3600) / 60);
     var s = secs % 60;

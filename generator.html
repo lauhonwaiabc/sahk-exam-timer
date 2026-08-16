@@ -143,13 +143,13 @@ hr { border: none; border-top: 1px solid #e0e0e0; margin: 14px 0; }
   </div>
 
   <div class="card" id="viva-detail-card" style="display:none;">
-    <h2>2a. AM Schedule — Candidate Priority &amp; Examiner Names</h2>
+    <h2>2. Candidate Priority &amp; Examiner Names</h2>
+    <h3>2a. AM Schedule</h3>
     <h3>AM Candidate Priority (high → low)</h3>
     <div class="candidate-prio" id="viva-prio-list-am"></div>
     <h3>AM Examiner Names (one per table)</h3>
     <div class="grid-inputs" id="viva-examiner-list-am"></div>
-    <h3>2b. PM Schedule — Candidate Priority &amp; Examiner Names</h3>
-    <p style="font-size:0.75em;color:#777;margin:4px 0;">Defaults copied from AM. Edit below if candidate order or examiners differ for PM (e.g. examiner changes after lunch).</p>
+    <h3>2b. PM Schedule</h3>
     <h3>PM Candidate Priority (high → low)</h3>
     <div class="candidate-prio" id="viva-prio-list-pm"></div>
     <h3>PM Examiner Names (one per table)</h3>
@@ -368,7 +368,8 @@ hr { border: none; border-top: 1px solid #e0e0e0; margin: 14px 0; }
 function $(id) { return document.getElementById(id); }
 function qs(sel, parent) { return (parent||document).querySelector(sel); }
 function esc(s) { return s == null || s === '' ? '' : String(s); }
-function pad2(v) { return String(v).trim(); }
+function htmlEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function pad2(v) { return String(v).trim().padStart(2, '0'); }
 
 const tabNames = ['viva','osce','debrief','written','mapping'];
 function switchTab(name) {
@@ -508,9 +509,9 @@ function genScript({label, prep, brk, brkIdx, baseSessions, concl, concIdx, extr
   } else if (examType === 'viva') {
     lines.push('    entries.push({session:si,phase:0,offset:0,sentences:["Please transit to your next table."]});');
     lines.push('    entries.push({session:si,phase:1,offset:0,sentences:[`Viva Session ${num} now begins.`]});');
-    lines.push('    entries.push({session:si,phase:1,offset:600,sentences:[`5 minutes left for Viva Session ${num}.`]});');
+    lines.push('    entries.push({session:si,phase:1,offset:Math.max(0, SESSION_PHASES[si][1].duration - 300),sentences:[`5 minutes left for Viva Session ${num}.`]});');
     lines.push('    entries.push({session:si,phase:2,offset:0,sentences:[`Debriefing for Viva Session ${num} now begins.`]});');
-    lines.push('    entries.push({session:si,phase:2,offset:300,sentences:["2 minutes left for debriefing."]});');
+    lines.push('    entries.push({session:si,phase:2,offset:Math.max(0, SESSION_PHASES[si][2].duration - 120),sentences:["2 minutes left for debriefing."]});');
   }
   if (extraLines) lines.push(extraLines);
   lines.push('  }');
@@ -531,7 +532,7 @@ function genDebScript({prep, concl, baseSessions, concIdx, durationMin}) {
   lines.push('  for (var si = firstExam; si < CONCLUSION_SESSION_INDEX; si++) {');
   lines.push('    sessionNum++;');
   lines.push(`    entries.push({session:si,phase:0,offset:0,sentences:["Debriefing Session " + sessionNum + " now begins."]});`);
-  lines.push(`    entries.push({session:si,phase:0,offset:3000,sentences:["10 minutes left for Debriefing Session " + sessionNum + "."]});`);
+  lines.push(`    entries.push({session:si,phase:0,offset:Math.max(0, SESSION_PHASES[si][0].duration - 600),sentences:["10 minutes left for Debriefing Session " + sessionNum + "."]});`);
   lines.push('  }');
   lines.push(`  entries.push({session:CONCLUSION_SESSION_INDEX,phase:0,offset:0,sentences:["End of the Debriefing Session. Thank you for participating in the SAHK Final Examination Preparation Course Written Examination Debriefing."]});`);
   lines.push('  return entries;');
@@ -543,20 +544,26 @@ function genDebScript({prep, concl, baseSessions, concIdx, durationMin}) {
 let vivaStore = {};
 
 function vivaProceed() {
-  var TAm = +($('viva-tables-am').value)||10, SPm = +($('viva-sessions-am').value)||10, CAm = +($('viva-candidates-am').value)||15;
-  var TPm = +($('viva-tables-pm').value)||10, SPm2 = +($('viva-sessions-pm').value)||10, CPm = +($('viva-candidates-pm').value)||15;
+  var TAm = +($('viva-tables-am').value)||10, SAm = +($('viva-sessions-am').value)||10, CAm = +($('viva-candidates-am').value)||15;
+  var TPm = +($('viva-tables-pm').value)||10, SPm = +($('viva-sessions-pm').value)||10, CPm = +($('viva-candidates-pm').value)||15;
   $('viva-detail-card').style.display = 'block'; $('viva-result-card').style.display = 'none';
 
-  // Show constraint info (AM stats)
-  var total = SPm * TAm, base = Math.floor(total / CAm), extra = total % CAm;
-  var msg = 'AM Hotseats: '+base+' or '+(base+1)+' ('+extra+' get '+(base+1)+' each). ';
-  if (CAm < TAm) msg += '<b style=\"color:#d33;\">Warning: C < T</b> — some tables may be underutilized. ';
-  if (CAm > 2*TAm) msg += '<b style=\"color:#d33;\">Warning: C > 2T</b> — impossible to assign every candidate per session. ';
-  if (TAm < SPm) msg += '<b style=\"color:#d33;\">Warning: Tables < Sessions</b>. ';
-  if (!(CAm >= TAm && CAm <= 2*TAm)) msg += 'Recommended: T \u2264 C \u2264 2T.';
+  // Show constraint info for BOTH AM and PM (differing counts are normal)
+  function hotseatMsg(label, T, S, C) {
+    var total = S * T, base = Math.floor(total / C), extra = total % C;
+    var m = '<b>'+label+'</b> Hotseats: ';
+    m += extra === 0 ? base + ' per candidate. ' : base + ' or ' + (base+1) + ' (' + extra + ' get ' + (base+1) + ' each). ';
+    if (C < T) m += '<b style=\"color:#d33;\">Warning: C &lt; T</b> — some tables may be underutilized. ';
+    if (C > 2*T) m += '<b style=\"color:#d33;\">Warning: C &gt; 2T</b> — impossible to assign every candidate per session. ';
+    if (T < S) m += '<b style=\"color:#d33;\">Warning: Tables &lt; Sessions</b>. ';
+    if (!(C >= T && C <= 2*T)) m += 'Recommended: T \u2264 C \u2264 2T.';
+    return m;
+  }
   var existingMsg = $('viva-constraint-msg');
   if (existingMsg) existingMsg.remove();
-  $('viva-detail-card').insertAdjacentHTML('beforeend', '<div class=\"status warn\" style=\"margin-top:8px;\" id=\"viva-constraint-msg\">'+msg+'</div>');
+  $('viva-detail-card').insertAdjacentHTML('beforeend',
+    '<div class=\"status warn\" style=\"margin-top:8px;\" id=\"viva-constraint-msg\">' + hotseatMsg('AM', TAm, SAm, CAm) + '</div>' +
+    '<div class=\"status warn\" style=\"margin-top:4px;\">' + hotseatMsg('PM', TPm, SPm, CPm) + '</div>');
 
   var plAm = $('viva-prio-list-am'); plAm.innerHTML = '';
   for (var i=0;i<CAm;i++) {
@@ -602,74 +609,52 @@ function vivaSolver(T, S, C) {
   var targets = new Array(C);
   for (var i = 0; i < C; i++) targets[i] = i < extra ? base + 1 : base;
 
-  // Build hotseat grid from Latin square (table x session)
-  // Core candidates (0..T-1) each appear T times. Extra candidates (T..C-1)
-  // replace core cells, with priority sorting to balance removals.
+  // Feasibility: a candidate can hotseat at most once per table and per session.
+  if (C < T || C > 2 * T || S > T) return null;
+  for (var i = 0; i < C; i++) if (targets[i] > T || targets[i] > S) return null;
+
+  var deadline = Date.now() + 2500;
   for (var attempt = 0; attempt < 3000; attempt++) {
+    if (attempt % 20 === 0 && Date.now() > deadline) return null;
+
     var rng = vivaRng(attempt * 7919 + 1);
 
-    var hsGrid = new Array(T);
-    for (var t = 0; t < T; t++) {
-      hsGrid[t] = new Array(S);
-      for (var sess = 0; sess < S; sess++) {
-        hsGrid[t][sess] = (t + sess) % T;
+    // Build hotseat edges: candidate c hotseats in exactly targets[c] sessions,
+    // each session has exactly T distinct hotseat candidates.
+    var need = targets.slice();
+    var edges = [];
+    var feasible = true;
+    for (var sess = 0; sess < S && feasible; sess++) {
+      var order = [];
+      for (var c = 0; c < C; c++) order.push(c);
+      order.sort(function(a, b) { var d = need[b] - need[a]; return d !== 0 ? d : a - b; });
+      var picked = 0;
+      for (var oi = 0; oi < order.length && picked < T; oi++) {
+        var c = order[oi];
+        if (need[c] <= 0) continue;
+        edges.push({ l: c, r: sess });
+        need[c]--;
+        picked++;
       }
+      if (picked < T) feasible = false;
     }
+    for (var c = 0; c < C && feasible; c++) if (need[c] !== 0) feasible = false;
+    if (!feasible) continue;
 
-    var remove = new Array(T);
-    for (var c = 0; c < T; c++) remove[c] = S - targets[c];
+    // Proper edge-colouring with T colours (= tables). Kőnig's theorem guarantees
+    // such a colouring exists because every vertex has degree ≤ T. Shuffling the
+    // edge order varies the resulting table layout between attempts.
+    vivaShuffle(edges, rng);
+    var col = vivaEdgeColor(edges, C, S, T);
+    if (!col) continue;
 
-    // Build cell list once, sort by removal priority (highest first)
-    var allCells = [];
-    for (var t = 0; t < T; t++)
-      for (var sess = 0; sess < S; sess++)
-        allCells.push({t:t, sess:sess, orig:hsGrid[t][sess], used:false});
-
-    allCells.sort(function(a,b){
-      var d = remove[b.orig] - remove[a.orig];
-      if (d !== 0) return d;
-      return rng() < 0.5 ? -1 : 1;
-    });
-
-    var ok = true;
-    for (var d = T; d < C && ok; d++) {
-      var needed = targets[d];
-      var rowsU = new Set();
-      var colsU = new Set();
-
-      for (var ci = 0; ci < allCells.length && needed > 0; ci++) {
-        var cell = allCells[ci];
-        if (cell.used) continue;
-        if (remove[cell.orig] <= 0) continue;
-        if (rowsU.has(cell.t) || colsU.has(cell.sess)) continue;
-
-        cell.used = true;
-        hsGrid[cell.t][cell.sess] = d;
-        remove[cell.orig]--;
-        rowsU.add(cell.t);
-        colsU.add(cell.sess);
-        needed--;
-      }
-      if (needed > 0) ok = false;
-    }
-
-    for (var c = 0; c < T; c++) { if (remove[c] !== 0) { ok = false; break; } }
-    if (!ok) continue;
-
-    // Build hotseat arrays and count
     var hotseat = new Array(S);
-    var obs = new Array(S);
+    for (var s = 0; s < S; s++) { hotseat[s] = new Array(T); for (var t = 0; t < T; t++) hotseat[s][t] = -1; }
     var hsCount = new Array(C);
     for (var c = 0; c < C; c++) hsCount[c] = 0;
-    for (var sess = 0; sess < S; sess++) {
-      hotseat[sess] = new Array(T);
-      obs[sess] = new Array(T);
-      for (var t = 0; t < T; t++) {
-        var c = hsGrid[t][sess];
-        hotseat[sess][t] = c;
-        hsCount[c]++;
-        obs[sess][t] = -1;
-      }
+    for (var e = 0; e < edges.length; e++) {
+      hotseat[edges[e].r][col[e]] = edges[e].l;
+      hsCount[edges[e].l]++;
     }
 
     var hsOk = true;
@@ -681,14 +666,22 @@ function vivaSolver(T, S, C) {
     for (var c = 0; c < C; c++) visited[c] = new Set();
     for (var sess = 0; sess < S; sess++)
       for (var t = 0; t < T; t++)
-        visited[hotseat[sess][t]].add(t);
+        if (hotseat[sess][t] >= 0) visited[hotseat[sess][t]].add(t);
 
-    // Assign observers per session via matching
+    var obs = new Array(S);
+    for (var s = 0; s < S; s++) { obs[s] = new Array(T); for (var t = 0; t < T; t++) obs[s][t] = -1; }
     var busted = false;
     var tableObsCount = new Array(T);
     for (var t = 0; t < T; t++) tableObsCount[t] = 0;
 
-    for (var sess = 0; sess < S && !busted; sess++) {
+    // Process observer assignment sessions in random order — a fixed forward pass
+    // can deadlock on unlucky visited-table accumulation; shuffling avoids that.
+    var sessOrder = [];
+    for (var s = 0; s < S; s++) sessOrder.push(s);
+    vivaShuffle(sessOrder, rng);
+
+    for (var si = 0; si < S && !busted; si++) {
+      var sess = sessOrder[si];
       var used = new Set();
       for (var t = 0; t < T; t++) used.add(hotseat[sess][t]);
 
@@ -716,6 +709,61 @@ function vivaSolver(T, S, C) {
   }
 
   return null;
+}
+
+// Proper edge-colouring of a bipartite graph with Δ colours via Kempe-chain
+// (alternating-path) recolouring — the constructive proof of Kőnig's theorem.
+// Returns the colour of each edge (0..Δ-1), or null if Δ colours are insufficient.
+function vivaEdgeColor(edges, nL, nR, delta) {
+  var m = edges.length;
+  var col = new Array(m).fill(-1);
+  var eL = []; for (var i = 0; i < nL; i++) eL.push(new Array(delta).fill(-1));
+  var eR = []; for (var i = 0; i < nR; i++) eR.push(new Array(delta).fill(-1));
+
+  function freeColor(arr, v) {
+    for (var c = 0; c < delta; c++) if (arr[v][c] === -1) return c;
+    return -1;
+  }
+
+  for (var e = 0; e < m; e++) {
+    var u = edges[e].l, v = edges[e].r;
+    var a = freeColor(eL, u);
+    var b = freeColor(eR, v);
+    if (a < 0 || b < 0) return null;
+    if (a === b) {
+      col[e] = a; eL[u][a] = e; eR[v][a] = e;
+      continue;
+    }
+
+    // Maximal alternating path from v: v --a--> u1 --b--> v1 --a--> ...
+    var path = [];
+    var side = 'R';
+    var cur = v;
+    var nextColor = a;
+    var guard = 0;
+    while (guard++ < (nL + nR + 2)) {
+      var pe = (side === 'R') ? eR[cur][nextColor] : eL[cur][nextColor];
+      if (pe === -1) break;
+      path.push(pe);
+      cur = (edges[pe].l === cur) ? edges[pe].r : edges[pe].l;
+      side = (side === 'R') ? 'L' : 'R';
+      nextColor = (nextColor === a) ? b : a;
+    }
+
+    // Un-assign the old colours on the path, then assign the flipped colours.
+    for (var pi = 0; pi < path.length; pi++) {
+      var ei = path[pi], lu = edges[ei].l, rv = edges[ei].r;
+      eL[lu][col[ei]] = -1; eR[rv][col[ei]] = -1;
+    }
+    for (var pi = 0; pi < path.length; pi++) {
+      var ei = path[pi], lu = edges[ei].l, rv = edges[ei].r;
+      var ne = (col[ei] === a) ? b : a;
+      col[ei] = ne; eL[lu][ne] = ei; eR[rv][ne] = ei;
+    }
+
+    col[e] = a; eL[u][a] = e; eR[v][a] = e;
+  }
+  return col;
 }
 
 // Maximum bipartite matching (Kuhn) with MRV ordering — used for both hotseats and observers
@@ -1260,7 +1308,7 @@ function debriefBuildQuestionAssignments(){
     html+='<option value="">--</option>';
     for(var s=0;s<scCount;s++){
       var sel= (s===q%scCount) ? ' selected' : '';
-      html+='<option value="'+esc(scNames[s])+'"'+sel+'>'+esc(scNames[s])+'</option>';
+      html+='<option value="'+htmlEsc(scNames[s])+'"'+sel+'>'+htmlEsc(scNames[s])+'</option>';
     }
     html+='</select></div>';
   }
@@ -1361,9 +1409,8 @@ function debriefGenerate(){
 function fmtDur(sec){
   var m=Math.round(sec/60), h=Math.floor(m/60), rm=m%60;
   if(m<60) return m+' min';
-  if(m===60||h===1) return m+' min';
-  if(rm===0) return h+' hours';
-  return h+' hours '+rm+' min';
+  if(rm===0) return h+(h===1?' hour':' hours');
+  return h+(h===1?' hour':' hours')+' '+rm+' min';
 }
 function writtenGenerate(){
   const start=$('wr-start').value||'08:45:00', title=$('wr-title').value;
@@ -1372,8 +1419,41 @@ function writtenGenerate(){
   const brkDur=+($('wr-break').value)||1200, lunchDur=+($('wr-lunch-dur').value)||3600;
   const caread=+($('wr-ca-read').value)||1800, caexam=+($('wr-ca-exam').value)||600, trans=+($('wr-trans').value)||600;
   const invexam=+($('wr-inv-exam').value)||600, radexam=+($('wr-rad-exam').value)||600, mcqexam=+($('wr-mcq-exam').value)||9000;
+  function fmtClock(sec) {
+    sec = ((sec % 86400) + 86400) % 86400;
+    var hh = Math.floor(sec / 3600), mm = Math.floor((sec % 3600) / 60);
+    return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  }
+  function parseSecs(str) { var p = String(str).split(':').map(Number); return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0); }
+  var ttRows = [
+    ['Pre-Examination', preDur],
+    ['Preparation', p1prep],
+    ['Paper I: Clinical Scenarios & SAQs', p1exam],
+    ['Paper I: Paper Collection', p1coll],
+    ['Break', brkDur],
+    ['Preparation', p1prep],
+    ['Paper II: Critical Appraisal (Article Reading)', caread],
+    ['Paper II: Critical Appraisal (Examination)', caexam],
+    ['Transition', trans],
+    ['Paper II: Investigation', invexam],
+    ['Transition', trans],
+    ['Paper II: Radiology', radexam],
+    ['Paper Collection', p1coll],
+    ['Lunch', lunchDur],
+    ['Preparation', p1prep],
+    ['Paper III: Multiple Choice Questions', mcqexam],
+    ['Paper Collection & Dismissal', p1coll]
+  ];
+  var run = parseSecs(start);
+  var ttLines = [];
+  for (var ti = 0; ti < ttRows.length; ti++) {
+    var from = fmtClock(run); run += ttRows[ti][1]; var to = fmtClock(run);
+    ttLines.push('    {time: "' + from + ' - ' + to + '", session: "' + ttRows[ti][0] + '"}');
+  }
+  var timetableJs = 'const TIMETABLE = [\n' + ttLines.join(',\\n') + '\n];';
 
-  const configJs = `'use strict';\nconst START_TIME = "${start}";\nconst EXAM_TITLE = "${title}";\nconst SESSION_TITLES = ["Pre-Examination", "Paper I", "Break", "Paper II", "Lunch", "Paper III"];\n\nconst SESSION_PHASES = [\n    [\n        {title: "Pre-Examination", duration: ${preDur}, info: "${fmtDur(preDur)}"}\n    ],\n    [\n        {title: "Preparation", duration: ${p1prep}, info: "${fmtDur(p1prep)}"},\n        {title: "Clinical Scenarios & SAQs", duration: ${p1exam}, info: "${fmtDur(p1exam)}"},\n        {title: "Paper Collection", duration: ${p1coll}, info: "${fmtDur(p1coll)}"}\n    ],\n    [\n        {title: "Break", duration: ${brkDur}, info: "${fmtDur(brkDur)}"}\n    ],\n    [\n        {title: "Preparation", duration: ${p1prep}, info: "${fmtDur(p1prep)}"},\n        {title: "CA Article", duration: ${caread}, info: "${fmtDur(caread)}"},\n        {title: "CA Exam", duration: ${caexam}, info: "${fmtDur(caexam)}"},\n        {title: "Transition", duration: ${trans}, info: "${fmtDur(trans)}"},\n        {title: "Investigation", duration: ${invexam}, info: "${fmtDur(invexam)}"},\n        {title: "Transition", duration: ${trans}, info: "${fmtDur(trans)}"},\n        {title: "Radiology", duration: ${radexam}, info: "${fmtDur(radexam)}"},\n        {title: "Paper Collection", duration: ${p1coll}, info: "${fmtDur(p1coll)}"}\n    ],\n    [\n        {title: "Lunch", duration: ${lunchDur}, info: "${fmtDur(lunchDur)}"}\n    ],\n    [\n        {title: "Preparation", duration: ${p1prep}, info: "${fmtDur(p1prep)}"},\n        {title: "MCQ Examination", duration: ${mcqexam}, info: "${fmtDur(mcqexam)}"},\n        {title: "Paper Collection", duration: ${p1coll}, info: "${fmtDur(p1coll)}"}\n    ]\n];\n\nconst PAPER_I_PAGES = ${p1pg};\nconst PAPER_CA_PAGES = ${capg};\nconst PAPER_INV_PAGES = ${invpg};\nconst PAPER_RAD_PAGES = ${radpg};\nconst PAPER_MCQ_PAGES = ${mcqpg};\n\nconst TIMETABLE = [\n    {time: "${start} - 08:55", session: "Pre-Examination"},\n    {time: "08:55 - 09:00", session: "Preparation"},\n    {time: "09:00 - 11:00", session: "Paper I: Clinical Scenarios & SAQs"},\n    {time: "11:00 - 11:05", session: "Paper I: Paper Collection"},\n    {time: "11:05 - 11:25", session: "Break"},\n    {time: "11:25 - 11:30", session: "Preparation"},\n    {time: "11:30 - 12:00", session: "Paper II: Critical Appraisal (Article Reading)"},\n    {time: "12:00 - 12:10", session: "Paper II: Critical Appraisal (Examination)"},\n    {time: "12:10 - 12:20", session: "Transition"},\n    {time: "12:20 - 12:30", session: "Paper II: Investigation"},\n    {time: "12:30 - 12:40", session: "Transition"},\n    {time: "12:40 - 12:50", session: "Paper II: Radiology"},\n    {time: "12:50 - 12:55", session: "Paper Collection"},\n    {time: "12:55 - 13:55", session: "Lunch"},\n    {time: "13:55 - 14:00", session: "Preparation"},\n    {time: "14:00 - 16:30", session: "Paper III: Multiple Choice Questions"},\n    {time: "16:30 - 16:35", session: "Paper Collection & Dismissal"}\n];\n`;
+
+  const configJs = `'use strict';\nconst START_TIME = "${start}";\nconst EXAM_TITLE = "${title}";\nconst SESSION_TITLES = ["Pre-Examination", "Paper I", "Break", "Paper II", "Lunch", "Paper III"];\n\nconst SESSION_PHASES = [\n    [\n        {title: "Pre-Examination", duration: ${preDur}, info: "${fmtDur(preDur)}"}\n    ],\n    [\n        {title: "Preparation", duration: ${p1prep}, info: "${fmtDur(p1prep)}"},\n        {title: "Clinical Scenarios & SAQs", duration: ${p1exam}, info: "${fmtDur(p1exam)}"},\n        {title: "Paper Collection", duration: ${p1coll}, info: "${fmtDur(p1coll)}"}\n    ],\n    [\n        {title: "Break", duration: ${brkDur}, info: "${fmtDur(brkDur)}"}\n    ],\n    [\n        {title: "Preparation", duration: ${p1prep}, info: "${fmtDur(p1prep)}"},\n        {title: "CA Article", duration: ${caread}, info: "${fmtDur(caread)}"},\n        {title: "CA Exam", duration: ${caexam}, info: "${fmtDur(caexam)}"},\n        {title: "Transition", duration: ${trans}, info: "${fmtDur(trans)}"},\n        {title: "Investigation", duration: ${invexam}, info: "${fmtDur(invexam)}"},\n        {title: "Transition", duration: ${trans}, info: "${fmtDur(trans)}"},\n        {title: "Radiology", duration: ${radexam}, info: "${fmtDur(radexam)}"},\n        {title: "Paper Collection", duration: ${p1coll}, info: "${fmtDur(p1coll)}"}\n    ],\n    [\n        {title: "Lunch", duration: ${lunchDur}, info: "${fmtDur(lunchDur)}"}\n    ],\n    [\n        {title: "Preparation", duration: ${p1prep}, info: "${fmtDur(p1prep)}"},\n        {title: "MCQ Examination", duration: ${mcqexam}, info: "${fmtDur(mcqexam)}"},\n        {title: "Paper Collection", duration: ${p1coll}, info: "${fmtDur(p1coll)}"}\n    ]\n];\n\nconst PAPER_I_PAGES = ${p1pg};\nconst PAPER_CA_PAGES = ${capg};\nconst PAPER_INV_PAGES = ${invpg};\nconst PAPER_RAD_PAGES = ${radpg};\nconst PAPER_MCQ_PAGES = ${mcqpg};\n\n${timetableJs}\n`;
 
   $('wr-config-out').textContent = configJs;
   $('written-result-card').style.display='block';
@@ -1391,10 +1471,10 @@ function mappingAddRow(id='', name='', full='', abbr='') {
   const tbody = document.querySelector('#mapping-table tbody');
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td><input type="text" class="m-id" value="${esc(id)}" placeholder="26101"></td>
-    <td><input type="text" class="m-name" value="${esc(name)}" placeholder="Pansy"></td>
-    <td><input type="text" class="m-full" value="${esc(full)}" placeholder="Pansy Yue"></td>
-    <td><input type="text" class="m-abbr" value="${esc(abbr)}" placeholder="01"></td>
+    <td><input type="text" class="m-id" value="${htmlEsc(id)}" placeholder="26101"></td>
+    <td><input type="text" class="m-name" value="${htmlEsc(name)}" placeholder="Pansy"></td>
+    <td><input type="text" class="m-full" value="${htmlEsc(full)}" placeholder="Pansy Yue"></td>
+    <td><input type="text" class="m-abbr" value="${htmlEsc(abbr)}" placeholder="01"></td>
     <td><button class="btn-danger btn-sm" onclick="this.closest('tr').remove()">X</button></td>`;
   tbody.appendChild(tr);
 }
@@ -1463,6 +1543,8 @@ function parseCSV(text) {
   if (row.length > 0) rows.push(row);
   return rows;
 }
+function jsStr(s) { return JSON.stringify(String(s == null ? '' : s)); }
+function csvField(s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; }
 function mappingGenerate() {
   const rows = document.querySelectorAll('#mapping-table tbody tr');
   const jsEntries=[], csvLines=['"Full ID","Short Name","Full Name","Abbr ID"'];
@@ -1470,8 +1552,8 @@ function mappingGenerate() {
     const id=row.querySelector('.m-id').value.trim(), name=row.querySelector('.m-name').value.trim();
     const full=row.querySelector('.m-full').value.trim(), abbr=row.querySelector('.m-abbr').value.trim();
     if (!id) continue;
-    jsEntries.push(`"${id}":{"name":"${name}","fullName":"${full}","abbrId":"${abbr}"}`);
-    csvLines.push(`"${id}","${name}","${full}","${abbr}"`);
+    jsEntries.push(jsStr(id) + ': {name: ' + jsStr(name) + ', fullName: ' + jsStr(full) + ', abbrId: ' + jsStr(abbr) + '}');
+    csvLines.push([csvField(id), csvField(name), csvField(full), csvField(abbr)].join(','));
   }
   const jsStr = `var CANDIDATE_MAPPING = {\n  ${jsEntries.join(',\n  ')}\n};`;
   const csvStr = csvLines.join('\n');

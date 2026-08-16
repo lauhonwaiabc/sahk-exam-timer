@@ -352,3 +352,26 @@ input.locked {
     #keyboardHelpBtn { display: none !important; }
     body { font-size: 10pt; background: white; color: black; }
 }
+
+/* ===== Toast Notifications ===== */
+.sahk-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #323232;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    font-weight: 600;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    max-width: 90%;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    pointer-events: none;
+}
+.sahk-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.sahk-toast.error { background: #c62828; }
+.sahk-toast.info { background: #1565c0; }
