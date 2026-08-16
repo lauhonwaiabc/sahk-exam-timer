@@ -2,6 +2,7 @@
 Sahk.register('ScoringMatrix', function() {
   var P = Sahk.get('Constants').PHASE;
   var _lastScoringHtml = '';
+  var _unlockInactive = false;
   var SI = null;
 
   function getSI() {
@@ -33,6 +34,28 @@ Sahk.register('ScoringMatrix', function() {
     return arr;
   }
 
+  function _buildEditableCell(cn, stNo, colIdx, isInactive, cfg, C, isTr, curKey, prevKey, candidateSession, si_idx) {
+    var sc = Sahk.get('Scoring').getLatestScoreForStation(cn, stNo), co = getSI().getScoreColor(sc);
+    var comment = Sahk.get('Scoring').getLatestComment(cn, stNo);
+    var iconColor = comment ? '#f9a825' : (sc !== '-' ? '#999' : '#ccc');
+    var iconStyle = sc === '-' ? 'pointer-events:none;cursor:default' : '';
+    var iconClass = comment ? ' has-comment' : '';
+    var cellClass = 'scoring-matrix-cell' + (isInactive ? ' scoring-cell-inactive' : '');
+    var isCurSess = false, isPrevSess = false;
+    if (curKey) { var d = cfg.data[curKey]; if (d) { if (d.Candidate && d.Candidate[colIdx] === cn) isCurSess = true; } }
+    if (isTr && prevKey) { var pd = cfg.data[prevKey]; if (pd) { if (pd.Candidate && pd.Candidate[colIdx] === cn) isPrevSess = true; } }
+    var cellSessionIdx = candidateSession[cn + '|' + colIdx];
+    if (cellSessionIdx == null) cellSessionIdx = -1;
+    if (isTr && isPrevSess) cellClass += ' scoring-prev-session';
+    else if (isTr && isCurSess) cellClass += ' scoring-curr-transit';
+    else if (!isTr && isCurSess) cellClass += ' scoring-curr-exam';
+    else if (cellSessionIdx >= 0 && cellSessionIdx !== si_idx) {
+      if (cellSessionIdx < si_idx) cellClass += ' scoring-past-session';
+      else cellClass += ' scoring-future-session';
+    }
+    return '<td class="' + cellClass + '"><div class="scoring-cell-inner"><div class="scoring-score-row"><button class="score-scroll-btn score-down" data-cn="' + cn + '" data-st="' + stNo + '" data-dir="-1">&#9664;</button><span class="score-value" data-cn="' + cn + '" data-st="' + stNo + '" data-dirty="0" style="color:' + co + '">' + sc + '</span><button class="score-scroll-btn score-up" data-cn="' + cn + '" data-st="' + stNo + '" data-dir="1">&#9654;</button><span class="score-comment-icon' + iconClass + '" data-cn="' + cn + '" data-st="' + stNo + '" style="font-size:1.1em;color:' + iconColor + ';' + (iconStyle || 'cursor:pointer') + '" title="' + (sc !== '-' ? (comment ? 'Edit comment' : 'Add comment') : 'Enter a score first') + '">&#x1F4AC;</span></div><div class="score-comment-area" data-cn="' + cn + '" data-st="' + stNo + '" style="display:none;width:100%;min-width:100%"><textarea class="score-comment" data-cn="' + cn + '" data-st="' + stNo + '" rows="2" placeholder="Comment..." style="width:100%;max-width:100%;box-sizing:border-box;resize:vertical;font-size:0.8em;font-family:inherit;padding:4px;border:1px solid #bbb;border-radius:4px;min-width:100%">' + (comment || '') + '</textarea></div><button class="score-submit-btn" data-cn="' + cn + '" data-st="' + stNo + '" style="display:none">Submit</button></div></td>';
+  }
+
   function createScoringModeHtml(cfg, obsAtStation, candAtStation, candidateSession) {
     var candidates = buildAllCandidates(cfg.data);
     var isoSt = window.scoringIsolateStation != null ? Number(window.scoringIsolateStation) : null;
@@ -44,7 +67,6 @@ Sahk.register('ScoringMatrix', function() {
     var curKey = C.getDataSessionKey(si_idx);
     var prevIdx = isTr ? C.getPrevExamSession(si_idx, cfg.data) : null;
     var prevKey = prevIdx !== null ? C.getDataSessionKey(prevIdx) : null;
-    var SCO = getSI().getScoreColor;
 
     var html = '<h3 class="scoring-header">Scoring Table - ' + cfg.title + '</h3>';
     var cols = [];
@@ -62,42 +84,23 @@ Sahk.register('ScoringMatrix', function() {
     candidates.forEach(function(cn) {
       html += '<tr><td class="scoring-row-label">' + cn + '</td>';
       cols.forEach(function(cl) {
-        if (cfg.hasRest) {
-          var isRest = cfg.names[cl.no - 1] === 'Rest';
-          if (isRest) { html += '<td class="scoring-matrix-cell scoring-cell-rest"><div class="scoring-cell-inner"><span class="score-value" style="color:#aaa">-</span></div></td>'; return; }
-        }
         var colIdx = cl.no - 1;
+        var isRest = cfg.hasRest && cfg.names[colIdx] === 'Rest';
         var isObsAny = !!(obsAtStation[cn] && obsAtStation[cn][colIdx]);
         var isCandAny = !!(candAtStation[cn] && candAtStation[cn][colIdx]);
-        if (isObsAny || !isCandAny) {
-          html += '<td class="scoring-matrix-cell scoring-cell-obs"><div class="scoring-cell-inner"><span class="score-value" style="color:#aaa">-</span></div></td>';
+        var isInactive = isRest || isObsAny || !isCandAny;
+        if (isInactive && !_unlockInactive) {
+          html += '<td class="scoring-matrix-cell ' + (isRest ? 'scoring-cell-rest' : 'scoring-cell-obs') + '"><div class="scoring-cell-inner"><span class="score-value" style="color:#aaa">-</span></div></td>';
           return;
         }
-        var sc = Sahk.get('Scoring').getLatestScoreForStation(cn, cl.no), co = SCO(sc);
-        var comment = Sahk.get('Scoring').getLatestComment(cn, cl.no);
-        var iconColor = comment ? '#f9a825' : (sc !== '-' ? '#999' : '#ccc');
-        var iconStyle = sc === '-' ? 'pointer-events:none;cursor:default' : '';
-        var iconClass = comment ? ' has-comment' : '';
-        var cellClass = 'scoring-matrix-cell';
-        var isCurSess = false, isPrevSess = false;
-        if (curKey) { var d = cfg.data[curKey]; if (d) { if (d.Candidate && d.Candidate[colIdx] === cn) isCurSess = true; } }
-        if (isTr && prevKey) { var pd = cfg.data[prevKey]; if (pd) { if (pd.Candidate && pd.Candidate[colIdx] === cn) isPrevSess = true; } }
-        var cellSessionIdx = candidateSession[cn + '|' + colIdx];
-        if (cellSessionIdx == null) cellSessionIdx = -1;
-        if (isTr && isPrevSess) cellClass += ' scoring-prev-session';
-        else if (isTr && isCurSess) cellClass += ' scoring-curr-transit';
-        else if (!isTr && isCurSess) cellClass += ' scoring-curr-exam';
-        else if (cellSessionIdx >= 0 && cellSessionIdx !== si_idx) {
-          if (cellSessionIdx < si_idx) cellClass += ' scoring-past-session';
-          else cellClass += ' scoring-future-session';
-        }
-        html += '<td class="' + cellClass + '"><div class="scoring-cell-inner"><div class="scoring-score-row"><button class="score-scroll-btn score-down" data-cn="' + cn + '" data-st="' + cl.no + '" data-dir="-1">&#9664;</button><span class="score-value" data-cn="' + cn + '" data-st="' + cl.no + '" data-dirty="0" style="color:' + co + '">' + sc + '</span><button class="score-scroll-btn score-up" data-cn="' + cn + '" data-st="' + cl.no + '" data-dir="1">&#9654;</button><span class="score-comment-icon' + iconClass + '" data-cn="' + cn + '" data-st="' + cl.no + '" style="font-size:1.1em;color:' + iconColor + ';' + (iconStyle || 'cursor:pointer') + '" title="' + (sc !== '-' ? (comment ? 'Edit comment' : 'Add comment') : 'Enter a score first') + '">&#x1F4AC;</span></div><div class="score-comment-area" data-cn="' + cn + '" data-st="' + cl.no + '" style="display:none;width:100%;min-width:100%"><textarea class="score-comment" data-cn="' + cn + '" data-st="' + cl.no + '" rows="2" placeholder="Comment..." style="width:100%;max-width:100%;box-sizing:border-box;resize:vertical;font-size:0.8em;font-family:inherit;padding:4px;border:1px solid #bbb;border-radius:4px;min-width:100%">' + (comment || '') + '</textarea></div><button class="score-submit-btn" data-cn="' + cn + '" data-st="' + cl.no + '" style="display:none">Submit</button></div></td>';
+        html += _buildEditableCell(cn, cl.no, colIdx, isInactive, cfg, C, isTr, curKey, prevKey, candidateSession, si_idx);
       });
       html += '</tr>';
     });
     html += '</tbody></table></div>';
     var refreshLabel = window.currentRole === 'admin' ? 'Read / Refresh All' : 'Read / Refresh Station';
-    html += '<div style="text-align:center;margin-top:16px"><button id="scoringSubmitAllBtn" style="font-size:1.1em;padding:10px 32px;border-radius:8px;border:none;background:#2e7d32;color:white;font-weight:700;cursor:pointer;transition:background 0.3s">Submit All Changes</button> <button id="scoringRefreshBtn" data-label="' + refreshLabel + '" style="font-size:1.1em;padding:10px 32px;border-radius:8px;border:none;background:#1565c0;color:white;font-weight:700;cursor:pointer">' + refreshLabel + '</button></div>';
+    var unlockLabel = _unlockInactive ? 'Lock Inactive Candidates' : 'Unlock Inactive Candidates';
+    html += '<div style="text-align:center;margin-top:16px"><button id="scoringSubmitAllBtn" style="font-size:1.1em;padding:10px 32px;border-radius:8px;border:none;background:#2e7d32;color:white;font-weight:700;cursor:pointer;transition:background 0.3s">Submit All Changes</button> <button id="scoringRefreshBtn" data-label="' + refreshLabel + '" style="font-size:1.1em;padding:10px 32px;border-radius:8px;border:none;background:#1565c0;color:white;font-weight:700;cursor:pointer">' + refreshLabel + '</button> <button id="scoringUnlockBtn" style="font-size:1.1em;padding:10px 32px;border-radius:8px;border:none;background:#6a1b9a;color:white;font-weight:700;cursor:pointer;transition:background 0.3s">' + unlockLabel + '</button></div>';
     return html;
   }
 
@@ -186,6 +189,14 @@ Sahk.register('ScoringMatrix', function() {
         });
       });
     });
+    var unlockBtn = document.getElementById('scoringUnlockBtn');
+    if (unlockBtn) {
+      unlockBtn.addEventListener('click', function() {
+        _unlockInactive = !_unlockInactive;
+        _lastScoringHtml = '';
+        if (typeof window.renderScoringMode === 'function') window.renderScoringMode();
+      });
+    }
     var submitAllBtn = document.getElementById('scoringSubmitAllBtn');
     if (submitAllBtn) {
       submitAllBtn.addEventListener('click', function() {

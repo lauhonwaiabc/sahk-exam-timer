@@ -226,6 +226,7 @@
 
 .scoring-matrix-cell.scoring-cell-rest { background: #e0e0e0; color: #999; }
 .scoring-matrix-cell.scoring-cell-obs { background: #e0e0e0; color: #999; }
+.scoring-matrix-cell.scoring-cell-inactive { background: #fff8e1; }
 
 .scoring-cell-inner .score-value { font-size: 3em; min-width: 40px; }
 .scoring-cell-inner .score-scroll-btn { font-size: 0.65em; padding: 1px 5px; }

@@ -362,6 +362,7 @@ hr { border: none; border-top: 1px solid #e0e0e0; margin: 14px 0; }
 <!-- ================================================================ -->
 <!-- SCRIPTS -->
 <!-- ================================================================ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 // ==================== HELPERS ====================
 function $(id) { return document.getElementById(id); }
@@ -876,11 +877,13 @@ function vivaGenerate() {
   $('viva-downloads-am').innerHTML =
     '<button class="btn-primary" onclick="download(\'viva_data_am.js\',dlDataAM())">viva_data_am.js</button>'+
     '<button class="btn-primary" onclick="downloadVivaCSV(\'candidate_1\',\'am\')">viva_am_candidate_1.csv</button>'+
-    '<button class="btn-primary" onclick="downloadVivaCSV(\'candidate_2\',\'am\')">viva_am_candidate_2.csv</button>';
+    '<button class="btn-primary" onclick="downloadVivaCSV(\'candidate_2\',\'am\')">viva_am_candidate_2.csv</button>'+
+    '<button class="btn-primary" onclick="downloadVivaDocx(\'am\')">viva_am_scoring.docx</button>';
   $('viva-downloads-pm').innerHTML =
     '<button class="btn-primary" onclick="download(\'viva_data_pm.js\',dlDataPM())">viva_data_pm.js</button>'+
     '<button class="btn-primary" onclick="downloadVivaCSV(\'candidate_1\',\'pm\')">viva_pm_candidate_1.csv</button>'+
-    '<button class="btn-primary" onclick="downloadVivaCSV(\'candidate_2\',\'pm\')">viva_pm_candidate_2.csv</button>';
+    '<button class="btn-primary" onclick="downloadVivaCSV(\'candidate_2\',\'pm\')">viva_pm_candidate_2.csv</button>'+
+    '<button class="btn-primary" onclick="downloadVivaDocx(\'pm\')">viva_pm_scoring.docx</button>';
 
   window.dlDataAM=function(){return dataJsAM;}; window.dlDataPM=function(){return dataJsPM;};
   window.dlCfg=function(){return combinedConfig;};
@@ -892,7 +895,7 @@ function vivaGenerate() {
   $('viva-preview-session-pm').insertAdjacentHTML('beforebegin','<div class="status ok">PM solved: '+hsDistPM+' (obs:'+resultPM.obsFilled+'/'+((CPm-TPm)*SPm)+')</div>');
 
   $('viva-result-card').scrollIntoView({behavior:'smooth'});
-  vivaStore={dataAM:dataAM,dataPM:dataPM,TAm:TAm,SAm:SAm,TPm:TPm,SPm:SPm};
+  vivaStore={dataAM:dataAM,dataPM:dataPM,TAm:TAm,SAm:SAm,TPm:TPm,SPm:SPm,examAM:examAM,examPM:examPM,priosAM:priosAM,priosPM:priosPM};
 }
 
 function downloadVivaCSV(fmt, sess) {
@@ -987,11 +990,13 @@ function osceGenerate() {
   $('osce-downloads-am').innerHTML = `
     <button class="btn-primary" onclick="download('osce_data_am.js',dlOsceDataAm())">osce_data_am.js</button>
     <button class="btn-primary" onclick="downloadOsceCSV('candidate_1','am')">osce_am_candidate_1.csv</button>
-    <button class="btn-primary" onclick="downloadOsceCSV('candidate_2','am')">osce_am_candidate_2.csv</button>`;
+    <button class="btn-primary" onclick="downloadOsceCSV('candidate_2','am')">osce_am_candidate_2.csv</button>
+    <button class="btn-primary" onclick="downloadOsceDocx('am')">osce_am_scoring.docx</button>`;
   $('osce-downloads-pm').innerHTML = `
     <button class="btn-primary" onclick="download('osce_data_pm.js',dlOsceDataPm())">osce_data_pm.js</button>
     <button class="btn-primary" onclick="downloadOsceCSV('candidate_1','pm')">osce_pm_candidate_1.csv</button>
-    <button class="btn-primary" onclick="downloadOsceCSV('candidate_2','pm')">osce_pm_candidate_2.csv</button>`;
+    <button class="btn-primary" onclick="downloadOsceCSV('candidate_2','pm')">osce_pm_candidate_2.csv</button>
+    <button class="btn-primary" onclick="downloadOsceDocx('pm')">osce_pm_scoring.docx</button>`;
 
   window.dlOsceCfg = function(){return combinedConfig;};
   window.dlOsceStations = function(){return stationsJs;};
@@ -1018,6 +1023,214 @@ function downloadOsceCSV(fmt, sess){
       const d=data[`Session ${s+1}`]; return [`session_${s+1}`,'candidate',...d.Candidate.map(esc)].join(',')+'\n'+[`session_${s+1}`,'observer',...d.Observer.map(esc)].join(',');
     }).join('\n'));
   download(`${fn}_${fmt}.csv`,csv);
+}
+
+// ==================== SCORING DOCX ====================
+function escXml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function downloadBlob(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function scoringPara(text, bold, color, font, center) {
+  var rPr = '<w:rPr>';
+  if (bold) rPr += '<w:b/><w:bCs/>';
+  if (color) rPr += '<w:color w:val="' + color + '"/>';
+  if (font) rPr += '<w:rFonts w:ascii="' + font + '" w:hAnsi="' + font + '" w:cs="' + font + '"/>';
+  rPr += '</w:rPr>';
+  return '<w:p><w:pPr>' + (center ? '<w:jc w:val="center"/>' : '') + '<w:rPr>' + rPr + '</w:rPr></w:pPr><w:r>' + rPr + '<w:t xml:space="preserve">' + escXml(text) + '</w:t></w:r></w:p>';
+}
+
+function scoringParaLines(lines, bold, color, font, center) {
+  var rPr = '<w:rPr>';
+  if (bold) rPr += '<w:b/><w:bCs/>';
+  if (color) rPr += '<w:color w:val="' + color + '"/>';
+  if (font) rPr += '<w:rFonts w:ascii="' + font + '" w:hAnsi="' + font + '" w:cs="' + font + '"/>';
+  rPr += '</w:rPr>';
+  var s = '<w:p><w:pPr>' + (center ? '<w:jc w:val="center"/>' : '') + '<w:rPr>' + rPr + '</w:rPr></w:pPr><w:r>' + rPr;
+  for (var i = 0; i < lines.length; i++) {
+    if (i > 0) s += '<w:br/>';
+    s += '<w:t xml:space="preserve">' + escXml(lines[i]) + '</w:t>';
+  }
+  s += '</w:r></w:p>';
+  return s;
+}
+
+function scoringCell(width, gridSpan, fill, inner, slim, valign) {
+  var tcPr = '<w:tcPr><w:tcW w:w="' + width + '" w:type="dxa"/>';
+  if (gridSpan > 1) tcPr += '<w:gridSpan w:val="' + gridSpan + '"/>';
+  tcPr += '<w:tcBorders><w:top w:val="single" w:sz="6" w:space="0" w:color="000000"/>' +
+    '<w:left w:val="single" w:sz="6" w:space="0" w:color="000000"/>' +
+    '<w:bottom w:val="single" w:sz="6" w:space="0" w:color="000000"/>' +
+    '<w:right w:val="single" w:sz="6" w:space="0" w:color="000000"/></w:tcBorders>';
+  if (fill) tcPr += '<w:shd w:val="clear" w:color="auto" w:fill="' + fill + '"/>';
+  if (slim) tcPr += '<w:tcMar><w:top w:w="60" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>';
+  else tcPr += '<w:tcMar><w:top w:w="120" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:bottom w:w="120" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tcMar>';
+  tcPr += '<w:vAlign w:val="' + (valign || 'center') + '"/><w:hideMark/></w:tcPr>';
+  return '<w:tc>' + tcPr + inner + '</w:tc>';
+}
+
+function scoringTiny(text, color) {
+  var rPr = '<w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/>';
+  if (color) rPr += '<w:color w:val="' + color + '"/>';
+  rPr += '</w:rPr>';
+  return '<w:p><w:pPr><w:jc w:val="right"/><w:rPr>' + rPr + '</w:rPr></w:pPr><w:r>' + rPr + '<w:t xml:space="preserve">' + escXml(text) + '</w:t></w:r></w:p>';
+}
+
+function buildScoringTable(page) {
+  var s = '<w:tbl><w:tblPr><w:tblW w:w="8435" w:type="dxa"/>' +
+    '<w:tblCellMar><w:top w:w="15" w:type="dxa"/><w:left w:w="15" w:type="dxa"/><w:bottom w:w="15" w:type="dxa"/><w:right w:w="15" w:type="dxa"/></w:tblCellMar>' +
+    '<w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr>' +
+    '<w:tblGrid><w:gridCol w:w="1189"/><w:gridCol w:w="1500"/><w:gridCol w:w="1500"/><w:gridCol w:w="4246"/></w:tblGrid>';
+
+  s += '<w:tr><w:trPr><w:tblHeader/></w:trPr>';
+  s += scoringCell(1189, 1, '263238', scoringPara('Candidate', true, 'FFFFFF', null, true), false);
+  s += scoringCell(7246, 3, '1B5E20', scoringParaLines([page.headerLine1, page.headerLine2], true, 'FFFFFF', null, true), false);
+  s += '</w:tr>';
+
+  for (var r = 0; r < page.rows.length; r++) {
+    var row = page.rows[r];
+    var present = !!(row.session && String(row.session).trim());
+    var fill = present ? 'E3F2FD' : 'E0E0E0';
+    s += '<w:tr>';
+    s += scoringCell(1189, 1, '37474F', scoringPara(row.cand, true, 'FFFFFF', null, true), false);
+    s += scoringCell(1500, 1, fill, scoringPara(present ? 'Session ' + row.session : '', false, null, null, false), true);
+    s += scoringCell(1500, 1, fill, present ? scoringTiny('(2-8)', '757575') : scoringPara('', false, null, null, false), true, present ? 'bottom' : 'center');
+    s += scoringCell(4246, 1, fill, scoringPara(present ? '\uD83D\uDCAC' : '', false, null, 'Segoe UI Emoji', false), true, 'top');
+    s += '</w:tr>';
+  }
+  s += '</w:tbl>';
+  return s;
+}
+
+function buildScoringDocx(title, pages, filename) {
+  if (typeof JSZip === 'undefined') {
+    alert('The JSZip library is not loaded. Please check your internet connection and reload this page.');
+    return;
+  }
+  var body = '';
+  for (var p = 0; p < pages.length; p++) {
+    if (p > 0) body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+    body += '<w:p><w:pPr><w:rPr><w:b/><w:bCs/></w:rPr></w:pPr><w:r><w:rPr><w:b/><w:bCs/></w:rPr><w:t xml:space="preserve">' + escXml(title) + '</w:t></w:r></w:p>';
+    body += buildScoringTable(pages[p]);
+  }
+  body += '<w:p/>';
+
+  var zip = new JSZip();
+  zip.file('[Content_Types].xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+  zip.folder('_rels').file('.rels',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+    '</Relationships>');
+
+  var docXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" ' +
+    'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" ' +
+    'xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+    'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" ' +
+    'xmlns:v="urn:schemas-microsoft-com:vml" ' +
+    'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ' +
+    'xmlns:w10="urn:schemas-microsoft-com:office:word" ' +
+    'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
+    'xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" ' +
+    'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+    'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+    '<w:body>' + body +
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>' +
+    '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/>' +
+    '<w:cols w:space="708"/><w:docGrid w:linePitch="360"/></w:sectPr>' +
+    '</w:body></w:document>';
+  zip.folder('word').file('document.xml', docXml);
+
+  zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+    .then(function(blob) { downloadBlob(blob, filename); });
+}
+
+function sortCands(cands) {
+  return cands.slice().sort(function(a, b) {
+    var na = parseFloat(a), nb = parseFloat(b);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return String(a).localeCompare(String(b));
+  });
+}
+
+function buildOsceDocxPages(data, N, S, names) {
+  var cands = [];
+  for (var s = 0; s < S; s++) {
+    var d = data['Session ' + (s + 1)];
+    if (!d) continue;
+    for (var st = 0; st < N; st++) {
+      var c = d.Candidate[st];
+      if (c && cands.indexOf(c) < 0) cands.push(c);
+    }
+  }
+  cands = sortCands(cands);
+  var pages = [];
+  for (var st2 = 0; st2 < N; st2++) {
+    var sessOf = {};
+    for (var s2 = 0; s2 < S; s2++) {
+      var d2 = data['Session ' + (s2 + 1)];
+      if (!d2) continue;
+      var c2 = d2.Candidate[st2];
+      if (c2) sessOf[c2] = s2 + 1;
+    }
+    var rows = [];
+    for (var i = 0; i < cands.length; i++) rows.push({ cand: cands[i], session: sessOf[cands[i]] || null });
+    pages.push({ headerLine1: 'Station ' + (st2 + 1), headerLine2: names[st2], rows: rows });
+  }
+  return pages;
+}
+
+function downloadOsceDocx(sess) {
+  if (!osceStore.dataAm) return;
+  var isPm = sess === 'pm';
+  var data = isPm ? osceStore.dataPm : osceStore.dataAm;
+  var S = isPm ? osceStore.SPm : osceStore.SAm;
+  var title = 'Scoring Table - OSCE ' + (isPm ? 'PM' : 'AM');
+  buildScoringDocx(title, buildOsceDocxPages(data, osceStore.N, S, osceStore.names), (isPm ? 'osce_pm_scoring.docx' : 'osce_am_scoring.docx'));
+}
+
+function buildVivaDocxPages(data, T, S, prios, names) {
+  var cands = sortCands(prios);
+  var pages = [];
+  for (var t = 0; t < T; t++) {
+    var sessOf = {};
+    for (var s = 0; s < S; s++) {
+      var d = data['Session ' + (s + 1)];
+      if (!d) continue;
+      var c = d.Candidate[t];
+      if (c) sessOf[c] = s + 1;
+    }
+    var rows = [];
+    for (var i = 0; i < cands.length; i++) rows.push({ cand: cands[i], session: sessOf[cands[i]] || null });
+    pages.push({ headerLine1: 'Table ' + (t + 1), headerLine2: names[t], rows: rows });
+  }
+  return pages;
+}
+
+function downloadVivaDocx(sess) {
+  if (!vivaStore.dataAM) return;
+  var isPm = sess === 'pm';
+  var data = isPm ? vivaStore.dataPM : vivaStore.dataAM;
+  var T = isPm ? vivaStore.TPm : vivaStore.TAm;
+  var S = isPm ? vivaStore.SPm : vivaStore.SAm;
+  var prios = isPm ? vivaStore.priosPM : vivaStore.priosAM;
+  var names = isPm ? vivaStore.examPM : vivaStore.examAM;
+  var title = 'Scoring Table - Viva ' + (isPm ? 'PM' : 'AM');
+  buildScoringDocx(title, buildVivaDocxPages(data, T, S, prios, names), (isPm ? 'viva_pm_scoring.docx' : 'viva_am_scoring.docx'));
 }
 
 // ==================== DEBRIEFING ====================
