@@ -412,7 +412,7 @@ function toJsObj(obj, indent) {
   return result;
 }
 
-function genConfig({startAM, startPM, numItems, baseSessions, transitDur, examDur, prep, prepDur, brk, brkIdx, brkDur, concl, conclDur, extraPhases, examLabel, quote}) {
+function genConfig({startAM, startPM, numItems, baseSessions, transitDur, examDur, prep, prepDur, brk, brkIdx, brkDur, concl, conclDur, extraPhases, examLabel, quote, numLabel}) {
   const q = quote || "'";
   const lines = ["'use strict';"];
 
@@ -422,7 +422,7 @@ function genConfig({startAM, startPM, numItems, baseSessions, transitDur, examDu
   } else {
     lines.push(`const START_TIME = "${startAM || startPM}";`);
   }
-  if (numItems) lines.push(`const NUM_${examLabel === 'TABLES' ? 'TABLES' : 'STATIONS'} = ${numItems};`);
+  if (numItems) lines.push(`const ${numLabel || (examLabel === 'TABLES' ? 'NUM_TABLES' : 'NUM_STATIONS')} = ${numItems};`);
   lines.push(`const BASE_NUM_SESSIONS = ${baseSessions};`);
   lines.push('');
   lines.push(`const ENABLE_PREPARATION = ${prep};`);
@@ -914,7 +914,7 @@ function vivaGenerate() {
   $('viva-preview-session-pm').innerHTML = renderSessionView(dataPM, examPM, TPm, SPm);
   $('viva-preview-table-pm').innerHTML = renderTableView(dataPM, examPM, TPm, SPm);
 
-  var combinedConfig = genConfig({startAM:startAM,startPM:startPM,numItems:Math.max(TAm,TPm),baseSessions:Math.max(SAm,SPm),transitDur:transit,examDur:examDur,prep:prep,prepDur:prepDur,brk:brk,brkIdx:brkIdxAm,brkDur:brkDur,concl:concl,conclDur:conclDurAm,examLabel:'Viva Exam',extraPhases:[{title:'Debriefing',duration:debriefDur,info:Math.round(debriefDur/60)+' minutes'}],quote:"'"});
+  var combinedConfig = genConfig({startAM:startAM,startPM:startPM,numItems:Math.max(TAm,TPm),baseSessions:Math.max(SAm,SPm),transitDur:transit,examDur:examDur,prep:prep,prepDur:prepDur,brk:brk,brkIdx:brkIdxAm,brkDur:brkDur,concl:concl,conclDur:conclDurAm,examLabel:'Viva Exam',numLabel:'NUM_TABLES',extraPhases:[{title:'Debriefing',duration:debriefDur,info:Math.round(debriefDur/60)+' minutes'}],quote:"'"});
   var combinedTables = "'use strict';\nconst TABLE_NAMES_AM = "+JSON.stringify(examAM,null,2).replace(/\n\]/g,',\n]')+";\n\nconst TABLE_NAMES_PM = "+JSON.stringify(examPM,null,2).replace(/\n\]/g,',\n]')+";\n";
   var dataJsAM = "'use strict';\nwindow._dataReady = true;\nvar vivaData = "+toJsObj(dataAM,4)+";\n";
   var dataJsPM = "'use strict';\nwindow._dataReady = true;\nvar vivaData = "+toJsObj(dataPM,4)+";\n";
