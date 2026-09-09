@@ -7,7 +7,7 @@ const TABLE_NAMES_AM = [
   "Swan Lau",
   "Zion Yeung",
   "Andrea Yu",
-  "Adrie Chan",
+  "Lydia Lau",
   "Rosinni Wong",
   "Frankie Ng",
 ];
@@ -21,6 +21,6 @@ const TABLE_NAMES_PM = [
   "Zion Yeung",
   "Andrea Yu",
   "Max Lau",
-  "Lydia Lau",
+  "Adrie Chan",
   "Frankie Ng",
 ];
