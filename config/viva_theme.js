@@ -1,26 +1,26 @@
 'use strict';
 const VIVA_THEMES_AM = [
-  "theme_1_am",
-  "theme_2_am",
+  "Fracture hip, acute PE, delirium prevention ",
+  "Acute ischemic stroke for EVT",
   "COPD, prehabilitation, esophagectomy",
   "Duchenne muscular dystrophy, appendicectomy",
-  "theme_5_am",
+  "Remote anaesthesia",
   "Retrosternal goiter, ischemic CMP with CRT-D",
   "Athlete, shoulder surgery, RA; SLE, antiphospholipid syndrome, cancer surgery",
   "Thyroid bleed ",
   "Paediatric airway",
-  "theme_10_am"
+  "Adrenal Gland Pathology"
 ];
 
 const VIVA_THEMES_PM = [
-  "theme_1_pm",
+  "Fracture hip, acute PE, delirium prevention ",
   "Pre-eclampsia Spectrum Disorders",
-  "theme_3_pm",
+  "COPD, prehabilitation, esophagectomy",
   "Duchenne muscular dystrophy, appendicectomy",
-  "theme_5_pm",
+  "Patient blood management",
   "Retrosternal goiter, ischemic CMP with CRT-D",
-  "theme_7_pm",
+  "SLE, antiphospholipid syndrome, cancer surgery",
   "Acute airway in patient with ultra high cardiovascular risk",
   "DM and SGLT2/GLP1 RA, gastric USG, mediastinoscopy",
-  "theme_10_pm"
+  "Adrenal Gland Pathology"
 ];
