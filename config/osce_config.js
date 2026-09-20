@@ -1,6 +1,6 @@
 'use strict';
 const START_TIME_AM = "09:00:00";
-const START_TIME_PM = "13:30:00";
+const START_TIME_PM = "13:45:00";
 const NUM_STATIONS = 15;
 const BASE_NUM_SESSIONS = 15;
 
